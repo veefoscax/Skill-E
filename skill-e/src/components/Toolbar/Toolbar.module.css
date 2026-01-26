@@ -1,0 +1,25 @@
+/**
+ * Toolbar Component Styles
+ * 
+ * Note: This component primarily uses Tailwind CSS classes.
+ * This module is provided for any custom styles that may be needed
+ * beyond Tailwind's utility classes.
+ */
+
+.toolbar {
+  /* Custom styles can be added here if needed */
+}
+
+.timerActive {
+  /* Animation for active recording timer */
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
