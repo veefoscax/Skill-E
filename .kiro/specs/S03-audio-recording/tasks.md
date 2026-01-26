@@ -10,7 +10,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
 
 ## Phase 1: Audio Capture
 
-- [ ] 1. Audio Recording Hook
+- [-] 1. Audio Recording Hook
   - Create src/hooks/useAudioRecording.ts
   - Request microphone permission via getUserMedia
   - Setup MediaRecorder with audio/webm format
@@ -18,7 +18,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
   - Save audio chunks to blob
   - _Requirements: FR-3.1, FR-3.3_
 
-- [ ] 2. Audio Level Meter
+- [~] 2. Audio Level Meter
   - Create src/components/AudioLevelMeter.tsx
   - Use Web Audio API AnalyserNode
   - Render real-time level visualization
@@ -27,7 +27,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
 
 ## Phase 2: File Storage
 
-- [ ] 3. Audio File Handling
+- [~] 3. Audio File Handling
   - Convert blob to file on recording stop
   - Save audio file via Tauri FS API
   - Store path in session data
@@ -36,7 +36,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
 
 ## Phase 3: Whisper Integration
 
-- [ ] 4. Whisper Client
+- [~] 4. Whisper Client
   - Create src/lib/whisper.ts
   - Implement transcribeAudio() function
   - Use verbose_json response format
@@ -44,7 +44,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
   - Handle API errors gracefully
   - _Requirements: FR-3.4, FR-3.5_
 
-- [ ] 5. Settings Integration
+- [~] 5. Settings Integration
   - Add Whisper API key input to settings
   - Validate API key on save
   - Store key securely in settings store
@@ -52,7 +52,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
 
 ## Phase 4: Testing
 
-- [ ] 6. Audio Testing
+- [~] 6. Audio Testing
   - Test microphone recording works
   - Test pause/resume functionality
   - Test audio level meter accuracy
@@ -60,7 +60,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
   - Verify timestamp alignment with recording
   - _Requirements: All ACs_
 
-- [ ] 7. Checkpoint - Verify Phase Complete
+- [~] 7. Checkpoint - Verify Phase Complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ---

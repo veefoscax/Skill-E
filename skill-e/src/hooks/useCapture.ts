@@ -1,13 +1,12 @@
 import { useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useRecordingStore } from '../stores/recording';
-import type { 
-  CaptureResult, 
-  WindowInfo, 
-  CaptureFrame, 
+import type {
+  CaptureResult,
+  WindowInfo,
+  CaptureFrame,
   CaptureSession,
   SessionManifest,
-  FrameMetadata,
 } from '../types/capture';
 
 /**
