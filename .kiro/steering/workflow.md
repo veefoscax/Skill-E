@@ -4,11 +4,17 @@
 
 ### Task Execution Workflow
 
-1. **Read Spec Documents** - Always review requirements.md and design.md before implementing
-2. **Implement Task** - Focus on one task at a time, follow acceptance criteria
-3. **Test Implementation** - Verify functionality works as expected
-4. **Update DEVLOG** - Document what was completed (see below)
-5. **Mark Complete** - Update task status only after verification
+1. **Check Official Documentation FIRST** - Before implementing any feature:
+   - Search official docs for the framework/library being used
+   - Check for specific APIs, permissions, or configuration requirements
+   - Look for examples and best practices
+   - Verify compatibility with current version
+   - **NEVER assume** - always verify with official sources
+2. **Read Spec Documents** - Always review requirements.md and design.md before implementing
+3. **Implement Task** - Focus on one task at a time, follow acceptance criteria
+4. **Test Implementation** - Verify functionality works as expected
+5. **Update DEVLOG** - Document what was completed (see below)
+6. **Mark Complete** - Update task status only after verification
 
 ### DEVLOG Updates (CRITICAL)
 

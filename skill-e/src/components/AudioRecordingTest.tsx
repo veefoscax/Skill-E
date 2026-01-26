@@ -123,7 +123,21 @@ export function AudioRecordingTest() {
           <strong>Has Permission:</strong>{' '}
           {hasPermission === null ? 'Not requested' : hasPermission ? 'Yes ✓' : 'No ✗'}
         </p>
+        <p className="mb-2 text-sm text-gray-600">
+          <strong>Browser:</strong> {navigator.userAgent.includes('Chrome') ? 'Chrome' : navigator.userAgent.includes('Firefox') ? 'Firefox' : 'Other'}
+        </p>
+        <p className="mb-2 text-sm text-gray-600">
+          <strong>getUserMedia available:</strong> {navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? 'Yes ✓' : 'No ✗'}
+        </p>
         {hasPermission === false && (
+          <button
+            onClick={handleRequestPermission}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Request Permission
+          </button>
+        )}
+        {hasPermission === null && (
           <button
             onClick={handleRequestPermission}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"

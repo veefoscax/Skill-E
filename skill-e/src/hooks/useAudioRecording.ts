@@ -33,6 +33,13 @@ export function useAudioRecording() {
    */
   const requestPermission = useCallback(async (): Promise<boolean> => {
     try {
+      console.log('Requesting microphone permission...');
+      
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia is not supported in this browser');
+      }
+      
       // Request microphone access with Whisper-compatible settings
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -47,16 +54,29 @@ export function useAudioRecording() {
       streamRef.current = stream;
       setHasPermission(true);
       setError(null);
-      console.log('Microphone permission granted');
+      console.log('✅ Microphone permission granted successfully!');
+      console.log('Stream tracks:', stream.getTracks());
       return true;
     } catch (err) {
-      console.error('Failed to get microphone permission:', err);
+      console.error('❌ Failed to get microphone permission:', err);
+      console.error('Error name:', (err as any).name);
+      console.error('Error message:', (err as any).message);
       setHasPermission(false);
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to access microphone. Please check your permissions.'
-      );
+      
+      let errorMessage = 'Failed to access microphone. ';
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError') {
+          errorMessage += 'Permission denied. Please allow microphone access in your browser settings.';
+        } else if (err.name === 'NotFoundError') {
+          errorMessage += 'No microphone found. Please connect a microphone and try again.';
+        } else if (err.name === 'NotReadableError') {
+          errorMessage += 'Microphone is already in use by another application.';
+        } else {
+          errorMessage += err.message;
+        }
+      }
+      
+      setError(errorMessage);
       return false;
     }
   }, []);
