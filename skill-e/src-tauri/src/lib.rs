@@ -23,6 +23,7 @@ use commands::whisper::{
     transcribe_local,
     get_model_download_url,
     get_models_directory,
+    check_compute_capability,
 };
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -141,7 +142,8 @@ pub fn run() {
             get_available_models,
             transcribe_local,
             get_model_download_url,
-            get_models_directory
+            get_models_directory,
+            check_compute_capability
         ])
         .setup(|app| {
             // Note: For Tauri v2, window effects (Mica/Vibrancy) are configured in tauri.conf.json

@@ -4,7 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSettingsStore, WHISPER_MODEL_INFO, type WhisperModel } from '@/stores/settings';
 import { validateWhisperApiKey } from '@/lib/whisper';
-import { Loader2, Check, X, Eye, EyeOff, Cloud, HardDrive, Cpu, Zap, ChevronDown } from 'lucide-react';
+import { checkComputeCapability } from '@/lib/whisper-local';
+import { AudioLevelMeter } from '@/components/AudioLevelMeter';
+import { Loader2, Check, X, Eye, EyeOff, Cloud, HardDrive, Cpu, Zap, ChevronDown, Mic, MicOff } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,11 +38,69 @@ export function Settings() {
   const [validationStatus, setValidationStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [showApiKey, setShowApiKey] = useState(false);
 
+  // Microphone Test State
+  const [isTestingMic, setIsTestingMic] = useState(false);
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
+  const [micError, setMicError] = useState<string | null>(null);
+
+  // GPU State
+  const [gpuType, setGpuType] = useState<'cpu' | 'cuda' | 'metal'>('cpu');
+  const [checkingGpu, setCheckingGpu] = useState(true);
+
+  useEffect(() => {
+    // Check GPU capability on mount
+    checkComputeCapability().then((type) => {
+      console.log('Detected GPU capability:', type);
+      setGpuType(type);
+      setCheckingGpu(false);
+
+      // Auto-enable GPU if available (unless user explicitly disabled it previously, but we don't track that yet)
+      if (type !== 'cpu' && !useGpu) {
+        // Optional: could auto-enable here
+      }
+    }).catch(err => {
+      console.error('Failed to check GPU:', err);
+      setCheckingGpu(false);
+    });
+  }, []);
+
+  const handleToggleMicTest = async () => {
+    if (isTestingMic) {
+      // Stop test
+      if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+        setMicStream(null);
+      }
+      setIsTestingMic(false);
+    } else {
+      // Start test
+      setMicError(null);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMicStream(stream);
+        setIsTestingMic(true);
+      } catch (err) {
+        console.error('Microphone access denied:', err);
+        setMicError('Access denied. Check system permissions.');
+      }
+    }
+  };
+
+  // Cleanup mic stream on unmount
+  useEffect(() => {
+    return () => {
+      if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [micStream]);
+
   const handleClose = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     const window = getCurrentWindow();
     await window.hide();
   };
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -90,6 +150,38 @@ export function Settings() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
 
+        {/* Microphone Test Section */}
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground uppercase">Microphone</Label>
+          <div className="p-3 rounded-md border bg-card space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Input Test</span>
+              <Button
+                size="sm"
+                variant={isTestingMic ? "destructive" : "secondary"}
+                className="h-7 text-xs"
+                onClick={handleToggleMicTest}
+              >
+                {isTestingMic ? <><MicOff className="h-3 w-3 mr-1" /> Stop</> : <><Mic className="h-3 w-3 mr-1" /> Test</>}
+              </Button>
+            </div>
+
+            {micError && (
+              <p className="text-xs text-destructive">{micError}</p>
+            )}
+
+            {(isTestingMic || micStream) && (
+              <AudioLevelMeter audioStream={micStream} isActive={isTestingMic} />
+            )}
+
+            {!isTestingMic && !micError && (
+              <p className="text-[10px] text-muted-foreground">
+                Click Test to verify microphone permissions and levels.
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* Transcription Mode */}
         <div className="space-y-2">
           <Label className="text-xs font-medium text-muted-foreground uppercase">Transcription Mode</Label>
@@ -121,18 +213,28 @@ export function Settings() {
         {transcriptionMode === 'local' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
             {/* GPU Toggle */}
-            <div className="flex items-center justify-between p-3 rounded-md border bg-card">
+            <div className={`flex items-center justify-between p-3 rounded-md border ${gpuType === 'cpu' && !checkingGpu ? 'bg-muted/30 border-dashed' : 'bg-card'
+              }`}>
               <div className="flex items-center gap-2">
                 {useGpu ? <Zap className="h-4 w-4 text-yellow-500" /> : <Cpu className="h-4 w-4" />}
                 <div className="flex flex-col">
                   <span className="font-medium">GPU Acceleration</span>
-                  <span className="text-[10px] text-muted-foreground">{useGpu ? 'Turbo Model Rec.' : 'Tiny Model Rec.'}</span>
+                  <span className={`text-[10px] ${gpuType === 'cuda' ? 'text-green-600 font-medium' :
+                      gpuType === 'metal' ? 'text-blue-600 font-medium' :
+                        'text-muted-foreground'
+                    }`}>
+                    {checkingGpu ? 'Checking hardware...' :
+                      gpuType === 'cuda' ? 'NVIDIA CUDA Detected' :
+                        gpuType === 'metal' ? 'Apple Metal Detected' :
+                          'No GPU Detected (CPU Mode)'}
+                  </span>
                 </div>
               </div>
               <button
                 onClick={() => setUseGpu(!useGpu)}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${useGpu ? 'bg-primary' : 'bg-muted'
                   }`}
+                title={gpuType === 'cpu' ? "GPU not detected, but you can force enable" : "Toggle GPU acceleration"}
               >
                 <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${useGpu ? 'translate-x-5' : 'translate-x-1'
                   }`} />

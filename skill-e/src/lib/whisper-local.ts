@@ -247,3 +247,13 @@ export async function isLocalWhisperAvailable(): Promise<boolean> {
         return false;
     }
 }
+
+/**
+ * Check if the system supports GPU acceleration for Whisper
+ * 
+ * @returns 'cuda', 'metal', or 'cpu'
+ */
+export async function checkComputeCapability(): Promise<'cuda' | 'metal' | 'cpu'> {
+    return invoke<'cuda' | 'metal' | 'cpu'>('check_compute_capability');
+}
+

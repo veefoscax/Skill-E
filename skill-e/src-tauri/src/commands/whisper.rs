@@ -357,8 +357,76 @@ mod tests {
             duration: 3.0,
         };
         
-        let json = serde_json::to_string(&result).unwrap();
-        assert!(json.contains("Hello world"));
-        assert!(json.contains("segments"));
+/// Check if the system supports GPU acceleration for Whisper
+/// Returns "cuda", "metal", or "cpu" based on available hardware/drivers
+#[tauri::command]
+pub fn check_compute_capability() -> Result<String, String> {
+    #[cfg(target_os = "macos")]
+    {
+        // On macOS, we check for Apple Silicon which supports Metal
+        // or check for high-performance GPU
+        use std::process::Command;
+        
+        let output = Command::new("sysctl")
+            .arg("-n")
+            .arg("machdep.cpu.brand_string")
+            .output()
+            .map_err(|e| e.to_string())?;
+            
+        let cpu_info = String::from_utf8_lossy(&output.stdout).to_lowercase();
+        
+        if cpu_info.contains("apple") {
+            return Ok("metal".to_string());
+        }
+        
+        // For Intel Macs, check system_profiler for GPU
+        let gpu_output = Command::new("system_profiler")
+            .arg("SPDisplaysDataType")
+            .output()
+            .map_err(|e| e.to_string())?;
+            
+        let gpu_info = String::from_utf8_lossy(&gpu_output.stdout).to_lowercase();
+        if gpu_info.contains("metal") {
+            return Ok("metal".to_string());
+        }
+        
+        Ok("cpu".to_string())
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // On Windows, check for NVIDIA GPU for CUDA support
+        use std::process::Command;
+        use std::os::windows::process::CommandExt;
+        
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        
+        let output = Command::new("wmic")
+            .args(&["path", "win32_VideoController", "get", "name"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
+            .map_err(|e| e.to_string())?;
+            
+        let gpu_info = String::from_utf8_lossy(&output.stdout).to_lowercase();
+        
+        if gpu_info.contains("nvidia") {
+            return Ok("cuda".to_string());
+        }
+        
+        // Could also check for AMD/Intel regarding Vulkan/OpenCL, but whisper.cpp mainly targets CUDA
+        Ok("cpu".to_string())
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Basic check for nvidia-smi
+        use std::process::Command;
+        
+        if Command::new("nvidia-smi").output().is_ok() {
+            return Ok("cuda".to_string());
+        }
+        
+        Ok("cpu".to_string())
     }
 }
+
