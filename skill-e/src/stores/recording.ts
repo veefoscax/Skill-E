@@ -27,6 +27,7 @@ export interface RecordingState {
   // Captured data
   frames: CaptureFrame[];
   audioBlob: Blob | null;
+  audioPath: string | null;
   
   // Actions
   startRecording: () => void;
@@ -39,6 +40,7 @@ export interface RecordingState {
   updateDuration: (duration: number) => void;
   addFrame: (frame: CaptureFrame) => void;
   setAudioBlob: (blob: Blob) => void;
+  setAudioPath: (path: string) => void;
   reset: () => void;
 }
 
@@ -53,6 +55,7 @@ const initialState = {
   duration: 0,
   frames: [],
   audioBlob: null,
+  audioPath: null,
 };
 
 /**
@@ -72,6 +75,7 @@ export const useRecordingStore = create<RecordingState>()(
           duration: 0,
           frames: [],
           audioBlob: null,
+          audioPath: null,
         }),
 
       pauseRecording: () =>
@@ -107,6 +111,7 @@ export const useRecordingStore = create<RecordingState>()(
               duration: 0,
               frames: [],
               audioBlob: null,
+              audioPath: null,
             };
           }
         }),
@@ -124,6 +129,7 @@ export const useRecordingStore = create<RecordingState>()(
           duration: 0,
           frames: [],
           audioBlob: null,
+          audioPath: null,
         }),
 
       updateDuration: (duration: number) =>
@@ -139,6 +145,11 @@ export const useRecordingStore = create<RecordingState>()(
       setAudioBlob: (blob: Blob) =>
         set({
           audioBlob: blob,
+        }),
+
+      setAudioPath: (path: string) =>
+        set({
+          audioPath: path,
         }),
 
       reset: () => set(initialState),

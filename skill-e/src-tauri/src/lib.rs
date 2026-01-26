@@ -14,6 +14,7 @@ use commands::capture::{
     load_session_manifest,
     cleanup_session,
     list_sessions,
+    save_audio_file,
 };
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -124,7 +125,8 @@ pub fn run() {
             save_session_manifest,
             load_session_manifest,
             cleanup_session,
-            list_sessions
+            list_sessions,
+            save_audio_file
         ])
         .setup(|app| {
             // Note: For Tauri v2, window effects (Mica/Vibrancy) are configured in tauri.conf.json

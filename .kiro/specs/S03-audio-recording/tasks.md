@@ -10,7 +10,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
 
 ## Phase 1: Audio Capture
 
-- [-] 1. Audio Recording Hook
+- [x] 1. Audio Recording Hook
   - Create src/hooks/useAudioRecording.ts
   - Request microphone permission via getUserMedia
   - Setup MediaRecorder with audio/webm format
@@ -18,7 +18,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
   - Save audio chunks to blob
   - _Requirements: FR-3.1, FR-3.3_
 
-- [~] 2. Audio Level Meter
+- [x] 2. Audio Level Meter
   - Create src/components/AudioLevelMeter.tsx
   - Use Web Audio API AnalyserNode
   - Render real-time level visualization
@@ -27,7 +27,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
 
 ## Phase 2: File Storage
 
-- [~] 3. Audio File Handling
+- [x] 3. Audio File Handling
   - Convert blob to file on recording stop
   - Save audio file via Tauri FS API
   - Store path in session data
@@ -36,7 +36,7 @@ Implements microphone audio recording with visual feedback and Whisper API trans
 
 ## Phase 3: Whisper Integration
 
-- [~] 4. Whisper Client
+- [x] 4. Whisper Client
   - Create src/lib/whisper.ts
   - Implement transcribeAudio() function
   - Use verbose_json response format

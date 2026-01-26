@@ -183,13 +183,13 @@ fn get_active_window_windows() -> Result<WindowInfo, String> {
     use windows::Win32::UI::WindowsAndMessaging::{
         GetForegroundWindow, GetWindowTextW, GetWindowRect, GetWindowThreadProcessId,
     };
-    use windows::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, PROCESS_QUERY_LIMITED_INFORMATION};
+    use windows::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_NAME_FORMAT};
     use windows::core::PWSTR;
 
     unsafe {
         // Get the foreground window handle
         let hwnd: HWND = GetForegroundWindow();
-        if hwnd.0 == 0 {
+        if hwnd.0 == std::ptr::null_mut() {
             return Err("No active window found".to_string());
         }
 
@@ -226,7 +226,7 @@ fn get_active_window_windows() -> Result<WindowInfo, String> {
                     
                     match QueryFullProcessImageNameW(
                         process_handle,
-                        0,
+                        PROCESS_NAME_FORMAT(0),
                         PWSTR(path_buffer.as_mut_ptr()),
                         &mut size,
                     ) {
@@ -368,6 +368,15 @@ pub struct CursorPosition {
     pub y: i32,
 }
 
+/// Result of saving an audio file
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SaveAudioResult {
+    /// Path to the saved audio file
+    pub path: String,
+    /// File size in bytes
+    pub size: u64,
+}
+
 /// Session manifest containing all frame metadata
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SessionManifest {
@@ -381,6 +390,8 @@ pub struct SessionManifest {
     pub interval_ms: u64,
     /// All captured frames
     pub frames: Vec<FrameMetadata>,
+    /// Path to audio file (if audio was recorded)
+    pub audio_path: Option<String>,
 }
 
 /// Creates a temporary directory for a capture session
@@ -543,6 +554,65 @@ pub async fn list_sessions() -> Result<Vec<String>, String> {
     Ok(sessions)
 }
 
+/// Saves an audio blob to the session directory
+/// 
+/// # Arguments
+/// * `session_dir` - Path to the session directory
+/// * `audio_data` - Base64 encoded audio data
+/// * `filename` - Name for the audio file (e.g., "audio.webm")
+/// 
+/// # Returns
+/// * `Ok(SaveAudioResult)` - Contains path and size of saved file
+/// * `Err(String)` - Error message if save fails
+/// 
+/// # Requirements
+/// * NFR-3.1: Audio quality: 16kHz mono (Whisper-compatible)
+/// 
+/// # Notes
+/// The audio data should be in WebM format with Opus codec, which is
+/// compatible with Whisper API. The frontend is responsible for ensuring
+/// the correct format (16kHz mono) during recording.
+#[tauri::command]
+pub async fn save_audio_file(
+    session_dir: String,
+    audio_data: Vec<u8>,
+    filename: String,
+) -> Result<SaveAudioResult, String> {
+    // Validate filename
+    if filename.is_empty() {
+        return Err("Filename cannot be empty".to_string());
+    }
+    
+    // Construct full path
+    let audio_path = PathBuf::from(&session_dir).join(&filename);
+    
+    // Ensure parent directory exists
+    if let Some(parent) = audio_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create audio directory: {}", e))?;
+    }
+    
+    // Write audio data to file
+    fs::write(&audio_path, &audio_data)
+        .map_err(|e| format!("Failed to write audio file: {}", e))?;
+    
+    // Get file size
+    let size = audio_data.len() as u64;
+    
+    // Convert path to string
+    let path_str = audio_path
+        .to_str()
+        .ok_or_else(|| "Failed to convert path to string".to_string())?
+        .to_string();
+    
+    println!("Saved audio file: {} ({} bytes)", path_str, size);
+    
+    Ok(SaveAudioResult {
+        path: path_str,
+        size,
+    })
+}
+
 #[cfg(test)]
 mod session_tests {
     use super::*;
@@ -579,10 +649,24 @@ mod session_tests {
             end_time: Some(1234567900),
             interval_ms: 1000,
             frames: vec![],
+            audio_path: Some("/path/to/audio.webm".to_string()),
         };
 
         let json = serde_json::to_string(&manifest).unwrap();
         assert!(json.contains("session-123"));
         assert!(json.contains("1000"));
+        assert!(json.contains("audio.webm"));
+    }
+    
+    #[test]
+    fn test_save_audio_result_serialization() {
+        let result = SaveAudioResult {
+            path: "/tmp/session/audio.webm".to_string(),
+            size: 1024000,
+        };
+
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("audio.webm"));
+        assert!(json.contains("1024000"));
     }
 }

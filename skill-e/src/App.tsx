@@ -3,6 +3,7 @@ import { CaptureTest } from '@/components/CaptureTest'
 import { CaptureCommandTest } from '@/components/CaptureCommandTest'
 import { CaptureHookTest } from '@/components/CaptureHookTest'
 import { CaptureIntegrationTest } from '@/components/CaptureIntegrationTest'
+import { AudioRecordingTest } from '@/components/AudioRecordingTest'
 // import { useWindowPosition } from '@/hooks/useWindowPosition'
 import { useSystemTray } from '@/hooks/useSystemTray'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
@@ -31,6 +32,8 @@ function App() {
   return (
     <div className="flex flex-col gap-4 p-4">
       <Toolbar />
+      {/* TASK S03-1: Audio Recording Hook Test */}
+      <AudioRecordingTest />
       {/* TASK 9: Comprehensive Integration Test for Screen Capture */}
       <CaptureIntegrationTest />
       {/* TEMPORARY: Test component for Task 2 - Screen Capture */}
