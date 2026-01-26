@@ -5725,3 +5725,49 @@ Implemented all 7 tasks for S03 Audio Recording by delegating to subagents, but 
 2. Debug microphone permission issue
 3. Test and fix before proceeding
 
+
+
+---
+
+## Day 2 - January 27, 2025 (Continued)
+
+### S03: Audio Recording - Permission Issue Investigation
+
+**Problem Discovered**: Microphone permission prompt does NOT appear when clicking "Start Recording" or "Request Permission" buttons.
+
+**Investigation Completed**:
+- ✅ Checked Tauri v2 documentation for microphone permissions
+- ✅ Researched WebView2 getUserMedia() behavior on Windows
+- ✅ Found root cause: **WebView2 has a known bug where getUserMedia() permission prompts don't work reliably**
+- ✅ Reviewed multiple GitHub issues and Stack Overflow discussions
+- ✅ Confirmed this is a WebView2 limitation, not a Tauri or code issue
+
+**Key Findings**:
+1. **WebView2 Bug**: Permission prompts for getUserMedia() don't appear automatically in WebView2
+2. **Blocked by Microsoft**: https://github.com/MicrosoftEdge/WebView2Feedback/issues/2427
+3. **No Current Solution**: Tauri/WRY doesn't expose PermissionRequested event handler
+4. **Code is Correct**: Our getUserMedia() implementation follows best practices
+5. **macOS May Work**: WKWebView (macOS) may handle permissions differently than WebView2 (Windows)
+
+**Documentation Created**:
+- Created `AUDIO_PERMISSION_ISSUE.md` with full investigation report
+- Documented 5 possible solutions with pros/cons
+- Added references to all relevant GitHub issues and discussions
+
+**Recommended Next Steps**:
+1. **Immediate**: Add better error messages guiding users to Windows Settings
+2. **Short-term**: Implement OS-level permission checking (Windows API)
+3. **Test on macOS**: Verify if permission prompt works on macOS
+4. **Long-term**: Monitor Tauri/WRY for permission handler API updates
+
+**Status**: ⏳ Awaiting user decision on which solution to implement
+
+**Files Modified**:
+- Created: `skill-e/AUDIO_PERMISSION_ISSUE.md`
+- Updated: `.kiro/steering/workflow.md` (added "Check Documentation First" rule)
+
+**References**:
+- [Tauri Issue #4434](https://github.com/tauri-apps/tauri/issues/4434)
+- [WebView2 Feedback #2427](https://github.com/MicrosoftEdge/WebView2Feedback/issues/2427)
+- [Stack Overflow Discussion](https://stackoverflow.com/questions/73501432)
+

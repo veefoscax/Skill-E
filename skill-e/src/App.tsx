@@ -6,6 +6,7 @@ import { CaptureIntegrationTest } from '@/components/CaptureIntegrationTest'
 import { AudioRecordingTest } from '@/components/AudioRecordingTest'
 import { AudioTestSuite } from '@/components/AudioTestSuite'
 import { SettingsTest } from '@/components/SettingsTest'
+import { MicrophoneDiagnostic } from '@/components/MicrophoneDiagnostic'
 // import { useWindowPosition } from '@/hooks/useWindowPosition'
 import { useSystemTray } from '@/hooks/useSystemTray'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
@@ -15,7 +16,7 @@ function App() {
   // TEMPORARILY DISABLED: Window position persistence is forcing window to center
   // TODO: Re-enable after fixing the centering logic
   // useWindowPosition();
-  
+
   // Initialize system tray behavior (minimize to tray on close)
   useSystemTray();
 
@@ -34,6 +35,8 @@ function App() {
   return (
     <div className="flex flex-col gap-4 p-4">
       <Toolbar />
+      {/* Microphone Diagnostic - Run this first if audio isn't working */}
+      <MicrophoneDiagnostic />
       {/* TASK S03-6: Audio Testing - Comprehensive Test Suite */}
       <AudioTestSuite />
       {/* TASK S03-5: Settings Integration Test */}

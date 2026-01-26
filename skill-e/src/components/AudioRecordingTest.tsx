@@ -127,7 +127,7 @@ export function AudioRecordingTest() {
           <strong>Browser:</strong> {navigator.userAgent.includes('Chrome') ? 'Chrome' : navigator.userAgent.includes('Firefox') ? 'Firefox' : 'Other'}
         </p>
         <p className="mb-2 text-sm text-gray-600">
-          <strong>getUserMedia available:</strong> {navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? 'Yes ✓' : 'No ✗'}
+          <strong>getUserMedia available:</strong> {typeof navigator.mediaDevices?.getUserMedia === 'function' ? 'Yes ✓' : 'No ✗'}
         </p>
         {hasPermission === false && (
           <button
@@ -153,7 +153,7 @@ export function AudioRecordingTest() {
           <strong>Error:</strong> {error}
         </div>
       )}
-      
+
       {/* Session Error Display */}
       {sessionError && (
         <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-lg">
@@ -197,8 +197,8 @@ export function AudioRecordingTest() {
         {/* Audio Level Meter */}
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Audio Level Meter</h3>
-          <AudioLevelMeter 
-            audioStream={getAudioStream()} 
+          <AudioLevelMeter
+            audioStream={getAudioStream()}
             isActive={isRecording && !isPaused}
           />
         </div>
@@ -302,7 +302,7 @@ export function AudioRecordingTest() {
           <li>Click "Play Audio" to verify the recording quality</li>
           <li>Check that the file format is WebM with Opus codec (16kHz mono)</li>
         </ol>
-        
+
         <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900 rounded">
           <p className="font-semibold mb-1">✓ Task 3 Requirements:</p>
           <ul className="list-disc list-inside text-sm space-y-1">
