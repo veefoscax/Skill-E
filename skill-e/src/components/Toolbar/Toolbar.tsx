@@ -5,9 +5,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Circle, Square, Pause, Pencil } from 'lucide-react'
+import { Circle, Square, Pause, Pencil, X } from 'lucide-react'
 import { useEffect } from 'react'
 import { useRecordingStore } from '@/stores'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
 interface ToolbarProps {
   className?: string
@@ -77,8 +78,14 @@ export function Toolbar({ className }: ToolbarProps) {
     stopRecording()
   }
 
+  const handleClose = async () => {
+    const window = getCurrentWindow()
+    await window.hide()
+  }
+
   return (
     <div 
+      data-tauri-drag-region
       className={`bg-background/80 backdrop-blur-xl border border-border rounded-lg shadow-2xl px-4 py-2 flex items-center gap-3 ${className || ''}`}
       style={{
         width: '300px',
@@ -95,6 +102,7 @@ export function Toolbar({ className }: ToolbarProps) {
                 variant="default"
                 className="h-9 w-9 rounded-full"
                 onClick={handleStartRecording}
+                onPointerDown={(e) => e.stopPropagation()}
               >
                 <Circle className="h-4 w-4 fill-current" />
               </Button>
@@ -111,6 +119,7 @@ export function Toolbar({ className }: ToolbarProps) {
                 variant={isPaused ? "default" : "secondary"}
                 className="h-9 w-9 rounded-full"
                 onClick={handlePauseRecording}
+                onPointerDown={(e) => e.stopPropagation()}
               >
                 {isPaused ? (
                   <Circle className="h-4 w-4 fill-current" />
@@ -134,6 +143,7 @@ export function Toolbar({ className }: ToolbarProps) {
               className="h-9 w-9"
               disabled={!isRecording}
               onClick={handleStopRecording}
+              onPointerDown={(e) => e.stopPropagation()}
             >
               <Square className="h-4 w-4" />
             </Button>
@@ -143,10 +153,9 @@ export function Toolbar({ className }: ToolbarProps) {
           </TooltipContent>
         </Tooltip>
 
-        {/* Timer Display - Draggable Area */}
+        {/* Timer Display */}
         <div 
-          data-tauri-drag-region
-          className="flex-1 text-center cursor-move select-none"
+          className="flex-1 text-center select-none"
         >
           <span 
             className={`text-sm font-mono ${
@@ -167,12 +176,31 @@ export function Toolbar({ className }: ToolbarProps) {
               variant="ghost"
               className="h-9 w-9"
               disabled
+              onPointerDown={(e) => e.stopPropagation()}
             >
               <Pencil className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Annotation Mode (Coming Soon)</p>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Close Button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              size="icon" 
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={handleClose}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Hide to Tray</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

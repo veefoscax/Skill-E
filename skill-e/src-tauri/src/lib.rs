@@ -124,6 +124,8 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tray_icon::menu::MenuEvent;
     use tray_icon::Icon;
 
+    println!("Setting up system tray...");
+
     // Load tray icon
     let icon_bytes = include_bytes!("../icons/32x32.png");
     let icon_image = image::load_from_memory(icon_bytes)?;
@@ -131,6 +133,8 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let width = icon_image.width();
     let height = icon_image.height();
     let icon = Icon::from_rgba(rgba, width, height)?;
+
+    println!("Tray icon loaded: {}x{}", width, height);
 
     // Create menu items with unique IDs
     let show_hide = MenuItem::with_id("show_hide", "Show/Hide", true, None);
@@ -148,19 +152,25 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .with_icon(icon)
         .build()?;
 
+    println!("System tray created successfully!");
+
     // Handle menu events
     let app_handle = app.handle().clone();
     MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
+        println!("Tray menu event: {:?}", event.id);
         if let Some(window) = app_handle.get_webview_window("main") {
             match event.id.0.as_str() {
                 "show_hide" => {
                     let _ = if window.is_visible().unwrap_or(false) {
+                        println!("Hiding window");
                         window.hide()
                     } else {
+                        println!("Showing window");
                         window.show().and_then(|_| window.set_focus())
                     };
                 }
                 "quit" => {
+                    println!("Quitting app");
                     app_handle.exit(0);
                 }
                 _ => {}
@@ -175,8 +185,10 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             button: tray_icon::MouseButton::Left, 
             .. 
         } = event {
+            println!("Tray icon clicked");
             if let Some(window) = app_handle2.get_webview_window("main") {
                 let _ = if window.is_visible().unwrap_or(false) {
+                    println!("Hiding window");
                     window.hide()
                 } else {
                     window.show().and_then(|_| window.set_focus())
@@ -191,7 +203,9 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 fn setup_global_shortcuts(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
-    let app_handle = app.handle().clone();
+    println!("Setting up global shortcuts...");
+
+    let _app_handle = app.handle().clone();
 
     // Register Ctrl+Shift+R (Cmd+Shift+R on macOS) for toggle recording
     #[cfg(target_os = "macos")]
@@ -199,8 +213,10 @@ fn setup_global_shortcuts(app: &mut tauri::App) -> Result<(), Box<dyn std::error
     #[cfg(not(target_os = "macos"))]
     let record_shortcut = "Ctrl+Shift+R";
 
+    println!("Registering shortcut: {}", record_shortcut);
     app.global_shortcut().on_shortcut(record_shortcut, move |_app, _shortcut, event| {
         if event.state == ShortcutState::Pressed {
+            println!("Hotkey pressed: Toggle Recording");
             if let Some(window) = _app.get_webview_window("main") {
                 // Emit event to frontend
                 let _ = window.emit("hotkey-toggle-recording", ());
@@ -214,8 +230,10 @@ fn setup_global_shortcuts(app: &mut tauri::App) -> Result<(), Box<dyn std::error
     #[cfg(not(target_os = "macos"))]
     let annotation_shortcut = "Ctrl+Shift+A";
 
+    println!("Registering shortcut: {}", annotation_shortcut);
     app.global_shortcut().on_shortcut(annotation_shortcut, move |_app, _shortcut, event| {
         if event.state == ShortcutState::Pressed {
+            println!("Hotkey pressed: Toggle Annotation");
             if let Some(window) = _app.get_webview_window("main") {
                 // Emit event to frontend
                 let _ = window.emit("hotkey-toggle-annotation", ());
@@ -224,8 +242,10 @@ fn setup_global_shortcuts(app: &mut tauri::App) -> Result<(), Box<dyn std::error
     })?;
 
     // Register Esc for cancel recording
+    println!("Registering shortcut: Escape");
     app.global_shortcut().on_shortcut("Escape", move |_app, _shortcut, event| {
         if event.state == ShortcutState::Pressed {
+            println!("Hotkey pressed: Cancel Recording");
             if let Some(window) = _app.get_webview_window("main") {
                 // Emit event to frontend
                 let _ = window.emit("hotkey-cancel-recording", ());
@@ -233,5 +253,6 @@ fn setup_global_shortcuts(app: &mut tauri::App) -> Result<(), Box<dyn std::error
         }
     })?;
 
+    println!("Global shortcuts registered successfully!");
     Ok(())
 }
