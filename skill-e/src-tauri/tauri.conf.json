@@ -29,14 +29,14 @@
       {
         "label": "settings",
         "title": "Skill-E Settings",
-        "width": 600,
-        "height": 700,
-        "resizable": true,
-        "decorations": true,
-        "transparent": false,
-        "alwaysOnTop": false,
-        "skipTaskbar": false,
-        "center": true,
+        "width": 300,
+        "height": 400,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "center": false,
         "visible": false,
         "url": "index.html#/settings"
       }

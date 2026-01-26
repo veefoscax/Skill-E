@@ -2,7 +2,8 @@ import { Button } from '@/components/ui/button'
 import { Circle, Square, Pause, Pencil, X, Settings } from 'lucide-react'
 import { useEffect } from 'react'
 import { useRecordingStore } from '@/stores'
-import { getCurrentWindow } from '@tauri-apps/api/window'
+import { useAudioRecording } from '@/hooks/useAudioRecording'
+import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 interface ToolbarProps {
@@ -18,19 +19,28 @@ interface ToolbarProps {
  * - Annotation mode toggle
  * - Draggable area for window positioning
  * 
- * Requirements: FR-1.1, AC1
+ * Requirements: FR-1.1, AC1, FR-3.1
  */
 export function Toolbar(_props: ToolbarProps) {
   const {
     isRecording,
     isPaused,
     duration,
-    startRecording,
-    pauseRecording,
-    resumeRecording,
-    stopRecording,
+    startRecording: startRecordingState,
+    pauseRecording: pauseRecordingState,
+    resumeRecording: resumeRecordingState,
+    stopRecording: stopRecordingState,
     updateDuration,
   } = useRecordingStore()
+
+  // Audio recording hook - actual microphone capture
+  const {
+    startRecording: startAudio,
+    stopRecording: stopAudio,
+    pauseRecording: pauseAudio,
+    resumeRecording: resumeAudio,
+    error: audioError,
+  } = useAudioRecording()
 
   // Timer logic - runs when recording and not paused
   useEffect(() => {
@@ -49,6 +59,13 @@ export function Toolbar(_props: ToolbarProps) {
     }
   }, [isRecording, isPaused, duration, updateDuration])
 
+  // Log audio errors
+  useEffect(() => {
+    if (audioError) {
+      console.error('Audio recording error:', audioError)
+    }
+  }, [audioError])
+
   // Format elapsed time as MM:SS
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
@@ -56,21 +73,32 @@ export function Toolbar(_props: ToolbarProps) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Recording control handlers
-  const handleStartRecording = () => {
-    startRecording()
+  // Recording control handlers - integrate state AND audio
+  const handleStartRecording = async () => {
+    console.log('Starting recording with audio...')
+    startRecordingState()
+    try {
+      await startAudio()
+      console.log('Audio recording started!')
+    } catch (error) {
+      console.error('Failed to start audio:', error)
+    }
   }
 
   const handlePauseRecording = () => {
     if (isPaused) {
-      resumeRecording()
+      resumeRecordingState()
+      resumeAudio()
     } else {
-      pauseRecording()
+      pauseRecordingState()
+      pauseAudio()
     }
   }
 
   const handleStopRecording = () => {
-    stopRecording()
+    console.log('Stopping recording...')
+    stopRecordingState()
+    stopAudio()
   }
 
   const handleClose = async () => {
@@ -89,19 +117,40 @@ export function Toolbar(_props: ToolbarProps) {
       const existingWindow = await WebviewWindow.getByLabel('settings')
 
       if (existingWindow) {
-        // Window exists, just show and focus it
+        // Calculate new position
+        const mainWindow = getCurrentWindow()
+        const position = await mainWindow.outerPosition()
+        const size = await mainWindow.outerSize()
+        const settingsX = position.x + size.width + 10
+        const settingsY = position.y
+
+        // Move and show
+        await existingWindow.setPosition(new PhysicalPosition(settingsX, settingsY))
         await existingWindow.show()
         await existingWindow.setFocus()
       } else {
+        // Calculate position relative to toolbar
+        const mainWindow = getCurrentWindow()
+        const position = await mainWindow.outerPosition()
+        const size = await mainWindow.outerSize()
+
+        // Open to the RIGHT of the toolbar with spacing
+        const settingsX = position.x + size.width + 10
+        const settingsY = position.y
+
         // Create new settings window
         const settingsWindow = new WebviewWindow('settings', {
           url: 'index.html#/settings',
           title: 'Skill-E Settings',
-          width: 600,
-          height: 700,
-          center: true,
-          resizable: true,
-          decorations: true,
+          width: 300,
+          height: 400,
+          x: settingsX,
+          y: settingsY,
+          resizable: false,
+          decorations: false,
+          transparent: true,
+          alwaysOnTop: true,
+          skipTaskbar: true,
         })
 
         settingsWindow.once('tauri://created', () => {
