@@ -1,20 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
 import { useRecordingStore } from '../stores/recording';
+import { useSettingsStore } from '../stores/settings';
 import { invoke } from '@tauri-apps/api/core';
 
-/**
- * Hook for managing audio recording during demonstration sessions
- * 
- * Provides functions to start/stop/pause audio recording from the microphone,
- * with support for saving audio chunks to a blob.
- * 
- * Requirements:
- * - FR-3.1: Record audio from default microphone
- * - FR-3.3: Support pause/resume during recording
- * - NFR-3.1: Audio quality: 16kHz mono (Whisper-compatible)
- */
+// ...
+
 export function useAudioRecording() {
   const [isRecording, setIsRecording] = useState(false);
+  const selectedMicId = useSettingsStore(state => state.selectedMicId);
   const [isPaused, setIsPaused] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,23 +19,19 @@ export function useAudioRecording() {
   const setAudioBlob = useRecordingStore((state) => state.setAudioBlob);
   const setAudioPath = useRecordingStore((state) => state.setAudioPath);
 
-  /**
-   * Requests microphone permission and initializes the media stream
-   * 
-   * @returns Promise that resolves to true if permission granted, false otherwise
-   */
   const requestPermission = useCallback(async (): Promise<boolean> => {
     try {
       console.log('Requesting microphone permission...');
-      
+
       // Check if getUserMedia is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('getUserMedia is not supported in this browser');
       }
-      
+
       // Request microphone access with Whisper-compatible settings
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
+          deviceId: selectedMicId !== 'default' ? { exact: selectedMicId } : undefined,
           channelCount: 1, // Mono
           sampleRate: 16000, // 16kHz for Whisper
           echoCancellation: true,
@@ -62,7 +51,7 @@ export function useAudioRecording() {
       console.error('Error name:', (err as any).name);
       console.error('Error message:', (err as any).message);
       setHasPermission(false);
-      
+
       let errorMessage = 'Failed to access microphone. ';
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError') {
@@ -75,7 +64,7 @@ export function useAudioRecording() {
           errorMessage += err.message;
         }
       }
-      
+
       setError(errorMessage);
       return false;
     }
@@ -115,37 +104,37 @@ export function useAudioRecording() {
       // Handle recording stop event
       mediaRecorder.onstop = async () => {
         console.log('MediaRecorder stopped');
-        
+
         // Create final blob from all chunks
         const audioBlob = new Blob(audioChunksRef.current, {
           type: 'audio/webm;codecs=opus',
         });
-        
+
         console.log(`Audio recording complete: ${audioBlob.size} bytes`);
-        
+
         // Store blob in recording store
         setAudioBlob(audioBlob);
-        
+
         // Save audio file to disk if we have a session directory
         if (sessionDirRef.current) {
           try {
             // Convert blob to array buffer
             const arrayBuffer = await audioBlob.arrayBuffer();
             const uint8Array = new Uint8Array(arrayBuffer);
-            
+
             // Generate filename with timestamp
             const timestamp = Date.now();
             const filename = `audio-${timestamp}.webm`;
-            
+
             // Save to session directory via Tauri command
             const result = await invoke<{ path: string; size: number }>('save_audio_file', {
               sessionDir: sessionDirRef.current,
               audioData: Array.from(uint8Array),
               filename,
             });
-            
+
             console.log(`Audio file saved: ${result.path} (${result.size} bytes)`);
-            
+
             // Store path in recording store
             setAudioPath(result.path);
           } catch (err) {
@@ -157,7 +146,7 @@ export function useAudioRecording() {
             );
           }
         }
-        
+
         // Reset state
         setIsRecording(false);
         setIsPaused(false);
@@ -174,11 +163,11 @@ export function useAudioRecording() {
       // Start recording with timeslice for periodic data availability
       mediaRecorder.start(1000); // Request data every second
       mediaRecorderRef.current = mediaRecorder;
-      
+
       setIsRecording(true);
       setIsPaused(false);
       setError(null);
-      
+
       console.log('Audio recording started');
     } catch (err) {
       console.error('Failed to start recording:', err);
@@ -259,7 +248,7 @@ export function useAudioRecording() {
     setIsRecording(false);
     setIsPaused(false);
     setHasPermission(null);
-    
+
     console.log('Audio recording resources cleaned up');
   }, []);
 
@@ -288,7 +277,7 @@ export function useAudioRecording() {
     isPaused,
     hasPermission,
     error,
-    
+
     // Actions
     requestPermission,
     startRecording,

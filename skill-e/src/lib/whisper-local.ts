@@ -253,7 +253,7 @@ export async function isLocalWhisperAvailable(): Promise<boolean> {
  * 
  * @returns 'cuda', 'metal', or 'cpu'
  */
-export async function checkComputeCapability(): Promise<'cuda' | 'metal' | 'cpu'> {
-    return invoke<'cuda' | 'metal' | 'cpu'>('check_compute_capability');
+export async function checkComputeCapability(): Promise<string> {
+    return invoke<string>('check_compute_capability');
 }
 

@@ -135,17 +135,49 @@ export function Toolbar(_props: ToolbarProps) {
         const size = await mainWindow.outerSize()
 
         // Open to the RIGHT of the toolbar with spacing
-        const settingsX = position.x + size.width + 10
-        const settingsY = position.y
+        // Calculate smart position relative to toolbar
+        const monitor = await getCurrentWindow().currentMonitor();
+        const screenWidth = monitor?.size.width || 1920;
+        const screenHeight = monitor?.size.height || 1080;
+        const scale = monitor?.scaleFactor || 1;
+
+        const settingsW = 300;
+        const settingsH = 400;
+        const toolbarW = size.width;
+        const toolbarH = size.height;
+
+        let targetX = position.x + toolbarW + 10; // Try Right first
+        let targetY = position.y;
+
+        // Check horizontal fit
+        if (targetX + settingsW > screenWidth) {
+          // Not enough space on right, try left
+          targetX = position.x - settingsW - 10;
+        }
+
+        // Validate vertical fit (keep within screen)
+        if (targetY + settingsH > screenHeight) {
+          targetY = screenHeight - settingsH - 10;
+        }
+        if (targetY < 0) targetY = 10;
+
+        // If left also fails (very narrow screen?), center it
+        if (targetX < 0) {
+          targetX = (screenWidth - settingsW) / 2;
+          targetY = (screenHeight - settingsH) / 2;
+        }
+
+        console.log(`Positioning Settings at (${targetX}, ${targetY}) for Toolbar (${position.x}, ${position.y})`);
 
         // Create new settings window
+        console.log('Creating settings window at', targetX, targetY);
         const settingsWindow = new WebviewWindow('settings', {
           url: 'index.html#/settings',
           title: 'Skill-E Settings',
-          width: 300,
-          height: 400,
-          x: settingsX,
-          y: settingsY,
+          width: settingsW,
+          height: settingsH,
+          x: Math.round(targetX),
+          y: Math.round(targetY),
           resizable: false,
           decorations: false,
           transparent: true,
@@ -154,7 +186,7 @@ export function Toolbar(_props: ToolbarProps) {
         })
 
         settingsWindow.once('tauri://created', () => {
-          console.log('Settings window created')
+          console.log('Settings window created successfully')
         })
 
         settingsWindow.once('tauri://error', (e) => {

@@ -357,6 +357,9 @@ mod tests {
             duration: 3.0,
         };
         
+    }
+}
+
 /// Check if the system supports GPU acceleration for Whisper
 /// Returns "cuda", "metal", or "cpu" based on available hardware/drivers
 #[tauri::command]
@@ -401,20 +404,39 @@ pub fn check_compute_capability() -> Result<String, String> {
         
         const CREATE_NO_WINDOW: u32 = 0x08000000;
         
+        // Try WMIC first
         let output = Command::new("wmic")
             .args(&["path", "win32_VideoController", "get", "name"])
             .creation_flags(CREATE_NO_WINDOW)
-            .output()
-            .map_err(|e| e.to_string())?;
-            
-        let gpu_info = String::from_utf8_lossy(&output.stdout).to_lowercase();
-        
-        if gpu_info.contains("nvidia") {
-            return Ok("cuda".to_string());
+            .output();
+
+        let mut found_gpus = String::new();
+
+        if let Ok(output) = output {
+            let info = String::from_utf8_lossy(&output.stdout).to_lowercase();
+            if info.contains("nvidia") {
+                return Ok("cuda".to_string());
+            }
+            found_gpus.push_str(&info);
+        }
+
+        // Fallback to PowerShell (Get-CimInstance) if WMIC fails or returns empty/weird encoding
+        let ps_output = Command::new("powershell")
+            .args(&["-NoProfile", "-Command", "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output();
+
+        if let Ok(output) = ps_output {
+            let info = String::from_utf8_lossy(&output.stdout).to_lowercase();
+            if info.contains("nvidia") {
+                return Ok("cuda".to_string());
+            }
+            found_gpus.push_str(" | PS: ");
+            found_gpus.push_str(&info);
         }
         
-        // Could also check for AMD/Intel regarding Vulkan/OpenCL, but whisper.cpp mainly targets CUDA
-        Ok("cpu".to_string())
+        // Return found names for debugging
+        Ok(format!("cpu (No NVIDIA found. Detected: {})", found_gpus.trim()))
     }
 
     #[cfg(target_os = "linux")]

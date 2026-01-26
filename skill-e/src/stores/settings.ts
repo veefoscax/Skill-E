@@ -48,6 +48,7 @@ export interface SettingsState {
   // Recording settings
   captureInterval: number; // milliseconds between frames
   captureQuality: number; // 0-100
+  selectedMicId: string;
 
   // Window settings
   windowPosition: WindowPosition | null;
@@ -67,6 +68,7 @@ export interface SettingsState {
   setTranscriptionMode: (mode: TranscriptionMode) => void;
   setWhisperModel: (model: WhisperModel) => void;
   setUseGpu: (value: boolean) => void;
+  setSelectedMicId: (id: string) => void;
   setOutputDir: (dir: string) => void;
   setCaptureInterval: (interval: number) => void;
   setCaptureQuality: (quality: number) => void;
@@ -91,6 +93,7 @@ const defaultSettings = {
   outputDir: '',
   captureInterval: 1000, // 1 second
   captureQuality: 80,
+  selectedMicId: 'default',
   windowPosition: null,
   alwaysOnTop: true,
   recordingHotkey: 'Ctrl+Shift+R',
@@ -137,6 +140,11 @@ export const useSettingsStore = create<SettingsState>()(
           useGpu: value,
           // Auto-adjust model based on GPU availability
           whisperModel: value ? 'turbo' : 'tiny',
+        }),
+
+      setSelectedMicId: (id: string) =>
+        set({
+          selectedMicId: id,
         }),
 
       setOutputDir: (dir: string) =>
