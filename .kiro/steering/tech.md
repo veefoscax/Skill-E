@@ -8,8 +8,9 @@
 | UI Framework | React | 18.x |
 | Language (Frontend) | TypeScript | 5.x |
 | Language (Backend) | Rust | 1.75+ |
-| Styling | Tailwind CSS | 3.4+ |
-| Components | **shadcn/ui** | Latest |
+| Styling | **Tailwind CSS** | **3.4+ (Stable)** |
+| Components | **shadcn/ui** | Latest (Mira Config) |
+| Fonts | **Nunito Sans** | @fontsource |
 | State Management | Zustand | 4.x |
 | Build | Vite | 5.x |
 
@@ -18,7 +19,16 @@
 ### Core Philosophy
 **"Premium Native Feel, No generic AI Slop"**
 - ❌ **AVOID**: Generic purple gradients, "AI sparkle" icons everywhere, flat/boring SaaS look.
-- ✅ **USE**: Clean typography (Inter/SF Pro/Segoe UI), subtle frosted glass, platform-native materials.
+- ✅ **USE**: Clean typography (**Nunito Sans**), subtle frosted glass, platform-native materials.
+
+### Configuration (Mira / Neutral)
+We use a specific **shadcn/ui** configuration to achieve the "Mira" look:
+- **Base**: `base`
+- **Style**: `new-york` (closest to Mira)
+- **Color**: `neutral`
+- **Radius**: `0.5`
+- **Font**: `Nunito Sans`
+- **Icons**: `Lucide`
 
 ### Platform-Specific Visuals
 

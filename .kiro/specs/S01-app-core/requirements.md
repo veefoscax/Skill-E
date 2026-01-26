@@ -44,16 +44,23 @@ Core Tauri 2.0 application with floating toolbar UI, system tray integration, an
 - **NFR-1.3**: Memory usage < 100MB idle
 - **NFR-1.4**: Cross-platform support (Windows AND macOS)
 - **NFR-1.5**: Easy installation (single file installer)
-- **NFR-1.6**: **Premium UI**: Must use shadcn/ui + platform-native glass effects (Mica/Vibrancy)
-- **NFR-1.7**: **Clean Aesthetic**: No generic "AI slop" gradients. Minimalist, professional look.
+- **NFR-1.6**: **Premium UI**: Use shadcn/ui (Stable) + platform-native glass effects (Mica/Vibrancy)
+- **NFR-1.7**: **Clean Aesthetic**: "Mira" style - Neutral colors, Nunito Sans font, subtle accents.
 
-## Design System
+## Design System (Mira Configuration)
 
 ### Visual Language
-- **Typography**: Inter (or system fonts)
-- **Colors**: Slate/Zinc palette (neutral), minimal accent usage
-- **Radius**: Soft rounded corners (0.5rem - 0.75rem)
-- **Dark Mode**: Default experience
+- **Typography**: **Nunito Sans** (Primary for all UI)
+- **Colors**: **Neutral** palette (Zinc/Slate based)
+- **Radius**: `0.5rem` (medium rounded)
+- **Icons**: Lucide React
+- **Theme**: Dark Mode default, heavily relying on platform transparency
+
+### Component Stack
+- **Framework**: Tailwind CSS v3.4+ (Stable)
+- **Library**: shadcn/ui (customized via components.json)
+- **Base**: `base` style, `neutral` base color
+- **Menu Accent**: `subtle`
 
 ### Platform Integration
 - **Windows**: Use `tauri-plugin-window-vibrancy` for Mica/Acrylic background

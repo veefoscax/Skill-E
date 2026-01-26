@@ -18,6 +18,7 @@
 | Jan 26 | Planning | Advanced specs (S07-S10) | TBD | TBD |
 | Jan 26 | Config | Kiro hooks/steering setup | TBD | TBD |
 | Jan 26 | Setup | GitHub repository creation & push | 5 | 5 |
+| Jan 26 | S01 | Task 1: Initialize Tauri Project | 15 | 20 |
 
 ---
 
@@ -134,6 +135,60 @@
 
 ---
 
+### Session 6: S01 Task 1 - Initialize Tauri Project (30min)
+
+**Objective**: Set up Tauri 2.0 project with React, TypeScript, and all required dependencies
+
+- **Started**: Jan 26, 2025 - 17:45
+- **Completed**: Jan 26, 2025 - 18:15
+- **Time**: 30 minutes (originally estimated 20 minutes)
+- **Kiro Credits Used**: 15 credits ⭐
+- **Files Modified**:
+  - **NEW**: skill-e/ (entire Tauri project directory)
+  - **NEW**: skill-e/package.json (dependencies and scripts)
+  - **NEW**: skill-e/tailwind.config.js (Nunito Sans font configuration)
+  - **NEW**: skill-e/postcss.config.js (Tailwind + Autoprefixer)
+  - **NEW**: skill-e/eslint.config.js (TypeScript + React rules)
+  - **NEW**: skill-e/.prettierrc (code formatting rules)
+  - **NEW**: skill-e/src/index.css (Tailwind directives + Nunito Sans imports)
+  - **NEW**: skill-e/src/main.tsx (updated with index.css import)
+
+#### Major Struggles & Refactorings
+
+**🚨 Critical Issue: Tailwind CSS v4 Incompatibility**
+- **Problem**: Initial installation used Tailwind CSS v4.1.18 which requires `@tailwindcss/postcss` plugin instead of the standard `tailwindcss` PostCSS plugin. Build failed with error about PostCSS plugin moving to separate package.
+- **Root Cause**: Tailwind CSS v4 changed its PostCSS integration architecture, requiring a different plugin package. The standard `tailwindcss` PostCSS plugin no longer works with v4.
+- **Solution**: 
+  1. Removed Tailwind CSS v4.1.18 and `@tailwindcss/postcss`
+  2. Installed Tailwind CSS v3.4.17 (stable version matching tech stack requirements)
+  3. Reverted postcss.config.js to standard configuration
+  4. Build succeeded with v3.4.17
+
+**🚨 Critical Issue: Undefined Tailwind Classes in CSS**
+- **Problem**: Build failed with error "The `bg-background` class does not exist" when using `@apply` directive with custom classes.
+- **Root Cause**: Attempted to use shadcn/ui-style custom classes (`bg-background`, `text-foreground`) before they were defined in the Tailwind configuration.
+- **Solution**: Simplified index.css to only include Tailwind directives and font configuration, removing the `@apply` usage until shadcn/ui is properly configured in Task 2.
+
+**📊 Build/Test Verification**: 
+- ✅ `pnpm install` - All 429 packages installed successfully
+- ✅ `pnpm run build` - TypeScript compilation and Vite build successful
+- ✅ `pnpm run lint` - ESLint passed with no errors
+- ✅ `pnpm run format` - Prettier formatted all source files
+- ✅ `pnpm list tailwindcss` - Confirmed v3.4.17 installed
+
+**Dependencies Installed**:
+- **Core**: zustand (5.0.10), framer-motion (12.29.2), lucide-react (0.563.0), clsx (2.1.1), tailwind-merge (3.4.0)
+- **Fonts**: @fontsource/nunito-sans (5.2.7) with 400, 600, 700 weights
+- **Styling**: tailwindcss (3.4.17), postcss (8.5.6), autoprefixer (10.4.23)
+- **Dev Tools**: eslint (9.39.2), prettier (3.8.1), typescript (5.8.3)
+- **Tauri**: @tauri-apps/api (2.9.1), @tauri-apps/cli (2.9.6)
+
+**Summary**: Successfully initialized Tauri 2.0 project with React + TypeScript template. Configured complete development environment with Tailwind CSS v3.4.17 (stable), ESLint, Prettier, and Nunito Sans font. Resolved Tailwind v4 compatibility issues by downgrading to v3.4.17. All build, lint, and format commands verified working. Project ready for Task 2 (shadcn/ui setup).
+
+**Key Learning**: Tailwind CSS v4 has breaking changes in PostCSS integration. For production projects, stick with v3.4.x stable branch until v4 ecosystem matures.
+
+---
+
 ## Specifications Summary (ALL MVP)
 
 | Spec | Name | Status | Priority | Key Features |
@@ -237,8 +292,9 @@ macOS: [🍎] [File] ... [Wi-Fi] [🔊] [Skill-E Icon] [🕐]
 | Jan 26 | 1.5h | Philosophy, README, Provider/Context Specs | TBD |
 | Jan 26 | 1.0h | Validation System, Cross-Platform, Kiro Config | TBD |
 | Jan 26 | 0.25h | GitHub Repository Setup | 5 |
+| Jan 26 | 0.5h | S01 Task 1: Initialize Tauri Project | 15 |
 | | | | |
-| **Total** | **6.75h** | **Planning Phase Complete** | **5** |
+| **Total** | **7.25h** | **Planning + Initial Setup Complete** | **20** |
 
 ---
 
@@ -289,7 +345,7 @@ macOS: [🍎] [File] ... [Wi-Fi] [🔊] [Skill-E Icon] [🕐]
 ## Next Steps (ALL MVP)
 
 ### Full Implementation Order
-1. [ ] Initialize Tauri project (S01)
+1. [x] Initialize Tauri project (S01) - ✅ COMPLETE
 2. [ ] Setup system tray + floating toolbar (S01)
 3. [ ] Implement screen capture (S02)
 4. [ ] Implement audio recording (S03)

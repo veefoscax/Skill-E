@@ -26,8 +26,10 @@ Capture screen content during recording sessions, with support for screenshots, 
 ## Non-Functional Requirements
 
 - **NFR-2.1**: Capture latency < 100ms
-- **NFR-2.2**: Storage format: WebP for compression
+- **NFR-2.2**: Storage format: WebP (Quality 80)
 - **NFR-2.3**: Memory-efficient streaming (don't load all to RAM)
+- **NFR-2.4**: **LLM Optimization**: Max dimension 1024px (or 768px configurable) to reduce token cost
+- **NFR-2.5**: **Smart Deduplication**: Don't save identical frames if screen didn't change
 
 ## Acceptance Criteria
 

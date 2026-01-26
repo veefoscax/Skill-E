@@ -59,12 +59,11 @@ Transparent overlay for visual feedback during recording. Shows click indicators
 - **FR-4.18**: Replace password text with ●●●●●● or ${variable}
 - **FR-4.19**: Keyboard display position configurable
 
-### Browser Element Selector (Optional)
-- **FR-4.20**: Toggle element picker on/off
-- **FR-4.21**: Hover highlights DOM elements in browser
-- **FR-4.22**: Click captures element information
-- **FR-4.23**: Store CSS selector, XPath, and element screenshot
-- **FR-4.24**: Use captured selector for skill automation
+### Recording Feedback
+- **FR-4.25**: **Screen Border**: Optional colored border (Red default) around screen/window when recording
+- **FR-4.26**: **Status Light**: Small pulsing red dot indicator in overlay or toolbar
+- **FR-4.27**: **Pause State**: Border turns Yellow when paused
+- **FR-4.28**: Visual feedback configurable (Border width/opacity)
 
 ## Non-Functional Requirements
 

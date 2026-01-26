@@ -10,18 +10,23 @@ Sets up the Tauri 2.0 application with floating toolbar, always-on-top behavior,
 
 ## Phase 1: Project Setup
 
-- [ ] 1. Initialize Tauri Project
+- [x] 1. Initialize Tauri Project
   - Run `pnpm create tauri-app skill-e` with React template
   - Configure pnpm workspace
-  - Install dependencies: zustand, framer-motion, lucide-react, clsx, tailwind-merge
+  - Install dependencies: `zustand`, `framer-motion`, `lucide-react`, `clsx`, `tailwind-merge`
+  - Install fonts: `@fontsource/nunito-sans`
   - Configure ESLint and Prettier
   - _Requirements: NFR-1.1, NFR-1.2_
 
-- [ ] 2. Design System Setup (shadcn/ui)
-  - Initialize shadcn/ui: `npx shadcn-ui@latest init`
-  - Configure components.json
-  - Add core components: button, tooltip, dropdown-menu, separator
-  - Configure Tailwind for custom colors (Zinc/Slate)
+- [ ] 2. Design System Setup (shadcn/ui - Mira)
+  - Initialize shadcn: `npx shadcn@latest init`
+  - Configure `components.json` manually for "Mira" style:
+    - Style: `new-york`
+    - Base Color: `neutral`
+    - Radius: `0.5`
+    - CSS Variables: `true`
+  - Configure `tailwind.config.js` for Nunito Sans
+  - Add core components: `button`, `tooltip`, `dropdown-menu`, `separator`
   - _Requirements: NFR-1.6, NFR-1.7_
 
 - [ ] 3. Window & Glass Effects
