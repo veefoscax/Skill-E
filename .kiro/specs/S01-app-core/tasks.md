@@ -18,7 +18,7 @@ Sets up the Tauri 2.0 application with floating toolbar, always-on-top behavior,
   - Configure ESLint and Prettier
   - _Requirements: NFR-1.1, NFR-1.2_
 
-- [ ] 2. Design System Setup (shadcn/ui - Mira)
+- [-] 2. Design System Setup (shadcn/ui - Mira)
   - Initialize shadcn: `npx shadcn@latest init`
   - Configure `components.json` manually for "Mira" style:
     - Style: `new-york`
@@ -29,7 +29,7 @@ Sets up the Tauri 2.0 application with floating toolbar, always-on-top behavior,
   - Add core components: `button`, `tooltip`, `dropdown-menu`, `separator`
   - _Requirements: NFR-1.6, NFR-1.7_
 
-- [ ] 3. Window & Glass Effects
+- [~] 3. Window & Glass Effects
   - Configure tauri.conf.json with transparent window
   - Set width: 300, height: 60, decorations: false
   - Add `tauri-plugin-window-vibrancy`
@@ -37,7 +37,7 @@ Sets up the Tauri 2.0 application with floating toolbar, always-on-top behavior,
   - Enable alwaysOnTop: true, transparent: true
   - _Requirements: FR-1.1, FR-1.2, NFR-1.6_
 
-- [ ] 3. Window Drag Region
+- [~] 3. Window Drag Region
   - Setup custom title bar for dragging
   - Implement data-tauri-drag-region attribute
   - Test drag behavior across screen
@@ -45,7 +45,7 @@ Sets up the Tauri 2.0 application with floating toolbar, always-on-top behavior,
 
 ## Phase 2: Core Components
 
-- [ ] 4. Toolbar Component
+- [~] 4. Toolbar Component
   - Create src/components/Toolbar/Toolbar.tsx
   - Add recording controls placeholder (Start/Pause/Stop)
   - Add timer display component
@@ -53,14 +53,14 @@ Sets up the Tauri 2.0 application with floating toolbar, always-on-top behavior,
   - Style with CSS modules
   - _Requirements: FR-1.1, AC1_
 
-- [ ] 5. State Management
+- [~] 5. State Management
   - Create src/stores/recording.ts with Zustand
   - Define RecordingState interface
   - Implement persist middleware
   - Create src/stores/settings.ts
   - _Requirements: FR-1.6, AC5_
 
-- [ ] 6. Window Persistence
+- [~] 6. Window Persistence
   - Save window position to localStorage
   - Restore position on app launch
   - Handle off-screen position correction
@@ -68,14 +68,14 @@ Sets up the Tauri 2.0 application with floating toolbar, always-on-top behavior,
 
 ## Phase 3: System Integration
 
-- [ ] 7. System Tray
+- [~] 7. System Tray
   - Add tauri-plugin-positioner
   - Configure tray icon
   - Implement minimize to tray on close
   - Add tray context menu with Quit option
   - _Requirements: FR-1.4, AC3_
 
-- [ ] 8. Global Hotkeys
+- [~] 8. Global Hotkeys
   - Add @tauri-apps/plugin-global-shortcut
   - Configure Ctrl+Shift+R for record toggle
   - Configure Ctrl+Shift+A for annotation mode
@@ -84,7 +84,7 @@ Sets up the Tauri 2.0 application with floating toolbar, always-on-top behavior,
 
 ## Phase 4: Testing
 
-- [ ] 9. Manual Testing
+- [~] 9. Manual Testing
   - Verify window launches as floating toolbar
   - Verify always-on-top works
   - Verify drag behavior
@@ -92,7 +92,7 @@ Sets up the Tauri 2.0 application with floating toolbar, always-on-top behavior,
   - Verify position persistence
   - _Requirements: All ACs_
 
-- [ ] 10. Checkpoint - Verify Phase Complete
+- [~] 10. Checkpoint - Verify Phase Complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ---
