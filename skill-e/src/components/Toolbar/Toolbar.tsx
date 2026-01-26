@@ -79,8 +79,15 @@ export function Toolbar({ className }: ToolbarProps) {
   }
 
   const handleClose = async () => {
-    const window = getCurrentWindow()
-    await window.hide()
+    try {
+      console.log('Close button clicked')
+      const window = getCurrentWindow()
+      console.log('Got window, hiding...')
+      await window.hide()
+      console.log('Window hidden')
+    } catch (error) {
+      console.error('Error hiding window:', error)
+    }
   }
 
   return (
@@ -88,8 +95,8 @@ export function Toolbar({ className }: ToolbarProps) {
       data-tauri-drag-region
       className={`bg-background/80 backdrop-blur-xl border border-border rounded-lg shadow-2xl px-4 py-2 flex items-center gap-3 ${className || ''}`}
       style={{
-        width: '300px',
-        height: '60px',
+        width: '100vw',
+        height: '100vh',
       }}
     >
       <TooltipProvider>
