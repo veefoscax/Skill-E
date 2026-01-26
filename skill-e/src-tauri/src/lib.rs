@@ -16,6 +16,14 @@ use commands::capture::{
     list_sessions,
     save_audio_file,
 };
+use commands::whisper::{
+    check_model_exists,
+    get_model_info,
+    get_available_models,
+    transcribe_local,
+    get_model_download_url,
+    get_models_directory,
+};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -126,7 +134,14 @@ pub fn run() {
             load_session_manifest,
             cleanup_session,
             list_sessions,
-            save_audio_file
+            save_audio_file,
+            // Whisper local transcription commands
+            check_model_exists,
+            get_model_info,
+            get_available_models,
+            transcribe_local,
+            get_model_download_url,
+            get_models_directory
         ])
         .setup(|app| {
             // Note: For Tauri v2, window effects (Mica/Vibrancy) are configured in tauri.conf.json
