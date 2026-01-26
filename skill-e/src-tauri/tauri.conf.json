@@ -25,6 +25,20 @@
         "x": 100,
         "y": 100,
         "visible": true
+      },
+      {
+        "label": "settings",
+        "title": "Skill-E Settings",
+        "width": 600,
+        "height": 700,
+        "resizable": true,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "skipTaskbar": false,
+        "center": true,
+        "visible": false,
+        "url": "index.html#/settings"
       }
     ],
     "security": {

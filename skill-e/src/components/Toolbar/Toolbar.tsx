@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button'
 import { Circle, Square, Pause, Pencil, X, Settings } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRecordingStore } from '@/stores'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { Settings as SettingsPanel } from '@/components/settings'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 interface ToolbarProps {
   className?: string
@@ -31,9 +31,6 @@ export function Toolbar(_props: ToolbarProps) {
     stopRecording,
     updateDuration,
   } = useRecordingStore()
-
-  // Settings panel visibility state
-  const [showSettings, setShowSettings] = useState(false)
 
   // Timer logic - runs when recording and not paused
   useEffect(() => {
@@ -83,6 +80,40 @@ export function Toolbar(_props: ToolbarProps) {
       console.log('Window hidden successfully')
     } catch (error) {
       console.error('Error hiding window:', error)
+    }
+  }
+
+  const handleOpenSettings = async () => {
+    try {
+      // Check if settings window already exists
+      const existingWindow = await WebviewWindow.getByLabel('settings')
+
+      if (existingWindow) {
+        // Window exists, just show and focus it
+        await existingWindow.show()
+        await existingWindow.setFocus()
+      } else {
+        // Create new settings window
+        const settingsWindow = new WebviewWindow('settings', {
+          url: 'index.html#/settings',
+          title: 'Skill-E Settings',
+          width: 600,
+          height: 700,
+          center: true,
+          resizable: true,
+          decorations: true,
+        })
+
+        settingsWindow.once('tauri://created', () => {
+          console.log('Settings window created')
+        })
+
+        settingsWindow.once('tauri://error', (e) => {
+          console.error('Error creating settings window:', e)
+        })
+      }
+    } catch (error) {
+      console.error('Error opening settings:', error)
     }
   }
 
@@ -160,7 +191,7 @@ export function Toolbar(_props: ToolbarProps) {
           size="icon"
           variant="ghost"
           className="h-9 w-9"
-          onClick={() => setShowSettings(true)}
+          onClick={handleOpenSettings}
           title="Settings"
         >
           <Settings className="h-4 w-4" />
@@ -188,33 +219,7 @@ export function Toolbar(_props: ToolbarProps) {
           <X className="h-3 w-3" />
         </Button>
       </div>
-
-      {/* Settings Panel Modal */}
-      {showSettings && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          onClick={() => setShowSettings(false)}
-          style={{ pointerEvents: 'auto' }}
-        >
-          <div
-            className="bg-background border border-border rounded-lg shadow-xl max-w-2xl max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center p-4 border-b border-border">
-              <h2 className="text-lg font-semibold">Settings</h2>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                onClick={() => setShowSettings(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <SettingsPanel />
-          </div>
-        </div>
-      )}
     </div>
   )
 }
+
