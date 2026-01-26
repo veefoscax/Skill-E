@@ -33,6 +33,7 @@ dirs = "5.0"   # For finding local app data directory
 # Local Whisper transcription - optional, compile without if whisper.cpp fails
 # Enable cuda feature for GPU: whisper-rs = { version = "0.15", features = ["cuda"] }
 whisper-rs = { version = "0.15", optional = true }
+tauri-plugin-dialog = "2.6.0"
 
 [features]
 default = []

@@ -5771,3 +5771,28 @@ Implemented all 7 tasks for S03 Audio Recording by delegating to subagents, but 
 - [WebView2 Feedback #2427](https://github.com/MicrosoftEdge/WebView2Feedback/issues/2427)
 - [Stack Overflow Discussion](https://stackoverflow.com/questions/73501432)
 
+
+## 2026-01-26 - Critical UI Fixes: Settings Visibility & Stability
+
+**Context**: User reported that 'Cloud API' and 'Local' sub-options were disappearing from the Settings UI, making configuration impossible.
+
+**Root Cause Analysis**:
+1. **Animation Conflict**: 'animate-in' classes on conditional blocks caused rendering issues in the compact window environment.
+2. **Layout Order**: Configuration blocks were placed below 'Session Storage', pushing them out of view in small viewports.
+3. **State Consistency**: 'transcriptionMode' could potentially enter an undefined state.
+4. **Code Duplication**: A regression introduced duplicate settings blocks during debugging.
+
+**Fixes Applied**:
+- **Removed Animations**: Stripped 'animate-in' classes from conditional rendering blocks to ensure stable visibility.
+- **Reordered UI**: Moved 'Cloud API' and 'Local' configuration sections to immediately follow the Transcription Mode selector, prioritizing them over 'Session Storage'.
+- **State Validation**: Added a 'useEffect' hook to force 'transcriptionMode' to 'local' if it becomes invalid.
+- **Layout Hardening**: Enforced 'h-screen overflow-hidden' in 'App.tsx' to prevent layout collapse.
+- **Cleanup**: Removed duplicate code blocks and debug overlays.
+
+**Files Modified**:
+- 'skill-e/src/components/settings/Settings.tsx' (Major layout refactor)
+- 'skill-e/src/App.tsx' (Height constraint fix)
+- 'skill-e/src-tauri/src/lib.rs' (Verified window sizing)
+
+**Status**: ✅ Resolved. UI is now stable and fully visible.
+

@@ -409,14 +409,21 @@ pub struct SessionManifest {
 #[tauri::command]
 pub async fn create_session_directory(
     session_id: String,
+    custom_output_dir: Option<String>,
 ) -> Result<String, String> {
-    // Get system temp directory
-    let temp_dir = std::env::temp_dir();
+    // Determine base directory
+    let base_dir = if let Some(custom) = custom_output_dir {
+        if custom.trim().is_empty() {
+            std::env::temp_dir().join("skill-e-sessions")
+        } else {
+            PathBuf::from(custom)
+        }
+    } else {
+        std::env::temp_dir().join("skill-e-sessions")
+    };
     
-    // Create session directory path: temp/skill-e-sessions/{session_id}
-    let session_dir = temp_dir
-        .join("skill-e-sessions")
-        .join(&session_id);
+    // Create session directory path: base_dir/{session_id}
+    let session_dir = base_dir.join(&session_id);
     
     // Create directory (including parent directories)
     fs::create_dir_all(&session_dir)

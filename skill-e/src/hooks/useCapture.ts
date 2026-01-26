@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useRecordingStore } from '../stores/recording';
+import { useSettingsStore } from '../stores/settings';
 import type {
   CaptureResult,
   WindowInfo,
@@ -26,6 +27,7 @@ export function useCapture() {
   const intervalRef = useRef<number | null>(null);
   const sessionRef = useRef<CaptureSession | null>(null);
   const addFrame = useRecordingStore((state) => state.addFrame);
+  const outputDir = useSettingsStore((state) => state.outputDir);
 
   /**
    * Captures a single frame with screenshot, window info, and cursor position
@@ -115,6 +117,7 @@ export function useCapture() {
     // Create session directory
     const sessionDirectory = await invoke<string>('create_session_directory', {
       sessionId,
+      customOutputDir: outputDir || null,
     });
 
     // Create session object

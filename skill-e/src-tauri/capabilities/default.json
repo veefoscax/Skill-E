@@ -19,6 +19,7 @@
     "core:window:allow-set-position",
     "core:window:allow-set-size",
     "core:window:allow-toggle-maximize",
+    "dialog:default",
     "opener:default",
     "screenshots:default",
     "screenshots:allow-get-monitor-screenshot",

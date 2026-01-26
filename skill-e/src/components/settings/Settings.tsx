@@ -160,6 +160,14 @@ export function Settings() {
     }
   };
 
+  // Ensure valid transcription mode on mount
+  useEffect(() => {
+    if (transcriptionMode !== 'api' && transcriptionMode !== 'local') {
+      console.warn('Invalid transcription mode detected, resetting to local');
+      setTranscriptionMode('local');
+    }
+  }, [transcriptionMode, setTranscriptionMode]);
+
   return (
     <div className="h-full w-full flex flex-col bg-background text-foreground select-none border rounded-lg shadow-xl overflow-hidden">
       {/* Header */}
@@ -172,6 +180,8 @@ export function Settings() {
           <X className="h-4 w-4" />
         </Button>
       </div>
+
+
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
 
@@ -237,8 +247,8 @@ export function Settings() {
             <button
               onClick={() => setTranscriptionMode('api')}
               className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${transcriptionMode === 'api'
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-card hover:bg-muted border-input'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card hover:bg-muted border-input'
                 }`}
             >
               <Cloud className="h-5 w-5 mb-1" />
@@ -247,44 +257,13 @@ export function Settings() {
             <button
               onClick={() => setTranscriptionMode('local')}
               className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${transcriptionMode === 'local'
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-card hover:bg-muted border-input'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card hover:bg-muted border-input'
                 }`}
             >
               <HardDrive className="h-5 w-5 mb-1" />
               <span className="font-medium text-xs">Local</span>
             </button>
-          </div>
-        </div>
-
-        {/* Output Directory */}
-        <div className="space-y-2">
-          <Label className="text-xs font-medium text-muted-foreground uppercase">Session Storage</Label>
-          <div className="flex gap-2">
-            <Input
-              value={outputDir || 'Default (Documents/Skill-E)'}
-              readOnly
-              className="text-xs h-7 flex-1"
-              title={outputDir || 'Default'}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 px-2"
-              onClick={async () => {
-                try {
-                  const selected = await open({
-                    directory: true,
-                    multiple: false,
-                  });
-                  if (selected) setOutputDir(selected as string);
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
-            >
-              <FolderOpen className="h-3 w-3" />
-            </Button>
           </div>
         </div>
 
@@ -299,8 +278,8 @@ export function Settings() {
                 <div className="flex flex-col">
                   <span className="font-medium text-xs">GPU Acceleration</span>
                   <span className={`text-[10px] truncate max-w-[180px] ${gpuType === 'cuda' ? 'text-green-600 font-medium' :
-                      gpuType === 'metal' ? 'text-blue-600 font-medium' :
-                        'text-muted-foreground'
+                    gpuType === 'metal' ? 'text-blue-600 font-medium' :
+                      'text-muted-foreground'
                     }`} title={gpuDebugInfo || (checkingGpu ? 'Checking...' : 'Hardware Status')}>
                     {checkingGpu ? 'Checking...' :
                       gpuType === 'cuda' ? 'NVIDIA CUDA Detected' :
@@ -405,6 +384,39 @@ export function Settings() {
             </div>
           </div>
         )}
+
+        {/* Output Directory */}
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground uppercase">Session Storage</Label>
+          <div className="flex gap-2">
+            <Input
+              value={outputDir || 'Default (Documents/Skill-E)'}
+              readOnly
+              className="text-xs h-7 flex-1"
+              title={outputDir || 'Default'}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2"
+              onClick={async () => {
+                try {
+                  const selected = await open({
+                    directory: true,
+                    multiple: false,
+                  });
+                  if (selected) setOutputDir(selected as string);
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
+            >
+              <FolderOpen className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+
+
 
       </div>
     </div>

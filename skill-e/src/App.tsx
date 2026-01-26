@@ -29,7 +29,7 @@ function App() {
   // Settings page - separate window
   if (route === '#/settings') {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="h-screen w-screen overflow-hidden bg-background">
         <Settings />
       </div>
     )
