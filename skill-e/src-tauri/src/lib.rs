@@ -108,7 +108,7 @@ pub fn run() {
             // Note: For Tauri v2, window effects (Mica/Vibrancy) are configured in tauri.conf.json
             // The transparent window with backdrop-blur CSS provides the glass effect
 
-            // Setup system tray
+            // Setup system tray - use mem::forget to keep it alive
             setup_tray(app)?;
 
             // Setup global shortcuts
@@ -145,12 +145,15 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     menu.append(&show_hide)?;
     menu.append(&quit)?;
 
-    // Build tray icon
-    let _tray = TrayIconBuilder::new()
+    // Build tray icon - use Box::leak to keep it alive forever
+    let tray = TrayIconBuilder::new()
         .with_menu(Box::new(menu))
         .with_tooltip("Skill-E")
         .with_icon(icon)
         .build()?;
+    
+    // Leak the tray icon so it stays alive for the lifetime of the app
+    Box::leak(Box::new(tray));
 
     println!("System tray created successfully!");
 
@@ -191,6 +194,7 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     println!("Hiding window");
                     window.hide()
                 } else {
+                    println!("Showing window");
                     window.show().and_then(|_| window.set_focus())
                 };
             }
