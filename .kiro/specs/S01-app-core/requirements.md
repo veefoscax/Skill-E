@@ -44,6 +44,20 @@ Core Tauri 2.0 application with floating toolbar UI, system tray integration, an
 - **NFR-1.3**: Memory usage < 100MB idle
 - **NFR-1.4**: Cross-platform support (Windows AND macOS)
 - **NFR-1.5**: Easy installation (single file installer)
+- **NFR-1.6**: **Premium UI**: Must use shadcn/ui + platform-native glass effects (Mica/Vibrancy)
+- **NFR-1.7**: **Clean Aesthetic**: No generic "AI slop" gradients. Minimalist, professional look.
+
+## Design System
+
+### Visual Language
+- **Typography**: Inter (or system fonts)
+- **Colors**: Slate/Zinc palette (neutral), minimal accent usage
+- **Radius**: Soft rounded corners (0.5rem - 0.75rem)
+- **Dark Mode**: Default experience
+
+### Platform Integration
+- **Windows**: Use `tauri-plugin-window-vibrancy` for Mica/Acrylic background
+- **macOS**: Use `tauri-plugin-window-vibrancy` for NSVisualEffectMaterial (HUD or Popover)
 
 ## System Permissions
 

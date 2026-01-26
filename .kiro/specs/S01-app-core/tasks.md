@@ -13,16 +13,24 @@ Sets up the Tauri 2.0 application with floating toolbar, always-on-top behavior,
 - [ ] 1. Initialize Tauri Project
   - Run `pnpm create tauri-app skill-e` with React template
   - Configure pnpm workspace
-  - Install dependencies: zustand, framer-motion
+  - Install dependencies: zustand, framer-motion, lucide-react, clsx, tailwind-merge
   - Configure ESLint and Prettier
   - _Requirements: NFR-1.1, NFR-1.2_
 
-- [ ] 2. Tauri Configuration
+- [ ] 2. Design System Setup (shadcn/ui)
+  - Initialize shadcn/ui: `npx shadcn-ui@latest init`
+  - Configure components.json
+  - Add core components: button, tooltip, dropdown-menu, separator
+  - Configure Tailwind for custom colors (Zinc/Slate)
+  - _Requirements: NFR-1.6, NFR-1.7_
+
+- [ ] 3. Window & Glass Effects
   - Configure tauri.conf.json with transparent window
   - Set width: 300, height: 60, decorations: false
+  - Add `tauri-plugin-window-vibrancy`
+  - Implement Mica (Windows) and Vibrancy (MacOS)
   - Enable alwaysOnTop: true, transparent: true
-  - Configure skipTaskbar: true
-  - _Requirements: FR-1.1, FR-1.2, AC1_
+  - _Requirements: FR-1.1, FR-1.2, NFR-1.6_
 
 - [ ] 3. Window Drag Region
   - Setup custom title bar for dragging

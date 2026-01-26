@@ -6,11 +6,30 @@
 ## Tagline
 > "Ensine ao Agente Como Fazer" / "Show Your Agent the Way"
 
-## Target Users
-- Developers creating automation skills for Claude/GPT
-- Teams documenting internal processes
-- Power users wanting AI assistance with repetitive tasks
-- Anyone who prefers showing over writing
+## Design Aesthetics (CRITICAL)
+
+### 💎 The "Premium Native" Look
+The UI must feel **expensive, polished, and native**. It should NOT look like a generic web app wrapped in a window.
+
+| Attribute | Guideline |
+|-----------|-----------|
+| **Vibe** | "iOS Liquid Glass" (Mac) / "Windows 11 Mica" (Win) |
+| **Colors** | Minimalist. Use HSL approach. **No generic purple AI gradients**. |
+| **Density** | Comfortable. Not cramped, not wasted space. |
+| **Motion** | Fluid, subtle physics-based animations (Framer Motion). |
+| **Fonts** | **Inter** or System Fonts. Clean, readable, professional. |
+
+### 🚫 "No AI Slop" Policy
+- **No** excessive sparkle ✨ emojis in UI.
+- **No** "Matrix rain" or cheesy tech backgrounds.
+- **No** jagged layout shifts.
+- **No** inconsistent padding.
+
+### Components Strategy
+- Use **shadcn/ui** as the base system.
+- Customize radius to `0.5rem` or `0.75rem`.
+- Use `zinc` or `slate` color palette for neutrality.
+- **Dark Mode** is first-class citizen (default).
 
 ## Core Value Proposition
 **"Demonstrate, Don't Describe"** - Create high-quality Agent Skills by recording what you do, not by manually writing complex instructions.

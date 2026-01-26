@@ -18,6 +18,24 @@
 
 ---
 
+## UI/UX Design System (Premium Native)
+
+**Philosophy**: "Premium Native Feel, No generic AI Slop"
+
+| Platform | Features | Effects |
+|----------|----------|---------|
+| **Windows** | Windows 11 Style, Segoe UI | **Mica / Acrylic** background |
+| **macOS** | Apple Style, SF Pro | **Vibrancy (HUD/Popover)** |
+| **Linux** | Native GTK/Qt Feel | System theme integration |
+
+**Tech Stack**:
+- **shadcn/ui** (Base components)
+- **Tailwind CSS** (Styling)
+- **tauri-plugin-window-vibrancy** (Glass effects)
+- **lucide-react** (Icons)
+
+---
+
 ## Security Features (Passwords)
 
 ### Password Handling
@@ -56,7 +74,7 @@ function isPasswordField(element) {
 
 ## Implementation Order (Recommended)
 
-1. **S01** - App Core (Tauri scaffold, toolbar, tray)
+1. **S01** - App Core (Tauri scaffold, toolbar, tray, **shadcn/ui setup**)
 2. **S02** - Screen Capture (screenshots, cursor)
 3. **S03** - Audio Recording (Whisper)
 4. **S04** - Overlay UI (clicks, drawing)
@@ -64,8 +82,8 @@ function isPasswordField(element) {
 6. **S05** - Processing (OCR, steps)
 7. **S06** - Skill Export (SKILL.md generation)
 8. **S07** - Variable Detection (speech+action)
-9. **S10** - Skill Validation (interactive testing)
-10. **S09** - Context Search (documentation)
+9. **S09** - Context Search (documentation)
+10. **S10** - Skill Validation (interactive testing)
 11. **S11** - Distribution (builds for release)
 
 ---
@@ -84,7 +102,7 @@ Skill-E/
 │   └── steering/                # 4 steering docs
 ├── src/
 │   ├── components/
-│   │   ├── ui/                  # Base components
+│   │   ├── ui/                  # shadcn/ui components
 │   │   ├── Toolbar/             # Recording toolbar
 │   │   ├── Overlay/             # Click viz, drawing
 │   │   ├── Recording/           # Capture UI
@@ -140,7 +158,7 @@ Skill-E/
 | Cross-platform | ✅ Addressed | S01, S11 updated |
 | Distribution | ✅ Addressed | S11 created |
 | Credit tracking | ✅ Addressed | Hooks updated |
-| Element selector | ✅ Addressed | S04 expanded |
+| Native UI Feel | ✅ Addressed | **shadcn/ui + vibrancy** enabled |
 | Linux support | ✅ Addressed | S11 includes AppImage |
 
 ---
