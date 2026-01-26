@@ -5,8 +5,9 @@ import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
 import { useRecordingStore } from '@/stores/recording'
 
 function App() {
-  // Initialize window position persistence
-  useWindowPosition();
+  // TEMPORARILY DISABLED: Window position persistence is forcing window to center
+  // TODO: Re-enable after fixing the centering logic
+  // useWindowPosition();
   
   // Initialize system tray behavior (minimize to tray on close)
   useSystemTray();

@@ -65,6 +65,40 @@ Transparent overlay for visual feedback during recording. Shows click indicators
 - **FR-4.27**: **Pause State**: Border turns Yellow when paused
 - **FR-4.28**: Visual feedback configurable (Border width/opacity)
 
+### Live Timeline UI (Step Bubbles)
+_Inspired by Claude Extension's analysis display_
+
+#### Display
+- **FR-4.29**: **Step Bubbles**: Show capture steps as they happen (click, screenshot, keystroke, network)
+- **FR-4.30**: **Animation**: New steps slide in from right with fade-in animation
+- **FR-4.31**: **Auto-Fade**: Older steps reduce to 50% opacity after 5 seconds
+- **FR-4.32**: **Hover Expand**: Hovering over timeline shows all steps at full opacity
+- **FR-4.33**: **Step Counter**: Badge showing total captured steps
+- **FR-4.34**: **Minimize/Expand**: Toggle timeline visibility
+
+#### Step Types (Icons + Labels)
+| Type | Icon | Example Label |
+|------|------|---------------|
+| Screenshot | 📷 | "Screen captured" |
+| Click | 🖱️ | "Clicked #submit-btn" |
+| Keystroke | ⌨️ | "Typed 'hello world'" |
+| Network | 🌐 | "POST /api/login" |
+| Console | 📝 | "console.log: 'Success'" |
+| Element | 🎯 | "Selected .form-input" |
+| Voice | 🎤 | "Transcribed: 'Click here'" |
+
+#### Step Management
+- **FR-4.35**: **Step Details**: Click step to expand details (timestamp, selector, data)
+- **FR-4.36**: **Delete Step**: Remove step from recording (with confirmation)
+- **FR-4.37**: **Edit Step Note**: Add/edit annotation for a step
+- **FR-4.38**: **Reorder Steps**: Drag to reorder (optional, for manual correction)
+
+#### Timeline Position
+- **FR-4.39**: Timeline anchored to right edge of overlay (vertical strip)
+- **FR-4.40**: Collapsed by default (just shows step count badge)
+- **FR-4.41**: Expands on hover or click
+- **FR-4.42**: Scrollable if many steps
+
 ## Non-Functional Requirements
 
 - **NFR-4.1**: Overlay must be transparent (click-through except for tool area)

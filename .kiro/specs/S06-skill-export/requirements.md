@@ -39,6 +39,42 @@ Generate advanced SKILL.md files in AgentSkills format with support for variable
 - **FR-6.10**: Validate skill format before saving
 - **FR-6.11**: Support skill regeneration with different settings
 
+### Programmatic-First Automation Strategy
+_Prefer API/DOM automation; fall back to image-based only when necessary_
+
+#### Step Generation Priority
+- **FR-6.12**: **Selector Priority**: For each click, prefer automation in this order:
+  1. `id` attribute (most reliable)
+  2. `data-testid` / `data-cy` (test-friendly attributes)
+  3. Unique CSS selector (class + hierarchy)
+  4. XPath (structural path)
+  5. Text match (last resort DOM)
+  6. Image-based click (fallback when DOM unavailable)
+
+- **FR-6.13**: **API Detection**: If captured network shows API call immediately after click:
+  - Include API endpoint in skill as "programmatic alternative"
+  - Example: "Click Submit OR call POST /api/form"
+
+- **FR-6.14**: **Fallback Instructions**: Each step includes:
+  - Primary: DOM selector/API call
+  - Fallback: Image-based or retry strategy
+  - Example format in SKILL.md:
+    ```
+    1. Click the "Submit" button
+       - Selector: `button#submit-form`
+       - Fallback: Look for green button with text "Submit"
+    ```
+
+- **FR-6.15**: **Anti-Bot Awareness**: Detect and flag steps that may trigger anti-bot:
+  - CAPTCHA forms
+  - Rate-limited endpoints
+  - CloudFlare challenges
+  - Suggest human intervention or delay strategies
+
+- **FR-6.16**: **Console Context**: Include relevant console logs in skill context:
+  - Success messages (for verification)
+  - Error patterns (for troubleshooting)
+
 ## Non-Functional Requirements
 
 - **NFR-6.1**: Generated skill works with Claude Code without modification

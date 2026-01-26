@@ -3,6 +3,9 @@ use tauri::{PhysicalPosition, Emitter};
 use tray_icon::{TrayIconBuilder, menu::{Menu, MenuItem}};
 use tauri_plugin_global_shortcut::ShortcutState;
 
+// Commands module
+mod commands;
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -92,6 +95,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_screenshots::init())
         .invoke_handler(tauri::generate_handler![
             greet,
             get_window_position,
@@ -102,7 +106,8 @@ pub fn run() {
             toggle_window,
             toggle_recording,
             toggle_annotation,
-            cancel_recording
+            cancel_recording,
+            commands::capture_screen
         ])
         .setup(|app| {
             // Note: For Tauri v2, window effects (Mica/Vibrancy) are configured in tauri.conf.json
@@ -126,15 +131,19 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Setting up system tray...");
 
-    // Load tray icon
-    let icon_bytes = include_bytes!("../icons/32x32.png");
+    // Load theme-aware tray icon
+    // For Windows: Use light icon (white) for dark mode, dark icon (black) for light mode
+    // TODO: Detect system theme and switch icons dynamically
+    // For now, we'll use the light icon (works better on dark taskbars which are more common)
+    let icon_bytes = include_bytes!("../icons/icon.ico");
+    
     let icon_image = image::load_from_memory(icon_bytes)?;
     let rgba = icon_image.to_rgba8().into_raw();
     let width = icon_image.width();
     let height = icon_image.height();
     let icon = Icon::from_rgba(rgba, width, height)?;
 
-    println!("Tray icon loaded: {}x{}", width, height);
+    println!("Tray icon loaded: {}x{} (theme-aware version coming soon)", width, height);
 
     // Create menu items with unique IDs
     let show_hide = MenuItem::with_id("show_hide", "Show/Hide", true, None);

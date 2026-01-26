@@ -1,10 +1,4 @@
 import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { Circle, Square, Pause, Pencil, X } from 'lucide-react'
 import { useEffect } from 'react'
 import { useRecordingStore } from '@/stores'
@@ -80,11 +74,9 @@ export function Toolbar({ className }: ToolbarProps) {
 
   const handleClose = async () => {
     try {
-      console.log('Close button clicked')
       const window = getCurrentWindow()
-      console.log('Got window, hiding...')
       await window.hide()
-      console.log('Window hidden')
+      console.log('Window hidden successfully')
     } catch (error) {
       console.error('Error hiding window:', error)
     }
@@ -93,124 +85,95 @@ export function Toolbar({ className }: ToolbarProps) {
   return (
     <div 
       data-tauri-drag-region
-      className={`bg-background/80 backdrop-blur-xl border border-border rounded-lg shadow-2xl px-4 py-2 flex items-center gap-3 ${className || ''}`}
+      className="bg-background/80 backdrop-blur-xl border border-border rounded-lg shadow-2xl flex items-center gap-3"
       style={{
-        width: '100vw',
-        height: '100vh',
+        width: '100%',
+        height: '100%',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        padding: '8px 16px',
       }}
     >
-      <TooltipProvider>
+      {/* Buttons on left - NOT draggable */}
+      <div style={{ pointerEvents: 'auto' }} className="flex items-center gap-3">
         {/* Start/Pause Button */}
         {!isRecording ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant="default"
-                className="h-9 w-9 rounded-full"
-                onClick={handleStartRecording}
-                onPointerDown={(e) => e.stopPropagation()}
-              >
-                <Circle className="h-4 w-4 fill-current" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Start Recording (Ctrl+Shift+R)</p>
-            </TooltipContent>
-          </Tooltip>
+          <Button 
+            size="icon" 
+            variant="default"
+            className="h-9 w-9 rounded-full"
+            onClick={handleStartRecording}
+            title="Start Recording (Ctrl+Shift+R)"
+          >
+            <Circle className="h-4 w-4 fill-current" />
+          </Button>
         ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant={isPaused ? "default" : "secondary"}
-                className="h-9 w-9 rounded-full"
-                onClick={handlePauseRecording}
-                onPointerDown={(e) => e.stopPropagation()}
-              >
-                {isPaused ? (
-                  <Circle className="h-4 w-4 fill-current" />
-                ) : (
-                  <Pause className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isPaused ? 'Resume Recording' : 'Pause Recording'}</p>
-            </TooltipContent>
-          </Tooltip>
+          <Button 
+            size="icon" 
+            variant={isPaused ? "default" : "secondary"}
+            className="h-9 w-9 rounded-full"
+            onClick={handlePauseRecording}
+            title={isPaused ? 'Resume Recording' : 'Pause Recording'}
+          >
+            {isPaused ? (
+              <Circle className="h-4 w-4 fill-current" />
+            ) : (
+              <Pause className="h-4 w-4" />
+            )}
+          </Button>
         )}
 
         {/* Stop Button */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              size="icon" 
-              variant="outline"
-              className="h-9 w-9"
-              disabled={!isRecording}
-              onClick={handleStopRecording}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <Square className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Stop Recording</p>
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Timer Display */}
-        <div 
-          className="flex-1 text-center select-none"
+        <Button 
+          size="icon" 
+          variant="outline"
+          className="h-9 w-9"
+          disabled={!isRecording}
+          onClick={handleStopRecording}
+          title="Stop Recording"
         >
-          <span 
-            className={`text-sm font-mono ${
-              isRecording && !isPaused 
-                ? 'text-destructive font-semibold' 
-                : 'text-muted-foreground'
-            }`}
-          >
-            {formatTime(duration)}
-          </span>
-        </div>
+          <Square className="h-4 w-4" />
+        </Button>
+      </div>
 
-        {/* Annotation Mode Toggle - Placeholder for future implementation */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              size="icon" 
-              variant="ghost"
-              className="h-9 w-9"
-              disabled
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Annotation Mode (Coming Soon)</p>
-          </TooltipContent>
-        </Tooltip>
+      {/* Timer Display - DRAGGABLE */}
+      <div className="flex-1 text-center select-none">
+        <span 
+          className={`text-sm font-mono ${
+            isRecording && !isPaused 
+              ? 'text-destructive font-semibold' 
+              : 'text-muted-foreground'
+          }`}
+        >
+          {formatTime(duration)}
+        </span>
+      </div>
+
+      {/* Buttons on right - NOT draggable */}
+      <div style={{ pointerEvents: 'auto' }} className="flex items-center gap-3">
+        {/* Annotation Mode Toggle */}
+        <Button 
+          size="icon" 
+          variant="ghost"
+          className="h-9 w-9"
+          disabled
+          title="Annotation Mode (Coming Soon)"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
 
         {/* Close Button */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              size="icon" 
-              variant="ghost"
-              className="h-7 w-7"
-              onClick={handleClose}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Hide to Tray</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+        <Button 
+          size="icon" 
+          variant="ghost"
+          className="h-7 w-7"
+          onClick={handleClose}
+          title="Hide to Tray"
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
     </div>
   )
 }

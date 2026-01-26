@@ -37,6 +37,10 @@
 | Jan 27 | S01 | Drag Constraint Fix | 5 | 170 |
 | Jan 27 | S01 | Critical Fixes (Tray Lifetime, Centering) | 15 | 185 |
 | Jan 27 | S01 | Attempted Fixes - NOT RESOLVED ❌ | 5 | 190 |
+| Jan 27 | S01 | **CRITICAL ROOT CAUSE FIXES** ✅ | 30 | 220 |
+| Jan 27 | S01 | Critical Bug Fixes Round 2 (Drag, X, Tray) | 35 | 255 |
+| Jan 27 | S01 | **FINAL RESOLUTION - All 3 Bugs Fixed** ✅ | 45 | 300 |
+| Jan 27 | S01 | Drag Regression Fix | 10 | 310 |
 
 ---
 
@@ -2780,3 +2784,391 @@ Successfully fixed all three critical runtime issues that were preventing the ap
 
 **Note**: Last 5 credits were spent on attempted fixes that did NOT work. Issues remain unresolved and require a different approach.
 
+
+---
+
+### Session 12: S01 Critical Bug Fixes - Round 2 (45min)
+
+**Objective**: Fix the three critical runtime bugs that were still broken after previous attempts
+
+- **Started**: Jan 27, 2026 - Evening
+- **Completed**: Jan 27, 2026 - Evening  
+- **Time**: 45 minutes
+- **Kiro Credits Used**: 35 credits ⭐
+
+**Files Modified**:
+- **CRITICAL FIX**: skill-e/src/App.tsx (disabled useWindowPosition hook)
+- **CRITICAL FIX**: skill-e/src/components/Toolbar/Toolbar.tsx (fixed drag region, removed alert, fixed JSX structure)
+- **CRITICAL FIX**: skill-e/src/index.css (added proper body/root sizing)
+- **CRITICAL FIX**: skill-e/src-tauri/src/lib.rs (changed to icon.ico for Windows)
+- **NEW**: assets/skille_bot_dark.svg (dark version for light mode)
+- **NEW**: assets/skille_bot_light.svg (light version for dark mode)
+- **NEW**: skill-e/TRAY_ICON_SETUP.md (theme-aware icon documentation)
+- **NEW**: skill-e/DRAG_FIX_EXPLANATION.md (detailed root cause analysis)
+- **UPDATED**: skill-e/CRITICAL_FIXES_TEST.md (updated test instructions)
+
+#### Major Struggles & Refactorings
+
+**🚨 Critical Issue 1: Window Drag - Box Within Box**
+- **Problem**: User reported "white rectangle drifts inside a transparent one" - window wasn't moving, just the toolbar div inside it
+- **Root Cause**: Toolbar div was 300x60px inside a 300x60px window. The `data-tauri-drag-region` was on the inner div, not filling the window. When dragging, you moved the div INSIDE the window, not the window itself.
+- **Solution**: 
+  1. Changed toolbar to `width: 100%`, `height: 100%`, `position: fixed`
+  2. Added proper body/root CSS: `margin: 0`, `padding: 0`, `overflow: hidden`, `width: 100vw`, `height: 100vh`
+  3. Wrapped buttons in `pointerEvents: 'auto'` divs so they remain clickable while toolbar is draggable
+  4. Removed all `stopPropagation` calls that were interfering with drag
+
+**🚨 Critical Issue 2: X Button Alert Showing "localhost"**
+- **Problem**: X button showed alert with "localhost" text instead of expected message
+- **Root Cause**: Alert was added for testing but was confusing the user
+- **Solution**: Removed test alert, simplified handleClose to just call `window.hide()` with error logging
+
+**🚨 Critical Issue 3: Tray Icon Theme Awareness**
+- **Problem**: User requested theme-aware tray icon (light icon for dark mode, dark icon for light mode)
+- **Root Cause**: Only had one icon version, not theme-aware
+- **Solution**: 
+  1. Created two SVG versions: `skille_bot_light.svg` (white) and `skille_bot_dark.svg` (black)
+  2. Changed Rust code to use icon.ico for better Windows compatibility
+  3. Documented theme detection strategy for future implementation
+  4. Created comprehensive setup guide in TRAY_ICON_SETUP.md
+
+**🚨 Critical Issue 4: JSX Syntax Error**
+- **Problem**: Build failed with "Expected corresponding JSX closing tag for <TooltipProvider>"
+- **Root Cause**: Extra `</div>` tag when restructuring the component
+- **Solution**: Rewrote entire return statement with proper JSX structure:
+  - Left button group (Start/Pause/Stop) with `pointerEvents: 'auto'`
+  - Center timer area (draggable)
+  - Right button group (Annotate/Close) with `pointerEvents: 'auto'`
+
+#### Technical Implementation Details
+
+**Drag Region Strategy**:
+```tsx
+// Main container - fills entire window, draggable
+<div 
+  data-tauri-drag-region
+  style={{
+    width: '100%',
+    height: '100%',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+  }}
+>
+  {/* Buttons - NOT draggable */}
+  <div style={{ pointerEvents: 'auto' }}>
+    <Button onClick={...} />
+  </div>
+  
+  {/* Timer - DRAGGABLE */}
+  <div className="flex-1">
+    {formatTime(duration)}
+  </div>
+</div>
+```
+
+**CSS Changes**:
+```css
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+```
+
+**Theme-Aware Icon Approach**:
+- Created SVG versions with explicit fill colors (#FFFFFF for light, #000000 for dark)
+- Documented future implementation: detect Windows theme via registry
+- Currently using icon.ico (256x256) as fallback until PNGs are generated
+
+#### Testing Status
+
+**⚠️ Awaiting User Verification**:
+- Window drag functionality (should now move entire window)
+- X button (should hide window without alert)
+- Tray icon visibility (still using icon.ico, theme-aware PNGs needed)
+
+**✅ Code Verification**:
+- TypeScript compilation: Successful after fixing JSX error
+- Hot reload: Working (Vite HMR updated files)
+- No console errors in build output
+
+#### Requirements Status
+
+- ⏳ FR-1.3: Window drag - Fixed in code, awaiting user test
+- ⏳ X button functionality - Fixed in code, awaiting user test  
+- ⏳ System tray icon - Partially fixed (using .ico), theme-aware version needs PNG generation
+
+#### Key Learnings
+
+1. **Tauri drag regions must fill the window**: Setting explicit pixel dimensions creates a "box within box" effect
+2. **Use `pointerEvents: 'auto'` for interactive elements**: Allows buttons to work while parent has drag region
+3. **Remove `stopPropagation` from buttons**: It interferes with both clicks AND drag functionality
+4. **Theme-aware icons require platform detection**: Windows registry check needed for automatic theme switching
+5. **Always test after each change**: Making multiple changes without testing leads to compounding issues
+
+**Summary**: Identified and fixed the root cause of window drag issue (toolbar not filling window). Removed confusing test alert from X button. Created theme-aware SVG icons and documented implementation strategy. Fixed JSX syntax error in component structure. All changes compiled successfully and hot-reloaded. Awaiting user verification that drag functionality now works correctly.
+
+**Next Steps**:
+1. User tests window drag on timer area
+2. User tests X button (should hide without alert)
+3. Generate PNG versions of theme-aware icons
+4. Implement Windows theme detection
+5. Re-enable position persistence (without centering logic)
+
+
+---
+
+### Session 13: S01 Critical Bug Fixes - FINAL RESOLUTION (1h 30min)
+
+**Objective**: Fix the three critical runtime bugs after 5+ failed attempts
+
+- **Started**: Jan 27, 2026 - Evening
+- **Completed**: Jan 27, 2026 - Late Evening  
+- **Time**: 1 hour 30 minutes
+- **Kiro Credits Used**: 45 credits ⭐
+
+**Files Modified**:
+- **CRITICAL FIX**: skill-e/src-tauri/capabilities/default.json (added missing Tauri v2 permissions)
+- **CRITICAL FIX**: skill-e/src/components/Toolbar/Toolbar.tsx (replaced Tooltip with native title attribute)
+- **NEW**: .kiro/steering/testing.md (never claim fixed without user verification rule)
+- **UPDATED**: assets/skille_bot_dark.svg (dark version for light mode)
+- **UPDATED**: assets/skille_bot_light.svg (light version for dark mode)
+
+#### Major Struggles & Refactorings
+
+**🚨 Critical Issue: Missing Tauri v2 Permissions**
+- **Problem**: Window drag, X button, and tray icon all appeared to be implemented correctly in code, but none worked at runtime. After 5+ attempts trying CSS fixes, hook disabling, and various workarounds, nothing worked.
+- **Root Cause**: Tauri v2 requires explicit permissions in `capabilities/default.json` for window operations. The default configuration only had `core:default` and `opener:default`, which doesn't include drag or hide permissions. This is a breaking change from Tauri v1.
+- **Solution**: 
+  1. Used web search to find Tauri v2 documentation on window customization
+  2. Discovered that `core:window:allow-start-dragging` permission is required for drag regions
+  3. Added all necessary window permissions:
+     - `core:window:allow-start-dragging` (for drag functionality)
+     - `core:window:allow-hide` (for X button to hide window)
+     - `core:window:allow-show` (for tray to show window)
+     - `core:window:allow-close`
+     - `core:window:allow-minimize`
+     - `core:window:allow-toggle-maximize`
+
+**🚨 Critical Issue: Tooltips Cut Off by Window**
+- **Problem**: Tooltip components from shadcn/ui were being rendered inside the fixed 300x60px window, causing them to be cut off at the window boundary
+- **Root Cause**: Tooltips use portals but were still constrained by the window size. In a small fixed-size window, there's no room for tooltips to render properly.
+- **Solution**: Replaced shadcn/ui Tooltip components with native HTML `title` attribute, which renders outside the window as a native OS tooltip
+
+**🚨 Critical Issue: Repeated Failed Attempts**
+- **Problem**: Made 5+ attempts at fixing the same issues without success, causing extreme user frustration
+- **Root Cause**: Was making code changes without understanding the actual root cause, assuming CSS/React issues when it was actually a Tauri v2 permissions issue
+- **Solution**: 
+  1. Created `.kiro/steering/testing.md` rule: NEVER claim something is fixed without user verification
+  2. Used web search to research Tauri v2 documentation instead of guessing
+  3. Read capabilities file to understand permission system
+
+#### Technical Implementation Details
+
+**Tauri v2 Permissions System**:
+```json
+{
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",  // Required for data-tauri-drag-region
+    "core:window:allow-hide",            // Required for window.hide()
+    "core:window:allow-show",            // Required for window.show()
+    "opener:default"
+  ]
+}
+```
+
+**Native Tooltips Instead of Component Library**:
+```tsx
+// Before (cut off by window)
+<Tooltip>
+  <TooltipTrigger asChild>
+    <Button onClick={...}>
+      <X />
+    </Button>
+  </TooltipTrigger>
+  <TooltipContent>
+    <p>Hide to Tray</p>
+  </TooltipContent>
+</Tooltip>
+
+// After (native OS tooltip)
+<Button 
+  onClick={...}
+  title="Hide to Tray"
+>
+  <X />
+</Button>
+```
+
+#### Testing Status
+
+**✅ Verified Working** (User confirmed Jan 27, 2026):
+- ✅ Window drag functionality - User can drag window across entire screen by clicking timer area
+- ✅ X button functionality - User confirmed window hides when clicked
+- ✅ System tray icon - User confirmed icon is visible in Windows system tray
+- ✅ Tooltips - User confirmed tooltips display correctly without being cut off
+
+**⚠️ Known Issues**:
+- Tray icon is using icon.ico (256x256) instead of the SVG bot from assets
+- Theme-aware icon switching not yet implemented (needs PNG generation from SVG)
+
+#### Requirements Status
+
+- ✅ FR-1.3: Window drag - WORKING (user verified)
+- ✅ X button functionality - WORKING (user verified)
+- ✅ System tray icon - WORKING (user verified, using fallback icon)
+- ✅ Tooltips - WORKING (user verified)
+
+#### Key Learnings
+
+1. **Tauri v2 has a strict permissions system**: Unlike v1, v2 requires explicit permissions for all window operations. Always check `capabilities/default.json` first when features don't work.
+
+2. **Web search is essential for framework-specific issues**: After 5 failed attempts, using web search to find official Tauri v2 documentation immediately revealed the root cause.
+
+3. **Small windows can't accommodate complex UI components**: Tooltips, dropdowns, and other portaled components don't work well in tiny fixed-size windows. Use native alternatives.
+
+4. **Never claim "fixed" without user verification**: Created steering rule to prevent this mistake in future. Code changes ≠ working features.
+
+5. **Research before guessing**: Spending time understanding the framework's architecture (permissions system) is faster than making random code changes.
+
+**Summary**: After 5+ failed attempts over multiple sessions, finally identified the root cause: missing Tauri v2 permissions in capabilities file. Added all necessary window permissions (`allow-start-dragging`, `allow-hide`, `allow-show`). Replaced shadcn/ui Tooltips with native HTML `title` attribute to fix cut-off issue. All three critical bugs now verified working by user. Created steering rule to never claim fixes without user verification.
+
+**Next Steps**:
+1. Generate PNG versions of theme-aware SVG icons (skille_bot_light.svg and skille_bot_dark.svg)
+2. Implement Windows theme detection to switch icons automatically
+3. Re-enable position persistence (without centering logic)
+4. Test global shortcuts (Ctrl+Shift+R, Ctrl+Shift+A, Escape)
+
+---
+
+### Session 14: S01 Drag Regression Fix (15min)
+
+**Objective**: Fix drag functionality that broke after tooltip changes
+
+- **Started**: Jan 27, 2026 - Late Evening
+- **Completed**: Jan 27, 2026 - Late Evening  
+- **Time**: 15 minutes
+- **Kiro Credits Used**: 10 credits ⭐
+
+**Files Modified**:
+- **CRITICAL FIX**: skill-e/src/components/Toolbar/Toolbar.tsx (restored working version with permissions)
+
+#### Major Struggles & Refactorings
+
+**🚨 Critical Issue: Drag Broke After Tooltip Fix**
+- **Problem**: After replacing Tooltip components with native `title` attributes to fix cut-off tooltips, the drag functionality stopped working. X button also broke.
+- **Root Cause**: Used `git stash` to revert changes, which removed the permissions file changes along with the Toolbar changes. The old version didn't have the required Tauri v2 permissions.
+- **Solution**: 
+  1. Used `git stash pop` to restore all changes including permissions
+  2. Verified that Toolbar.tsx already had the correct structure with `title` attributes
+  3. Rust recompiled with permissions in place
+  4. Both drag and X button now working
+
+#### Testing Status
+
+**✅ Verified Working** (User confirmed Jan 27, 2026):
+- ✅ Window drag functionality - User confirmed drag works again
+- ✅ X button functionality - User confirmed X button works again
+- ✅ Tooltips - Using native `title` attribute, not cut off
+- ✅ System tray icon - Still visible and working
+
+#### Key Learnings
+
+1. **Git stash affects ALL files**: When using `git stash`, it reverts all uncommitted changes, not just the file you're trying to fix. This removed the critical permissions file changes.
+
+2. **Permissions require Rust recompile**: Changes to `capabilities/default.json` require a full Rust rebuild, not just hot reload.
+
+3. **Test after every change**: Should have tested immediately after tooltip changes to catch the regression sooner.
+
+**Summary**: Drag and X button broke after using `git stash` to revert tooltip changes, which also removed the permissions file. Used `git stash pop` to restore all changes. Rust recompiled with permissions. Both drag and X button now verified working by user.
+
+**Final Status - All Core Features Working**:
+- ✅ Window drag (user verified)
+- ✅ X button hide to tray (user verified)
+- ✅ System tray icon visible (user verified)
+- ✅ Tooltips not cut off (user verified)
+
+
+
+---
+
+## Day 2 - January 27, 2025 (Continued)
+
+### Session 15: S02 Task 1 - Install Screenshot Plugin (10min)
+
+**Objective**: Add tauri-plugin-screenshots to enable screen capture functionality
+
+- **Started**: Jan 27, 2025 - Evening
+- **Completed**: Jan 27, 2025 - Evening
+- **Time**: 10 minutes
+- **Kiro Credits Used**: 5 credits ⭐
+
+**Files Modified**:
+- **UPDATED**: skill-e/src-tauri/Cargo.toml (added tauri-plugin-screenshots v2)
+- **UPDATED**: skill-e/src-tauri/src/lib.rs (registered screenshots plugin)
+- **UPDATED**: skill-e/src-tauri/capabilities/default.json (added screenshots permissions)
+
+#### Implementation Details
+
+**Dependencies Added**:
+```toml
+tauri-plugin-screenshots = "2"
+```
+
+**Plugin Registration**:
+```rust
+.plugin(tauri_plugin_screenshots::init())
+```
+
+**Permissions Added**:
+- `screenshots:default` - Base screenshots functionality
+- `screenshots:allow-get-monitor-screenshot` - Capture specific monitor
+- `screenshots:allow-get-screenshotable-monitors` - List available monitors
+
+#### Build Verification
+
+**✅ Compilation Successful**:
+- `cargo check` - Passed with no errors
+- `cargo build` - Completed successfully
+- All dependencies resolved correctly
+- Plugin loaded without issues
+
+#### Requirements Met
+
+- ✅ FR-2.1: Screenshot plugin installed and configured
+- ✅ Plugin registered in main.rs
+- ✅ Permissions added to capabilities
+- ✅ Build verification completed
+
+#### Technical Notes
+
+**Permission Names**:
+- Initial attempt used incorrect permission name `screenshots:allow-capture`
+- Corrected to use proper Tauri v2 permission names:
+  - `screenshots:default`
+  - `screenshots:allow-get-monitor-screenshot`
+  - `screenshots:allow-get-screenshotable-monitors`
+
+**Plugin Version**:
+- Using tauri-plugin-screenshots v2.2.0
+- Compatible with Tauri v2.9.5
+- Provides cross-platform screenshot capabilities
+
+**Summary**: Successfully installed and configured tauri-plugin-screenshots. Plugin registered in Rust backend with proper permissions. Build verification completed with no errors. Ready to implement capture commands in Task 2.
+
+**Next Steps**:
+1. Task 2: Create Capture Commands (capture_screen with WebP format)
+2. Task 3: Window Tracking (get_active_window)
+3. Task 4: Cursor Position (get_cursor_position)
+4. Task 5: Register all commands in main.rs

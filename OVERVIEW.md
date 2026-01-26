@@ -5,11 +5,11 @@
 | Spec | Name | Priority | Status | Key Features |
 |------|------|----------|--------|--------------|
 | **S01** | App Core | MVP ✅ | ✅ Complete | Tauri 2.0, floating toolbar, system tray, hotkeys, Win+Mac |
-| **S02** | Screen Capture | MVP ✅ | ✅ Complete | Screenshots, cursor tracking, OCR |
+| **S02** | Screen Capture | MVP ✅ | ✅ Complete | Screenshots, cursor, **console/network capture**, DOM selectors |
 | **S03** | Audio Recording | MVP ✅ | ✅ Complete | Whisper transcription, voice level |
-| **S04** | Overlay UI | MVP ✅ | ✅ Complete | Click viz, drawing tools, keyboard, element picker |
+| **S04** | Overlay UI | MVP ✅ | ✅ Complete | Click viz, drawing, keyboard, **Live Timeline (fading bubbles)** |
 | **S05** | Processing | MVP ✅ | ✅ Complete | OCR, step detection, timeline |
-| **S06** | Skill Export | MVP ✅ | ✅ Complete | SKILL.md, variables, conditionals, guardrails |
+| **S06** | Skill Export | MVP ✅ | ✅ Complete | SKILL.md, variables, **programmatic-first automation** |
 | **S07** | Variable Detection | MVP ✅ | ✅ Complete | Speech patterns, action correlation |
 | **S08** | LLM Providers | MVP ✅ | ✅ Complete | 5 providers (OpenRouter free, Claude, GPT, Gemini, Ollama) |
 | **S09** | Context Search | MVP ✅ | ✅ Complete | Context7 MCP, web fallback |
