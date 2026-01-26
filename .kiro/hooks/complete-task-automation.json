@@ -1,0 +1,17 @@
+{
+    "name": "Complete Task Documentation & Git Automation",
+    "description": "Comprehensive automation that updates DEVLOG.md with time tracking, struggles, Kiro credits used, and commits everything with proper git messages",
+    "trigger": {
+        "type": "agent_execution_complete",
+        "conditions": {
+            "task_completed": true,
+            "spec_context": true
+        }
+    },
+    "action": {
+        "type": "send_message",
+        "message": "🤖 **COMPLETE TASK AUTOMATION TRIGGERED**\n\nA task has been completed! Please perform comprehensive documentation:\n\n## 📝 **Update DEVLOG.md**\n\nAdd a detailed entry following this format:\n\n```markdown\n### S0X: [Spec Name]\n- **Started**: [timestamp]\n- **Completed**: [current timestamp] \n- **Time**: [actual duration] (originally estimated [estimate])\n- **Kiro Credits Used**: [X credits] ⭐\n- **Files Modified**:\n  - [file1.ts] ([description])\n  - **NEW**: [new-file.js] ([purpose])\n  - **CRITICAL FIX**: [config-file.ts] ([what was fixed])\n\n#### Major Struggles & Refactorings\n\n**🚨 Critical Issue: [Title]**\n- **Problem**: [detailed description]\n- **Root Cause**: [why it happened]\n- **Solution**: [how fixed]\n\n- **Summary**: [comprehensive summary with key learnings]\n```\n\n## 📊 **Track Kiro Credits**\n\n**IMPORTANT**: Update the Kiro Credits Usage table in DEVLOG.md:\n\n```markdown\n## Kiro Credits Usage\n\n| Date | Spec | Task | Credits | Running Total |\n|------|------|------|---------|---------------|\n| Jan 26 | Planning | Initial specs | X | X |\n| Jan 26 | S01 | Tauri scaffold | Y | X+Y |\n```\n\n## 📋 **Update Spec Files**\n- **tasks.md**: Mark completed items with [x], add Time Tracking + Lessons Learned sections\n- **requirements.md**: Update acceptance criteria status\n\n## 🔄 **Git Operations**\n1. Stage all changes: `git add .`\n2. Commit with format: `feat(S0X): [task] - [X credits used]`\n3. Push if spec complete\n\n**Style**: Engineering journal format with emojis, technical details, and **always include Kiro credits used**!"
+    },
+    "enabled": true,
+    "scope": "workspace"
+}

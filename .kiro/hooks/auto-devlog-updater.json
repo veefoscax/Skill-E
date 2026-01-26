@@ -1,0 +1,16 @@
+{
+    "name": "Auto DEVLOG & Credit Tracker",
+    "description": "Automatically updates DEVLOG.md with time tracking, Kiro credits used, struggles, and refactorings after each task session",
+    "trigger": {
+        "type": "agent_execution_complete",
+        "conditions": {
+            "task_completed": true
+        }
+    },
+    "action": {
+        "type": "send_message",
+        "message": "📝 **AUTO-DEVLOG UPDATE**\n\nTask session completed! Please update documentation:\n\n**Update DEVLOG.md:**\n- Add current task details to appropriate spec section\n- Include actual time spent vs estimate\n- **⭐ Track Kiro credits used in this session**\n- Update the Kiro Credits Usage table with running total\n- List all files modified/created (highlight NEW and CRITICAL FIX items)\n- Detail any struggles, debugging processes, configuration issues\n\n**Kiro Credits Tracking Format:**\n```markdown\n## Kiro Credits Usage\n\n| Date | Spec | Task | Credits | Running Total |\n|------|------|------|---------|---------------|\n| Jan 26 | S01 | Tauri scaffold | 5 | 5 |\n| Jan 26 | S02 | Screen capture | 3 | 8 |\n```\n\n**Update Spec Files:**\n- Add Time Tracking section to tasks.md with variance explanation\n- Add Lessons Learned section documenting critical issues\n\n**Documentation Style:**\n- Use emojis (🚨🔧📊🧪✅❌⭐)\n- Bold important items\n- Include Kiro credit count per task\n- Write like an engineering journal\n\n**Make it comprehensive** - capture what was built, HOW it was built, problems encountered, and **credits consumed**!"
+    },
+    "enabled": true,
+    "scope": "workspace"
+}

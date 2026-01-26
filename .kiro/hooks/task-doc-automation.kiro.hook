@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Complete Task Documentation & Git Automation",
+  "description": "Automatically updates DEVLOG.md with Kiro credits used, time tracking, struggles, and lessons learned after each task completion",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "🤖 **COMPLETE TASK AUTOMATION TRIGGERED**\n\nA task has been completed! Please perform comprehensive documentation:\n\n## 📝 **STEP 1: Update DEVLOG.md**\nAdd a detailed entry following this format:\n```markdown\n### S0X: [Spec Name]\n- **Started**: [timestamp]\n- **Completed**: [current timestamp] \n- **Time**: [actual duration] (originally estimated [estimate])\n- **Kiro Credits Used**: [X credits] ⭐\n- **Files Modified**:\n  - [file1.ts] ([description])\n  - **NEW**: [new-file.js] ([purpose])\n  - **CRITICAL FIX**: [config-file.ts] ([what was fixed])\n\n#### Major Struggles & Refactorings\n**🚨 Critical Issue: [Title]**\n- **Problem**: [detailed description]\n- **Root Cause**: [why it happened]\n- **Solution**: [how fixed]\n\n**📊 Build/Test Verification**: [what was verified]\n\n- **Summary**: [comprehensive summary with key learnings]\n```\n\n## 📊 **STEP 2: Update Kiro Credits Table**\n```markdown\n| Date | Spec | Task | Credits | Running Total |\n|------|------|------|---------|---------------|\n| [date] | [spec] | [task] | [X] | [total] |\n```\n\n## 📝 **STEP 3: Update Spec Files**\nMark completed tasks with [x] in tasks.md\n\n## 🔄 **STEP 4: Git Commit**\nCommit with: `feat(S0X): [task] - [X credits]`\n\n**ALWAYS include Kiro credits used in the update!**"
+  }
+}
