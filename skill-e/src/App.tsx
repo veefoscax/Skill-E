@@ -1,50 +1,85 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import { invoke } from '@tauri-apps/api/core'
-import './App.css'
+import { Button } from '@/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Separator } from '@/components/ui/separator'
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState('')
-  const [name, setName] = useState('')
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke('greet', { name }))
-  }
-
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="min-h-screen bg-background text-foreground p-8">
+      <div className="max-w-2xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Skill-E Design System</h1>
+          <p className="text-muted-foreground">
+            shadcn/ui components with Mira configuration (Neutral theme, 0.5rem radius)
+          </p>
+        </div>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <Separator />
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Button Variants</h2>
+          <div className="flex flex-wrap gap-4">
+            <Button>Default</Button>
+            <Button variant="secondary">Secondary</Button>
+            <Button variant="outline">Outline</Button>
+            <Button variant="ghost">Ghost</Button>
+            <Button variant="destructive">Destructive</Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Tooltip</h2>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline">Hover me</Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>This is a tooltip with Mira styling</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Dropdown Menu</h2>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">Open Menu</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem>Start Recording</DropdownMenuItem>
+              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem>About</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive">Quit</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold">Typography</h2>
+          <p className="text-sm text-muted-foreground">
+            Font: Nunito Sans • Theme: Neutral • Radius: 0.5rem
+          </p>
+        </div>
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={e => {
-          e.preventDefault()
-          greet()
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={e => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    </div>
   )
 }
 
