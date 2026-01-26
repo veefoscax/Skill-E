@@ -134,20 +134,21 @@
 
 ---
 
-## Specifications Summary
+## Specifications Summary (ALL MVP)
 
 | Spec | Name | Status | Priority | Key Features |
 |------|------|--------|----------|--------------|
-| S01 | App Core | ✅ Updated | **P1** | Tauri, toolbar, hotkeys, **system tray**, **Windows+Mac** |
-| S02 | Screen Capture | ✅ Defined | **P1** | Screenshots, OCR, cursor |
-| S03 | Audio Recording | ✅ Defined | **P1** | Whisper, level meter |
-| S08 | LLM Providers | ✅ Simplified | **P1** | **5 providers only** |
-| S06 | Skill Export | ✅ Expanded | **P1** | Variables, conditionals |
-| S10 | Skill Validation | ✅ NEW | **P1** | **Interactive testing** |
-| S05 | Processing | ✅ Expanded | P2 | OCR, step detection |
-| S07 | Variable Detection | ✅ Defined | P2 | Speech/action correlation |
-| S04 | Overlay UI | ✅ Defined | P3 | Annotations, drawing |
-| S09 | Context Search | ✅ Defined | P3 | Context7, docs lookup |
+| S01 | App Core | ✅ Complete | **MVP** | Tauri, toolbar, hotkeys, system tray, Win+Mac |
+| S02 | Screen Capture | ✅ Complete | **MVP** | Screenshots, OCR, cursor |
+| S03 | Audio Recording | ✅ Complete | **MVP** | Whisper, level meter |
+| S04 | Overlay UI | ✅ Complete | **MVP** | Click viz, drawing, keyboard, element picker |
+| S05 | Processing | ✅ Complete | **MVP** | OCR, step detection |
+| S06 | Skill Export | ✅ Complete | **MVP** | Variables, conditionals, guardrails |
+| S07 | Variable Detection | ✅ Complete | **MVP** | Speech/action correlation |
+| S08 | LLM Providers | ✅ Complete | **MVP** | 5 providers (OpenRouter free) |
+| S09 | Context Search | ✅ Complete | **MVP** | Context7, docs lookup |
+| S10 | Skill Validation | ✅ Complete | **MVP** | Interactive testing, feedback |
+| S11 | Distribution | ✅ **NEW** | **MVP** | Win/Mac/Linux builds, CI/CD |
 
 ---
 
@@ -285,20 +286,21 @@ macOS: [🍎] [File] ... [Wi-Fi] [🔊] [Skill-E Icon] [🕐]
 
 ---
 
-## Next Steps
+## Next Steps (ALL MVP)
 
-### MVP for Hackathon
+### Full Implementation Order
 1. [ ] Initialize Tauri project (S01)
-2. [ ] Setup system tray (Windows + Mac)
-3. [ ] Implement basic recording (S02, S03)
-4. [ ] Implement 5 providers (S08)
-5. [ ] Implement skill generation (S06)
-6. [ ] Implement validation UI (S10)
-7. [ ] Test on both Windows and Mac
-8. [ ] Build installers for both platforms
-9. [ ] Demo with OpenRouter free tier
-
-### Nice to Have
-10. [ ] Variable detection (S07)
-11. [ ] Overlay annotations (S04)
-12. [ ] Context search (S09)
+2. [ ] Setup system tray + floating toolbar (S01)
+3. [ ] Implement screen capture (S02)
+4. [ ] Implement audio recording (S03)
+5. [ ] Implement overlay UI - clicks, drawing (S04)
+6. [ ] Implement processing - OCR, steps (S05)
+7. [ ] Implement skill export (S06)
+8. [ ] Implement variable detection (S07)
+9. [ ] Implement 5 providers (S08)
+10. [ ] Implement context search (S09)
+11. [ ] Implement validation UI (S10)
+12. [ ] Setup distribution - builds (S11)
+13. [ ] Test on Windows + Mac
+14. [ ] Build installers for all platforms
+15. [ ] Demo with OpenRouter free tier

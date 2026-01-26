@@ -45,6 +45,56 @@ Core Tauri 2.0 application with floating toolbar UI, system tray integration, an
 - **NFR-1.4**: Cross-platform support (Windows AND macOS)
 - **NFR-1.5**: Easy installation (single file installer)
 
+## System Permissions
+
+### macOS Permissions Required
+
+| Permission | Purpose | How to Request |
+|------------|---------|----------------|
+| **Screen Recording** | Capture screenshots | System Preferences → Security → Screen Recording |
+| **Accessibility** | Global hotkeys, click tracking | System Preferences → Security → Accessibility |
+| **Microphone** | Audio recording | System Preferences → Security → Microphone |
+
+**Implementation:**
+```rust
+// Check permissions on macOS
+#[cfg(target_os = "macos")]
+fn check_permissions() -> PermissionStatus {
+    // Use macos-accessibility-client crate
+    // Show dialog if not granted
+}
+```
+
+**First Launch Flow:**
+1. App detects missing permissions
+2. Shows explanation dialog with "Open System Preferences" button
+3. User grants permission
+4. App confirms permission granted
+
+### Windows Permissions
+
+| Permission | Purpose | How to Handle |
+|------------|---------|---------------|
+| **Screen Capture** | Usually allowed by default | No special permission needed |
+| **Microphone** | Audio recording | Windows Settings → Privacy → Microphone |
+| **Run as Admin** | NOT required | App works without admin rights |
+
+**Note:** Windows is more permissive than macOS. Most features work without special permissions.
+
+### Linux Permissions
+
+| Permission | Purpose | How to Handle |
+|------------|---------|---------------|
+| **Screen Capture (Wayland)** | Portal-based access | Use xdg-desktop-portal |
+| **Screen Capture (X11)** | Usually allowed | No special permission |
+| **Microphone** | Audio recording | PipeWire/PulseAudio access |
+
+### Functional Requirements for Permissions
+- **FR-1.10**: App must check for required permissions on startup
+- **FR-1.11**: App must show friendly permission request dialog
+- **FR-1.12**: App must guide user to System Preferences (macOS)
+- **FR-1.13**: App must handle permission denial gracefully
+
 ## Platform-Specific Behavior
 
 ### Windows

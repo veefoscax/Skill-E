@@ -1,342 +1,366 @@
 # Skill-E
 
-> **"Ensine ao Agente Como Fazer"** — Crie Agent Skills por demonstração, não por escrita manual.
+> **"Show Your Agent the Way"** — Create Agent Skills by demonstration, not by manual writing.
 
 <p align="center">
   <img src="./assets/skille_bot.PNG" alt="Skill-E Bot" width="400" />
 </p>
 
 <p align="center">
-  <strong>🏆 Projeto para o Kiro Hackathon 2025</strong>
+  <strong>🏆 Project for the Kiro Hackathon 2025</strong>
 </p>
 
 ---
 
-## 🤔 Por Que Skill-E?
+## 🌐 Language Support
 
-### O Problema com Agentes Gerais
+**Interface Language**: Choose your preferred language  
+**Voice Recording**: Speak in any language - Whisper transcribes it  
+**Skill Output**: Generated SKILL.md adapts to your language  
 
-Agentes de IA gerais são poderosos, mas têm limitações críticas:
-
-| Problema | Consequência |
-|----------|--------------|
-| **Alucinação** | Inventam passos que não existem |
-| **Inconsistência** | Fazem diferente a cada vez |
-| **Falta de contexto** | Não conhecem SEU sistema |
-| **Sem guardrails** | Podem fazer coisas perigosas |
-| **Difícil de auditar** | Você não sabe o que vão fazer |
-
-### A Solução: Skills Específicas
-
-**Skills são robôzinhos de ensino** — você mostra como fazer, e a IA aprende EXATAMENTE aquilo.
-
-```
-❌ Agente Geral: "Encontre o cliente João no sistema"
-   → Pode clicar em qualquer lugar
-   → Pode acessar dados errados
-   → Pode fazer ações destrutivas
-
-✅ Skill Específica: "Encontre o cliente {nome} no sistema"
-   → Passos exatos definidos
-   → Campos específicos identificados
-   → Guardrails de segurança
-   → Human-in-the-loop quando necessário
-```
-
-### Por Que Demonstrar é Melhor que Descrever?
-
-| Só Descrever para LLM | Demonstrar com Skill-E |
-|-----------------------|------------------------|
-| ❌ Você esquece detalhes | ✅ Captura tudo automaticamente |
-| ❌ LLM interpreta errado | ✅ Vê exatamente o que você fez |
-| ❌ Sem contexto visual | ✅ Screenshots de referência |
-| ❌ Variáveis ambíguas | ✅ Detecta variáveis da sua fala |
-| ❌ Sem validação | ✅ Verificação de sucesso embutida |
+| Supported | Languages |
+|-----------|-----------|
+| ✅ Full | English, Portuguese |
+| 🔜 Planned | Spanish, French, German, Japanese |
 
 ---
 
-## 🛡️ Segurança: Guardrails Embutidos
+## 🤔 Why Skill-E?
 
-Skills criadas com Skill-E têm **safeguards de segurança** por design:
+### The Problem with General Agents
 
-### 1. Restrições de Escopo
+General AI agents are powerful, but have critical limitations:
+
+| Problem | Consequence |
+|---------|-------------|
+| **Hallucination** | They invent steps that don't exist |
+| **Inconsistency** | They do things differently each time |
+| **Lack of context** | They don't know YOUR system |
+| **No guardrails** | They can do dangerous things |
+| **Hard to audit** | You don't know what they'll do |
+
+### The Solution: Specific Skills
+
+**Skills are teaching robots** — you show how to do something, and the AI learns EXACTLY that.
+
+```
+❌ General Agent: "Find customer John in the system"
+   → May click anywhere
+   → May access wrong data
+   → May perform destructive actions
+
+✅ Specific Skill: "Find customer {name} in the system"
+   → Exact steps defined
+   → Specific fields identified
+   → Security guardrails
+   → Human-in-the-loop when needed
+```
+
+### Why Demonstrate is Better than Describe?
+
+| Just Describe to LLM | Demonstrate with Skill-E |
+|---------------------|--------------------------|
+| ❌ You forget details | ✅ Captures everything automatically |
+| ❌ LLM interprets wrong | ✅ Sees exactly what you did |
+| ❌ No visual context | ✅ Reference screenshots |
+| ❌ Ambiguous variables | ✅ Detects variables from your speech |
+| ❌ No validation | ✅ Built-in success verification |
+
+---
+
+## ✨ Key Features (11 Specs - All MVP)
+
+### 🖥️ Cross-Platform Desktop App (S01)
+- **Floating toolbar** - Always on top, draggable
+- **System tray** - Near the clock (Windows + macOS)
+- **Global hotkeys** - Ctrl+Shift+R to record
+- **Platforms**: Windows, macOS, Linux
+
+### 📸 Screen Capture (S02)
+- **Screenshots** with cursor position tracking
+- **OCR** for text extraction
+- **Window detection** for context
+
+### 🎤 Audio Recording (S03)
+- **Whisper transcription** - Any language
+- **Voice level meter** - Visual feedback
+- **Noise filtering** - Clear transcriptions
+
+### ✏️ Overlay UI (S04)
+- **Click visualization** - Numbered circles (1, 2, 3...)
+- **Drawing tools** - Arrows, rectangles, dots
+- **3 fixed colors** - Red, Blue, Green (no color picker needed)
+- **Keyboard display** - Shows what you type
+- **Password redaction** - Auto-hides sensitive input (●●●●●●)
+- **Browser element selector** - Optional DOM element picker
+
+### 🔄 Processing (S05)
+- **OCR** on screenshots
+- **Step detection** from voice pauses and focus changes
+- **Timeline** visualization
+
+### 📝 Skill Export (S06)
+- **SKILL.md** in AgentSkills format
+- **Variables** automatically detected
+- **Conditionals** from "if...then" speech
+- **Guardrails** and safety constraints
+- **Human-in-the-loop** confirmation points
+
+### 🔍 Variable Detection (S07)
+- **Speech patterns** - "the customer name" → `{customer_name}`
+- **Action correlation** - Field input → variable
+- **Smart defaults** - Suggested variable names
+
+### 🤖 LLM Providers (S08)
+5 essential providers (simplified for MVP):
+
+| Provider | Type | Cost |
+|----------|------|------|
+| **OpenRouter** | Aggregator | 🆓 FREE tier |
+| **Anthropic** | Claude API | 💰 Paid |
+| **OpenAI** | GPT-4 | 💰 Paid |
+| **Google** | Gemini | 💰 Paid |
+| **Ollama** | Local | 🆓 FREE |
+
+> 💡 Use **OpenRouter free tier** for demo! No payment required.
+
+### 📚 Context Search (S09)
+- **Context7 MCP** - Documentation lookup
+- **Web fallback** - Search when docs not found
+- **Auto-reference** - Adds docs to SKILL.md
+
+### ✅ Skill Validation (S10)
+- **Interactive testing** - Execute skill step-by-step
+- **DOM + Image automation** - DOM first, image fallback
+- **Feedback loop** - Refine skill from test results
+- **Visual confirmation** - Screenshots of each step
+
+### 📦 Distribution (S11)
+- **Windows** - MSI installer
+- **macOS** - DMG (Universal binary)
+- **Linux** - AppImage, .deb
+- **GitHub Actions** - Automated builds
+
+---
+
+## 🛡️ Security: Built-in Guardrails
+
+Skills created with Skill-E have **security safeguards by design**:
+
+### 1. Scope Restrictions
 
 ```markdown
-## ⚠️ Limites desta Skill
+## ⚠️ Limits of this Skill
 
-Esta skill DEVE:
-- Operar apenas no sistema CRM
-- Acessar apenas dados de clientes ativos
+This skill MUST:
+- Operate only in the CRM system
+- Access only active customer data
 
-Esta skill NÃO DEVE:
-- Deletar registros permanentemente
-- Acessar dados financeiros
-- Exportar mais de 100 registros por vez
+This skill MUST NOT:
+- Delete records permanently
+- Access financial data
+- Export more than 100 records at once
 ```
 
 ### 2. Human-in-the-Loop
 
 ```markdown
-## 🔒 Pontos de Confirmação
+## 🔒 Confirmation Points
 
-### Antes de Salvar
-> **PAUSE**: Confirme com o usuário antes de salvar alterações.
-> Mostre o que será alterado e aguarde aprovação.
+### Before Saving
+> **PAUSE**: Confirm with user before saving changes.
+> Show what will be changed and wait for approval.
 
-### Antes de Exportar
-> **PAUSE**: Confirme destino e formato com o usuário.
+### Before Exporting
+> **PAUSE**: Confirm destination and format with user.
 ```
 
-### 3. Rollback e Logs
+### 3. Password Protection
 
-```markdown
-## 📝 Auditoria
-
-- Registrar cada ação em log
-- Salvar estado anterior antes de modificações
-- Manter histórico de 30 dias
-```
+| Location | Behavior |
+|----------|----------|
+| **Keyboard Display** | Auto-detects password fields → shows `●●●●●●` |
+| **Skill Export** | Replaces with `${env:FIELD_PASSWORD}` variable |
+| **Recording** | Never stores actual password text |
+| **Transcription** | Marks as `[REDACTED]` if spoken |
 
 ---
 
-## 🔍 Pesquisa Automática de Documentação
+## 🔍 Automatic Documentation Search
 
-Quando você demonstra algo que usa uma biblioteca ou API, Skill-E pode **buscar a documentação automaticamente**:
+When you demonstrate something that uses a library or API, Skill-E can **automatically search documentation**:
 
-### Integração com Context7 (MCP)
+### Context7 Integration (MCP)
 
 ```
-Você demonstra: "Aqui eu uso o pandas pra filtrar..."
+You demonstrate: "Here I use pandas to filter..."
 
-Skill-E detecta: pandas
+Skill-E detects: pandas
        ↓
-Busca no Context7: documentação do pandas
+Searches Context7: pandas documentation
        ↓
-Adiciona à skill: Referência de como usar df.query()
+Adds to skill: Reference on how to use df.query()
 ```
 
-### Resultado no SKILL.md
+### Result in SKILL.md
 
 ```markdown
-## Referências Técnicas
+## Technical References
 
 ### Pandas DataFrame Filtering
-> Para filtrar dados, use `df.query()` ou `df[df['coluna'] == valor]`.
-> Documentação: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html
+> To filter data, use `df.query()` or `df[df['column'] == value]`.
+> Documentation: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html
 
-Esta skill usa os seguintes métodos:
-- `df.query()` - Para filtros complexos
-- `df.to_csv()` - Para exportação
+This skill uses the following methods:
+- `df.query()` - For complex filters
+- `df.to_csv()` - For export
 ```
 
 ---
 
-## 🧠 Como Skill-E Entende Sua Demonstração
-
-### 1. Captura Multimodal
-
-| Canal | O que Captura | Por que Importa |
-|-------|---------------|-----------------|
-| **Tela** | Screenshots + OCR | Ver o que você vê |
-| **Voz** | Transcrição + Contexto | Entender o PORQUÊ |
-| **Ações** | Cliques + Digitação | Saber O QUE fazer |
-| **Anotações** | Destaques + Notas | Ênfase manual |
-
-### 2. Detecção Inteligente
-
-**Variáveis** — Detecta automaticamente:
-- "o nome **do cliente**" → `{customer_name}`
-- Campo de texto preenchido → variável de input
-
-**Condicionais** — Identifica decisões:
-- "**se** for ativo, **então**..." → workflow condicional
-- Múltiplos caminhos demonstrados → branches no skill
-
-**Contexto** — Preserva explicações:
-- "isso é importante porque..." → Nota na skill
-- "geralmente fazemos assim..." → Best practice documentada
-
-### 3. Validação com Human-in-the-Loop
-
-Antes de gerar a skill final:
-
-```
-┌─────────────────────────────────────────────────────┐
-│  📋 Revise os Itens Detectados                      │
-├─────────────────────────────────────────────────────┤
-│                                                      │
-│  Variáveis Detectadas:                              │
-│  ☑️ {customer_name} - "João Silva"                  │
-│  ☑️ {action} - "editar"                             │
-│  ⬜ {department} - sugerido mas não confirmado      │
-│                                                      │
-│  Pontos de Confirmação:                             │
-│  ☑️ Antes de salvar alterações                      │
-│  ⬜ Antes de enviar email                           │
-│                                                      │
-│  [Confirmar e Gerar Skill]                          │
-│                                                      │
-└─────────────────────────────────────────────────────┘
-```
-
----
-
-## 🔌 Integrações
-
-### Providers de LLM (40+ Suportados!)
-
-Skill-E reutiliza a arquitetura de providers do [SidePilot](../SidePilot/) com **40+ providers**:
-
-| Tier | Providers | Notas |
-|------|-----------|-------|
-| **Core** | Anthropic, OpenAI, Google | Nativos, alta qualidade |
-| **Popular** | DeepSeek, Groq, Mistral, Ollama | Rápidos, alguns gratuitos |
-| **Agregadores** | **OpenRouter**, Together, Fireworks | 🆓 **OpenRouter tem free tier!** |
-| **Enterprise** | Bedrock, Vertex, Azure | Para produção |
-| **Local** | Ollama, LMStudio | Sem custo, offline |
-
-> **💡 Para o Hackathon**: Usamos **OpenRouter** com modelos gratuitos como `gemma-2-9b-it:free` para demonstração!
-
-### Ferramentas Externas
-
-| Ferramenta | Uso |
-|------------|-----|
-| **Context7 (MCP)** | Buscar docs de bibliotecas |
-| **Whisper** | Transcrição de alta qualidade |
-| **Tesseract** | OCR local |
-| **Claude Code** | Consumir skills geradas |
-
----
-
-## 🎯 Casos de Uso
-
-### 1. Automação de Tarefas Repetitivas
-
-```
-Problema: Funcionário gasta 2h/dia preenchendo relatórios
-Solução: Gravar demonstração → Skill → Agente executa
-```
-
-### 2. Onboarding de Sistemas
-
-```
-Problema: Novo funcionário não sabe usar o sistema interno
-Solução: Skills que ensinam passo-a-passo com screenshots
-```
-
-### 3. Controle de Computador Seguro
-
-```
-Problema: Agente precisa clicar em coisas, mas pode errar
-Solução: Skill com guardrails + confirmações humanas
-```
-
-### 4. Documentação Viva
-
-```
-Problema: Documentação desatualizada
-Solução: Skills são a documentação + são executáveis
-```
-
----
-
-## 📁 Estrutura do Projeto
+## 📁 Project Structure
 
 ```
 Skill-E/
 ├── .kiro/
-│   ├── specs/                  # Especificações Kiro
-│   │   ├── S01-app-core/       # Tauri, toolbar, hotkeys
-│   │   ├── S02-screen-capture/ # Screenshots, window tracking
-│   │   ├── S03-audio-recording/# Whisper, transcrição
-│   │   ├── S04-overlay-ui/     # Anotações, desenhos
+│   ├── specs/                  # 11 Kiro Specifications
+│   │   ├── S01-app-core/       # Tauri, toolbar, hotkeys, tray
+│   │   ├── S02-screen-capture/ # Screenshots, OCR, cursor
+│   │   ├── S03-audio-recording/# Whisper, transcription
+│   │   ├── S04-overlay-ui/     # Clicks, drawing, keyboard
 │   │   ├── S05-processing/     # OCR, step detection
-│   │   ├── S06-skill-export/   # Geração SKILL.md
-│   │   ├── S07-variable-detection/ # Detecção inteligente
-│   │   ├── S08-llm-providers/  # 40+ providers (do SidePilot)
-│   │   └── S09-context-search/ # Context7, docs lookup
-│   └── steering/
+│   │   ├── S06-skill-export/   # SKILL.md generation
+│   │   ├── S07-variable-detection/ # Smart detection
+│   │   ├── S08-llm-providers/  # 5 essential providers
+│   │   ├── S09-context-search/ # Context7, docs lookup
+│   │   ├── S10-skill-validation/# Interactive testing
+│   │   └── S11-distribution/   # Win/Mac/Linux builds
+│   ├── hooks/                  # Automation hooks
+│   ├── prompts/                # Prompt templates
+│   └── steering/               # Project steering
+├── src/                        # React Frontend
+├── src-tauri/                  # Rust Backend
+├── icons/                      # App icons
 ├── assets/
-│   └── skille_bot.PNG          # Logo do Skill-E
-├── src/                        # Frontend React
-├── src-tauri/                  # Backend Rust
-├── DEVLOG.md                   # Log de desenvolvimento
-└── README.md                   # Este arquivo
+│   └── skille_bot.PNG          # Skill-E Logo
+├── DEVLOG.md                   # Development log
+├── OVERVIEW.md                 # Project overview
+└── README.md                   # This file
 ```
 
 ---
 
-## 🚀 Começando
+## 🚀 Getting Started
+
+### Prerequisites
+- Rust & Cargo
+- Node.js 18+
+- pnpm
+
+### Installation
 
 ```bash
-# Pré-requisitos
-# - Rust & Cargo
-# - Node.js 18+
-# - pnpm
+# Clone repository
+git clone https://github.com/veefoscax/Skill-E.git
+cd Skill-E
 
-# Instalar dependências
+# Install dependencies
 pnpm install
 
-# Rodar em desenvolvimento
+# Run in development
 pnpm tauri dev
 
-# Build para produção
+# Build for production
 pnpm tauri build
 ```
 
-### Configuração de API Keys
+### API Keys Configuration
 
 ```bash
-# OpenRouter (gratuito para teste)
+# OpenRouter (FREE for testing)
 OPENROUTER_API_KEY=sk-or-...
 
-# Whisper (para transcrição)
+# Whisper (for transcription)
 OPENAI_API_KEY=sk-...
 
-# Claude (para geração de skills)
+# Claude (for skill generation)
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 ---
 
-## 📊 Diferencial Competitivo
+## 📊 Competitive Advantage
 
-| Feature | Skill-E | Só LLM | Gravadores Simples |
-|---------|---------|--------|-------------------|
-| Captura visual | ✅ | ❌ | ✅ |
-| Transcrição de voz | ✅ | ❌ | ⚠️ |
-| Detecção de variáveis | ✅ | ❌ | ❌ |
-| Condicionais automáticos | ✅ | ❌ | ❌ |
-| Guardrails de segurança | ✅ | ❌ | ❌ |
+| Feature | Skill-E | Just LLM | Simple Recorders |
+|---------|---------|----------|------------------|
+| Visual capture | ✅ | ❌ | ✅ |
+| Voice transcription | ✅ | ❌ | ⚠️ |
+| Variable detection | ✅ | ❌ | ❌ |
+| Automatic conditionals | ✅ | ❌ | ❌ |
+| Security guardrails | ✅ | ❌ | ❌ |
 | Human-in-the-loop | ✅ | ❌ | ❌ |
-| Busca de documentação | ✅ | ❌ | ❌ |
-| Formato AgentSkills | ✅ | ❌ | ❌ |
-| Preview e edição | ✅ | ❌ | ⚠️ |
-| **40+ LLM Providers** | ✅ | ⚠️ | ❌ |
+| Documentation search | ✅ | ❌ | ❌ |
+| AgentSkills format | ✅ | ❌ | ❌ |
+| Preview and edit | ✅ | ❌ | ⚠️ |
+| Skill validation | ✅ | ❌ | ❌ |
+| Cross-platform | ✅ | ⚠️ | ⚠️ |
+| Multi-language | ✅ | ⚠️ | ❌ |
+| Password redaction | ✅ | ❌ | ❌ |
 
 ---
 
-## 📝 Desenvolvimento
+## 🎯 Use Cases
 
-Este projeto está sendo desenvolvido para o **Kiro Hackathon** (deadline: 31 Jan 2025).
+### 1. Repetitive Task Automation
+```
+Problem: Employee spends 2h/day filling reports
+Solution: Record demonstration → Skill → Agent executes
+```
 
-Ver [DEVLOG.md](./DEVLOG.md) para timeline e decisões.
+### 2. System Onboarding
+```
+Problem: New employee doesn't know how to use internal system
+Solution: Skills that teach step-by-step with screenshots
+```
 
-### Specs por Prioridade
+### 3. Safe Computer Control
+```
+Problem: Agent needs to click things, but may make mistakes
+Solution: Skill with guardrails + human confirmations
+```
 
-1. **S01** - App Core (MVP)
-2. **S02** - Screen Capture (MVP)
-3. **S03** - Audio Recording (MVP)
-4. **S08** - LLM Providers (40+ do SidePilot)
+### 4. Living Documentation
+```
+Problem: Outdated documentation
+Solution: Skills ARE the documentation + they're executable
+```
+
+---
+
+## 📝 Development
+
+This project is being developed for the **Kiro Hackathon** (deadline: Jan 31, 2025).
+
+See [DEVLOG.md](./DEVLOG.md) for timeline and decisions.
+See [OVERVIEW.md](./OVERVIEW.md) for complete project overview.
+
+### All 11 Specs (MVP)
+
+1. **S01** - App Core (Tauri, tray, hotkeys)
+2. **S02** - Screen Capture
+3. **S03** - Audio Recording
+4. **S04** - Overlay UI
 5. **S05** - Processing
 6. **S06** - Skill Export
 7. **S07** - Variable Detection
-8. **S04** - Overlay UI
+8. **S08** - LLM Providers
 9. **S09** - Context Search
+10. **S10** - Skill Validation
+11. **S11** - Distribution
 
 ---
 
-## 📜 Licença
+## 📜 License
 
 MIT
 
