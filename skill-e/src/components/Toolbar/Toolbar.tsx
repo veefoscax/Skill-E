@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button'
-import { Circle, Square, Pause, Pencil, X } from 'lucide-react'
-import { useEffect } from 'react'
+import { Circle, Square, Pause, Pencil, X, Settings } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useRecordingStore } from '@/stores'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { Settings as SettingsPanel } from '@/components/settings'
 
 interface ToolbarProps {
   className?: string
@@ -30,6 +31,9 @@ export function Toolbar(_props: ToolbarProps) {
     stopRecording,
     updateDuration,
   } = useRecordingStore()
+
+  // Settings panel visibility state
+  const [showSettings, setShowSettings] = useState(false)
 
   // Timer logic - runs when recording and not paused
   useEffect(() => {
@@ -83,7 +87,7 @@ export function Toolbar(_props: ToolbarProps) {
   }
 
   return (
-    <div 
+    <div
       data-tauri-drag-region
       className="bg-background/80 backdrop-blur-xl border border-border rounded-lg shadow-2xl flex items-center gap-3"
       style={{
@@ -99,8 +103,8 @@ export function Toolbar(_props: ToolbarProps) {
       <div style={{ pointerEvents: 'auto' }} className="flex items-center gap-3">
         {/* Start/Pause Button */}
         {!isRecording ? (
-          <Button 
-            size="icon" 
+          <Button
+            size="icon"
             variant="default"
             className="h-9 w-9 rounded-full"
             onClick={handleStartRecording}
@@ -109,8 +113,8 @@ export function Toolbar(_props: ToolbarProps) {
             <Circle className="h-4 w-4 fill-current" />
           </Button>
         ) : (
-          <Button 
-            size="icon" 
+          <Button
+            size="icon"
             variant={isPaused ? "default" : "secondary"}
             className="h-9 w-9 rounded-full"
             onClick={handlePauseRecording}
@@ -125,8 +129,8 @@ export function Toolbar(_props: ToolbarProps) {
         )}
 
         {/* Stop Button */}
-        <Button 
-          size="icon" 
+        <Button
+          size="icon"
           variant="outline"
           className="h-9 w-9"
           disabled={!isRecording}
@@ -139,12 +143,11 @@ export function Toolbar(_props: ToolbarProps) {
 
       {/* Timer Display - DRAGGABLE */}
       <div className="flex-1 text-center select-none">
-        <span 
-          className={`text-sm font-mono ${
-            isRecording && !isPaused 
-              ? 'text-destructive font-semibold' 
-              : 'text-muted-foreground'
-          }`}
+        <span
+          className={`text-sm font-mono ${isRecording && !isPaused
+            ? 'text-destructive font-semibold'
+            : 'text-muted-foreground'
+            }`}
         >
           {formatTime(duration)}
         </span>
@@ -152,9 +155,20 @@ export function Toolbar(_props: ToolbarProps) {
 
       {/* Buttons on right - NOT draggable */}
       <div style={{ pointerEvents: 'auto' }} className="flex items-center gap-3">
+        {/* Settings Button */}
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-9 w-9"
+          onClick={() => setShowSettings(true)}
+          title="Settings"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+
         {/* Annotation Mode Toggle */}
-        <Button 
-          size="icon" 
+        <Button
+          size="icon"
           variant="ghost"
           className="h-9 w-9"
           disabled
@@ -164,8 +178,8 @@ export function Toolbar(_props: ToolbarProps) {
         </Button>
 
         {/* Close Button */}
-        <Button 
-          size="icon" 
+        <Button
+          size="icon"
           variant="ghost"
           className="h-7 w-7"
           onClick={handleClose}
@@ -174,6 +188,33 @@ export function Toolbar(_props: ToolbarProps) {
           <X className="h-3 w-3" />
         </Button>
       </div>
+
+      {/* Settings Panel Modal */}
+      {showSettings && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setShowSettings(false)}
+          style={{ pointerEvents: 'auto' }}
+        >
+          <div
+            className="bg-background border border-border rounded-lg shadow-xl max-w-2xl max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-4 border-b border-border">
+              <h2 className="text-lg font-semibold">Settings</h2>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                onClick={() => setShowSettings(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <SettingsPanel />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
