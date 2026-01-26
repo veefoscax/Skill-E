@@ -19,7 +19,7 @@ interface ToolbarProps {
  * 
  * Requirements: FR-1.1, AC1
  */
-export function Toolbar({ className }: ToolbarProps) {
+export function Toolbar(_props: ToolbarProps) {
   const {
     isRecording,
     isPaused,

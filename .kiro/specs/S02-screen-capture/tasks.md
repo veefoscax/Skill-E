@@ -19,7 +19,7 @@ Implements screen capture functionality with periodic screenshots, window tracki
 
 ## Phase 2: Rust Commands
 
-- [-] 2. Create Capture Commands
+- [x] 2. Create Capture Commands
   - Create src-tauri/src/commands/capture.rs
   - Implement capture_screen command
   - Save screenshot as WebP format

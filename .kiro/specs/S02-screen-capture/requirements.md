@@ -36,6 +36,26 @@ Capture screen content during recording sessions, with support for screenshots, 
 - **FR-2.12**: Detect if click triggered API call (correlate with network capture)
 - **FR-2.13**: Capture form field names/IDs for input steps
 
+### Smart Capture Mode (Inspired by Tango/Scribe)
+_Reduce context bloat by capturing intelligently, not continuously_
+
+#### Action-Based Capture (Default)
+- **FR-2.14**: **Click-Triggered Screenshots**: Take screenshot BEFORE and AFTER each click (500ms delay after)
+- **FR-2.15**: **Input-Triggered Screenshots**: Capture after text input is complete (on blur or Enter)
+- **FR-2.16**: **Page Load Screenshots**: Capture after navigation/URL change (after load event)
+- **FR-2.17**: **Skip Idle Frames**: Don't capture if no action in last 2 seconds
+
+#### Duplicate Detection
+- **FR-2.18**: **Pixel Delta Filter**: Skip screenshot if <5% visual change from previous
+- **FR-2.19**: **Hash-Based Dedup**: Store image hashes to detect identical frames
+- **FR-2.20**: **Motion Detection**: Flag frames with significant cursor movement
+
+#### Console/Network Filtering
+- **FR-2.21**: **Console Priority**: Keep only error/warn levels by default (debug/log optional)
+- **FR-2.22**: **Network Priority**: Keep errors (4XX/5XX) + first call of each unique endpoint
+- **FR-2.23**: **Body Size Limit**: Don't store request/response bodies >10KB
+- **FR-2.24**: **Ignore Static**: Skip requests for .js, .css, .png, .svg, fonts
+
 ## Non-Functional Requirements
 
 - **NFR-2.1**: Capture latency < 100ms

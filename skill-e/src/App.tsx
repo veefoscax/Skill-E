@@ -1,5 +1,6 @@
 import { Toolbar } from '@/components/Toolbar'
-import { useWindowPosition } from '@/hooks/useWindowPosition'
+import { CaptureTest } from '@/components/CaptureTest'
+// import { useWindowPosition } from '@/hooks/useWindowPosition'
 import { useSystemTray } from '@/hooks/useSystemTray'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
 import { useRecordingStore } from '@/stores/recording'
@@ -25,7 +26,11 @@ function App() {
   );
 
   return (
-    <Toolbar />
+    <div className="flex flex-col gap-4 p-4">
+      <Toolbar />
+      {/* TEMPORARY: Test component for Task 2 - Screen Capture */}
+      <CaptureTest />
+    </div>
   )
 }
 

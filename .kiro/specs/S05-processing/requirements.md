@@ -33,6 +33,37 @@ Advanced processing pipeline that combines screen captures, transcription, annot
 - **FR-5.9**: Detect conditional statements in narration
 - **FR-5.10**: Generate timeline with all events correlated
 
+### Context Packager (Inspired by Loom AI)
+_Prepare minimal but complete context for LLM, avoiding context bloat_
+
+#### Key Frame Selection
+- **FR-5.11**: **Before/After Frames**: For each action, keep only the screenshot before and after
+- **FR-5.12**: **State Change Detection**: Identify frames where significant visual change occurred
+- **FR-5.13**: **Page Load Frames**: Always keep first screenshot after navigation
+- **FR-5.14**: **Max Frames Rule**: Limit to 8-12 key frames for LLM context (configurable)
+- **FR-5.15**: **Frame Importance Score**: Rank frames by: action proximity + visual delta + OCR content change
+
+#### Context Summarization
+- **FR-5.16**: **Console Summary**: "3 errors, 15 info logs" instead of full logs
+- **FR-5.17**: **Network Summary**: "5 API calls: POST /login, GET /user, ..." pattern extraction
+- **FR-5.18**: **Action Summary**: "12 clicks, 3 text inputs, 2 page loads" overview
+- **FR-5.19**: **Transcript Chunking**: Split transcript into action-aligned segments
+
+#### Minimal Prompt Structure
+- **FR-5.20**: **Primary Context** (always sent to LLM):
+  - Action list (text description of each step)
+  - Key frames only (8-12 images max)
+  - Full transcript (cleaned)
+  - Detected variables
+  
+- **FR-5.21**: **Reference Context** (stored but not embedded):
+  - Full screenshot archive
+  - Complete console logs
+  - All network requests
+  - Mentioned as "See /references for details"
+
+- **FR-5.22**: **On-Demand Expansion**: If LLM requests more detail, provide specific data from Reference Context
+
 ## Non-Functional Requirements
 
 - **NFR-5.1**: Processing time < 30 seconds for 2-minute recording

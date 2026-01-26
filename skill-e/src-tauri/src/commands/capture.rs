@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tauri::AppHandle;
-use tauri_plugin_screenshots::ScreenshotsExt;
+use screenshots::Screen;
 
 /// Result of a screen capture operation
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,7 +14,6 @@ pub struct CaptureResult {
 /// Captures the entire screen and saves it as a WebP image
 /// 
 /// # Arguments
-/// * `app` - Tauri app handle for accessing the screenshots plugin
 /// * `output_path` - Full path where the screenshot should be saved (must end in .webp)
 /// 
 /// # Returns
@@ -27,7 +25,6 @@ pub struct CaptureResult {
 /// * NFR-2.2: Storage format WebP (Quality 80)
 #[tauri::command]
 pub async fn capture_screen(
-    app: AppHandle,
     output_path: String,
 ) -> Result<CaptureResult, String> {
     // Validate output path ends with .webp
@@ -41,14 +38,28 @@ pub async fn capture_screen(
         .map_err(|e| format!("Failed to get timestamp: {}", e))?
         .as_millis() as i64;
 
-    // Capture the screen using tauri-plugin-screenshots
-    // This captures all monitors as a single image
-    let screenshots = app.screenshots();
+    // Get all screens
+    let screens = Screen::all()
+        .map_err(|e| format!("Failed to get screens: {}", e))?;
     
-    // Capture all monitors
-    let image = screenshots
-        .capture_all_monitors()
+    // Capture the primary screen (first screen)
+    let screen = screens
+        .first()
+        .ok_or_else(|| "No screens found".to_string())?;
+    
+    let image_buffer = screen
+        .capture()
         .map_err(|e| format!("Failed to capture screen: {}", e))?;
+
+    // Convert to DynamicImage for processing
+    let image = image::DynamicImage::ImageRgba8(
+        image::RgbaImage::from_raw(
+            image_buffer.width(),
+            image_buffer.height(),
+            image_buffer.to_vec(),
+        )
+        .ok_or_else(|| "Failed to create image from buffer".to_string())?,
+    );
 
     // Convert to WebP format with quality 80
     let webp_data = encode_webp(&image)?;
