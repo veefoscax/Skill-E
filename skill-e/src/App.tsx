@@ -1,5 +1,8 @@
 import { Toolbar } from '@/components/Toolbar'
 import { CaptureTest } from '@/components/CaptureTest'
+import { CaptureCommandTest } from '@/components/CaptureCommandTest'
+import { CaptureHookTest } from '@/components/CaptureHookTest'
+import { CaptureIntegrationTest } from '@/components/CaptureIntegrationTest'
 // import { useWindowPosition } from '@/hooks/useWindowPosition'
 import { useSystemTray } from '@/hooks/useSystemTray'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
@@ -28,8 +31,14 @@ function App() {
   return (
     <div className="flex flex-col gap-4 p-4">
       <Toolbar />
+      {/* TASK 9: Comprehensive Integration Test for Screen Capture */}
+      <CaptureIntegrationTest />
       {/* TEMPORARY: Test component for Task 2 - Screen Capture */}
       <CaptureTest />
+      {/* TEMPORARY: Test component for Task 5 - Command Registration */}
+      <CaptureCommandTest />
+      {/* TEMPORARY: Test component for Task 7 - Capture Hook */}
+      <CaptureHookTest />
     </div>
   )
 }

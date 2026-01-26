@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use screenshots::Screen;
+use std::fs;
+use std::io::Write;
 
 /// Result of a screen capture operation
 #[derive(Debug, Serialize, Deserialize)]
@@ -9,6 +11,26 @@ pub struct CaptureResult {
     pub path: String,
     /// Unix timestamp in milliseconds when the capture was taken
     pub timestamp: i64,
+}
+
+/// Information about a window
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WindowInfo {
+    /// Window title
+    pub title: String,
+    /// Process name
+    pub process_name: String,
+    /// Window bounds (x, y, width, height)
+    pub bounds: WindowBounds,
+}
+
+/// Window bounds
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WindowBounds {
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
 }
 
 /// Captures the entire screen and saves it as a WebP image
@@ -131,5 +153,436 @@ mod tests {
 
         let invalid_path = "screenshot.png";
         assert!(!invalid_path.ends_with(".webp"));
+    }
+}
+
+/// Get information about the currently active window
+/// 
+/// # Returns
+/// * `Ok(WindowInfo)` - Information about the active window
+/// * `Err(String)` - Error message if unable to get window info
+/// 
+/// # Requirements
+/// * FR-2.3: Detect active window and track focus changes
+#[tauri::command]
+pub async fn get_active_window() -> Result<WindowInfo, String> {
+    #[cfg(target_os = "windows")]
+    {
+        get_active_window_windows()
+    }
+    
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("Window tracking is only supported on Windows".to_string())
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn get_active_window_windows() -> Result<WindowInfo, String> {
+    use windows::Win32::Foundation::{HWND, RECT};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetForegroundWindow, GetWindowTextW, GetWindowRect, GetWindowThreadProcessId,
+    };
+    use windows::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, PROCESS_QUERY_LIMITED_INFORMATION};
+    use windows::core::PWSTR;
+
+    unsafe {
+        // Get the foreground window handle
+        let hwnd: HWND = GetForegroundWindow();
+        if hwnd.0 == 0 {
+            return Err("No active window found".to_string());
+        }
+
+        // Get window title
+        let mut title_buffer = [0u16; 512];
+        let title_len = GetWindowTextW(hwnd, &mut title_buffer);
+        let title = if title_len > 0 {
+            String::from_utf16_lossy(&title_buffer[..title_len as usize])
+        } else {
+            String::from("(No Title)")
+        };
+
+        // Get window bounds
+        let mut rect = RECT::default();
+        GetWindowRect(hwnd, &mut rect)
+            .map_err(|e| format!("Failed to get window rect: {}", e))?;
+
+        let bounds = WindowBounds {
+            x: rect.left,
+            y: rect.top,
+            width: rect.right - rect.left,
+            height: rect.bottom - rect.top,
+        };
+
+        // Get process name
+        let mut process_id: u32 = 0;
+        GetWindowThreadProcessId(hwnd, Some(&mut process_id));
+
+        let process_name = if process_id != 0 {
+            match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process_id) {
+                Ok(process_handle) => {
+                    let mut path_buffer = [0u16; 1024];
+                    let mut size = path_buffer.len() as u32;
+                    
+                    match QueryFullProcessImageNameW(
+                        process_handle,
+                        0,
+                        PWSTR(path_buffer.as_mut_ptr()),
+                        &mut size,
+                    ) {
+                        Ok(_) => {
+                            let path = String::from_utf16_lossy(&path_buffer[..size as usize]);
+                            // Extract just the filename from the full path
+                            std::path::Path::new(&path)
+                                .file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("Unknown")
+                                .to_string()
+                        }
+                        Err(_) => String::from("Unknown"),
+                    }
+                }
+                Err(_) => String::from("Unknown"),
+            }
+        } else {
+            String::from("Unknown")
+        };
+
+        Ok(WindowInfo {
+            title,
+            process_name,
+            bounds,
+        })
+    }
+}
+
+/// Get the current cursor position
+/// 
+/// # Returns
+/// * `Ok((i32, i32))` - X and Y coordinates relative to screen origin (top-left)
+/// * `Err(String)` - Error message if unable to get cursor position
+/// 
+/// # Requirements
+/// * FR-2.4: Capture mouse cursor position for each frame
+#[tauri::command]
+pub async fn get_cursor_position() -> Result<(i32, i32), String> {
+    #[cfg(target_os = "windows")]
+    {
+        get_cursor_position_windows()
+    }
+    
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("Cursor position tracking is only supported on Windows".to_string())
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn get_cursor_position_windows() -> Result<(i32, i32), String> {
+    use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
+    use windows::Win32::Foundation::POINT;
+
+    unsafe {
+        let mut point = POINT { x: 0, y: 0 };
+        GetCursorPos(&mut point)
+            .map_err(|e| format!("Failed to get cursor position: {}", e))?;
+        
+        Ok((point.x, point.y))
+    }
+}
+
+#[cfg(test)]
+mod window_tests {
+    use super::*;
+
+    #[test]
+    fn test_window_info_serialization() {
+        let window_info = WindowInfo {
+            title: "Test Window".to_string(),
+            process_name: "test.exe".to_string(),
+            bounds: WindowBounds {
+                x: 100,
+                y: 200,
+                width: 800,
+                height: 600,
+            },
+        };
+
+        let json = serde_json::to_string(&window_info).unwrap();
+        assert!(json.contains("Test Window"));
+        assert!(json.contains("test.exe"));
+        assert!(json.contains("\"x\":100"));
+    }
+
+    #[test]
+    fn test_window_bounds_serialization() {
+        let bounds = WindowBounds {
+            x: 0,
+            y: 0,
+            width: 1920,
+            height: 1080,
+        };
+
+        let json = serde_json::to_string(&bounds).unwrap();
+        assert!(json.contains("\"width\":1920"));
+        assert!(json.contains("\"height\":1080"));
+    }
+}
+
+#[cfg(test)]
+mod cursor_tests {
+    use super::*;
+
+    #[test]
+    fn test_cursor_position_tuple() {
+        // Test that cursor position returns a valid tuple
+        let position = (100, 200);
+        assert_eq!(position.0, 100);
+        assert_eq!(position.1, 200);
+    }
+}
+
+// ============================================================================
+// Session Storage
+// ============================================================================
+
+/// Metadata for a captured frame stored in manifest.json
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FrameMetadata {
+    /// Unique frame identifier
+    pub id: String,
+    /// Unix timestamp in milliseconds
+    pub timestamp: i64,
+    /// Relative path to the screenshot image (within session directory)
+    pub image_path: String,
+    /// Active window at time of capture
+    pub active_window: Option<WindowInfo>,
+    /// Cursor position at time of capture
+    pub cursor_position: Option<CursorPosition>,
+}
+
+/// Cursor position
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CursorPosition {
+    pub x: i32,
+    pub y: i32,
+}
+
+/// Session manifest containing all frame metadata
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SessionManifest {
+    /// Unique session identifier
+    pub session_id: String,
+    /// Session start time (Unix timestamp in ms)
+    pub start_time: i64,
+    /// Session end time (Unix timestamp in ms)
+    pub end_time: Option<i64>,
+    /// Capture interval in milliseconds
+    pub interval_ms: u64,
+    /// All captured frames
+    pub frames: Vec<FrameMetadata>,
+}
+
+/// Creates a temporary directory for a capture session
+/// 
+/// # Arguments
+/// * `session_id` - Unique identifier for the session
+/// 
+/// # Returns
+/// * `Ok(String)` - Full path to the created session directory
+/// * `Err(String)` - Error message if directory creation fails
+/// 
+/// # Requirements
+/// * FR-2.5: Store captures with timestamps for timeline sync
+/// * NFR-2.3: Memory-efficient streaming (don't load all to RAM)
+#[tauri::command]
+pub async fn create_session_directory(
+    session_id: String,
+) -> Result<String, String> {
+    // Get system temp directory
+    let temp_dir = std::env::temp_dir();
+    
+    // Create session directory path: temp/skill-e-sessions/{session_id}
+    let session_dir = temp_dir
+        .join("skill-e-sessions")
+        .join(&session_id);
+    
+    // Create directory (including parent directories)
+    fs::create_dir_all(&session_dir)
+        .map_err(|e| format!("Failed to create session directory: {}", e))?;
+    
+    // Convert to string
+    let session_path = session_dir
+        .to_str()
+        .ok_or_else(|| "Failed to convert path to string".to_string())?
+        .to_string();
+    
+    println!("Created session directory: {}", session_path);
+    
+    Ok(session_path)
+}
+
+/// Saves or updates the session manifest file
+/// 
+/// # Arguments
+/// * `session_dir` - Path to the session directory
+/// * `manifest` - Session manifest data to save
+/// 
+/// # Returns
+/// * `Ok(())` - Manifest saved successfully
+/// * `Err(String)` - Error message if save fails
+/// 
+/// # Requirements
+/// * FR-2.5: Store captures with timestamps for timeline sync
+#[tauri::command]
+pub async fn save_session_manifest(
+    session_dir: String,
+    manifest: SessionManifest,
+) -> Result<(), String> {
+    let manifest_path = PathBuf::from(&session_dir).join("manifest.json");
+    
+    // Serialize manifest to JSON
+    let json = serde_json::to_string_pretty(&manifest)
+        .map_err(|e| format!("Failed to serialize manifest: {}", e))?;
+    
+    // Write to file
+    let mut file = fs::File::create(&manifest_path)
+        .map_err(|e| format!("Failed to create manifest file: {}", e))?;
+    
+    file.write_all(json.as_bytes())
+        .map_err(|e| format!("Failed to write manifest: {}", e))?;
+    
+    println!("Saved manifest to: {:?}", manifest_path);
+    
+    Ok(())
+}
+
+/// Loads the session manifest from disk
+/// 
+/// # Arguments
+/// * `session_dir` - Path to the session directory
+/// 
+/// # Returns
+/// * `Ok(SessionManifest)` - Loaded manifest data
+/// * `Err(String)` - Error message if load fails
+#[tauri::command]
+pub async fn load_session_manifest(
+    session_dir: String,
+) -> Result<SessionManifest, String> {
+    let manifest_path = PathBuf::from(&session_dir).join("manifest.json");
+    
+    // Read file
+    let json = fs::read_to_string(&manifest_path)
+        .map_err(|e| format!("Failed to read manifest file: {}", e))?;
+    
+    // Deserialize
+    let manifest: SessionManifest = serde_json::from_str(&json)
+        .map_err(|e| format!("Failed to parse manifest: {}", e))?;
+    
+    Ok(manifest)
+}
+
+/// Cleans up a session directory and all its contents
+/// 
+/// # Arguments
+/// * `session_dir` - Path to the session directory to delete
+/// 
+/// # Returns
+/// * `Ok(())` - Directory cleaned up successfully
+/// * `Err(String)` - Error message if cleanup fails
+/// 
+/// # Requirements
+/// * FR-2.5: Implement cleanup on session end
+#[tauri::command]
+pub async fn cleanup_session(
+    session_dir: String,
+) -> Result<(), String> {
+    let path = PathBuf::from(&session_dir);
+    
+    if !path.exists() {
+        return Ok(()); // Already cleaned up
+    }
+    
+    // Remove directory and all contents
+    fs::remove_dir_all(&path)
+        .map_err(|e| format!("Failed to remove session directory: {}", e))?;
+    
+    println!("Cleaned up session directory: {:?}", path);
+    
+    Ok(())
+}
+
+/// Gets the list of all session directories
+/// 
+/// # Returns
+/// * `Ok(Vec<String>)` - List of session directory paths
+/// * `Err(String)` - Error message if listing fails
+#[tauri::command]
+pub async fn list_sessions() -> Result<Vec<String>, String> {
+    let temp_dir = std::env::temp_dir();
+    let sessions_dir = temp_dir.join("skill-e-sessions");
+    
+    if !sessions_dir.exists() {
+        return Ok(Vec::new());
+    }
+    
+    let entries = fs::read_dir(&sessions_dir)
+        .map_err(|e| format!("Failed to read sessions directory: {}", e))?;
+    
+    let mut sessions = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
+        let path = entry.path();
+        if path.is_dir() {
+            if let Some(path_str) = path.to_str() {
+                sessions.push(path_str.to_string());
+            }
+        }
+    }
+    
+    Ok(sessions)
+}
+
+#[cfg(test)]
+mod session_tests {
+    use super::*;
+
+    #[test]
+    fn test_frame_metadata_serialization() {
+        let metadata = FrameMetadata {
+            id: "frame-1".to_string(),
+            timestamp: 1234567890,
+            image_path: "frame-1.webp".to_string(),
+            active_window: Some(WindowInfo {
+                title: "Test".to_string(),
+                process_name: "test.exe".to_string(),
+                bounds: WindowBounds {
+                    x: 0,
+                    y: 0,
+                    width: 800,
+                    height: 600,
+                },
+            }),
+            cursor_position: Some(CursorPosition { x: 100, y: 200 }),
+        };
+
+        let json = serde_json::to_string(&metadata).unwrap();
+        assert!(json.contains("frame-1"));
+        assert!(json.contains("1234567890"));
+    }
+
+    #[test]
+    fn test_session_manifest_serialization() {
+        let manifest = SessionManifest {
+            session_id: "session-123".to_string(),
+            start_time: 1234567890,
+            end_time: Some(1234567900),
+            interval_ms: 1000,
+            frames: vec![],
+        };
+
+        let json = serde_json::to_string(&manifest).unwrap();
+        assert!(json.contains("session-123"));
+        assert!(json.contains("1000"));
     }
 }

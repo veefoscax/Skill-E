@@ -5,7 +5,16 @@ use tauri_plugin_global_shortcut::ShortcutState;
 
 // Commands module
 mod commands;
-use commands::capture::capture_screen;
+use commands::capture::{
+    capture_screen, 
+    get_active_window, 
+    get_cursor_position,
+    create_session_directory,
+    save_session_manifest,
+    load_session_manifest,
+    cleanup_session,
+    list_sessions,
+};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -108,7 +117,14 @@ pub fn run() {
             toggle_recording,
             toggle_annotation,
             cancel_recording,
-            capture_screen
+            capture_screen,
+            get_active_window,
+            get_cursor_position,
+            create_session_directory,
+            save_session_manifest,
+            load_session_manifest,
+            cleanup_session,
+            list_sessions
         ])
         .setup(|app| {
             // Note: For Tauri v2, window effects (Mica/Vibrancy) are configured in tauri.conf.json

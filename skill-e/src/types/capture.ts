@@ -31,6 +31,46 @@ export interface WindowInfo {
 }
 
 /**
+ * Cursor position
+ */
+export interface CursorPosition {
+  x: number;
+  y: number;
+}
+
+/**
+ * Metadata for a captured frame stored in manifest.json
+ */
+export interface FrameMetadata {
+  /** Unique frame identifier */
+  id: string;
+  /** Unix timestamp in milliseconds */
+  timestamp: number;
+  /** Relative path to the screenshot image (within session directory) */
+  imagePath: string;
+  /** Active window at time of capture */
+  activeWindow?: WindowInfo;
+  /** Cursor position at time of capture */
+  cursorPosition?: CursorPosition;
+}
+
+/**
+ * Session manifest containing all frame metadata
+ */
+export interface SessionManifest {
+  /** Unique session identifier */
+  sessionId: string;
+  /** Session start time (Unix timestamp in ms) */
+  startTime: number;
+  /** Session end time (Unix timestamp in ms) */
+  endTime?: number;
+  /** Capture interval in milliseconds */
+  intervalMs: number;
+  /** All captured frames */
+  frames: FrameMetadata[];
+}
+
+/**
  * A single captured frame with metadata
  */
 export interface CaptureFrame {
@@ -43,10 +83,7 @@ export interface CaptureFrame {
   /** Active window at time of capture */
   activeWindow?: WindowInfo;
   /** Cursor position at time of capture */
-  cursorPosition?: {
-    x: number;
-    y: number;
-  };
+  cursorPosition?: CursorPosition;
 }
 
 /**
@@ -55,6 +92,8 @@ export interface CaptureFrame {
 export interface CaptureSession {
   /** Unique session identifier */
   id: string;
+  /** Full path to session directory */
+  directory: string;
   /** Session start time (Unix timestamp in ms) */
   startTime: number;
   /** Session end time (Unix timestamp in ms) */
@@ -64,3 +103,4 @@ export interface CaptureSession {
   /** Capture interval in milliseconds */
   intervalMs: number;
 }
+
