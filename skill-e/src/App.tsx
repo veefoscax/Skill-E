@@ -1,6 +1,16 @@
 import { Toolbar } from '@/components/Toolbar'
 import { MicrophoneDiagnostic } from '@/components/MicrophoneDiagnostic'
 import { Settings } from '@/components/settings'
+import { Overlay } from '@/components/Overlay/Overlay'
+import { OverlayTest } from '@/components/OverlayTest'
+import { ClickIndicatorTest } from '@/components/ClickIndicatorTest'
+import { DrawingRenderingTest } from '@/components/DrawingRenderingTest'
+import { ColorSelectionTest } from '@/components/ColorSelectionTest'
+import { FadePinModeTest } from '@/components/FadePinModeTest'
+import { KeyboardDisplayTest } from '@/components/KeyboardDisplayTest'
+import { PasswordRedactionTest } from '@/components/PasswordRedactionTest'
+import { OverlayStoreTest } from '@/components/OverlayStoreTest'
+import { ElementSelectorTest } from '@/components/ElementSelectorTest'
 // import { useWindowPosition } from '@/hooks/useWindowPosition'
 import { useSystemTray } from '@/hooks/useSystemTray'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
@@ -13,6 +23,16 @@ import { useEffect, useState } from 'react'
  * Routes:
  * - #/ or # or empty: Main toolbar view
  * - #/settings: Settings window view
+ * - #/overlay: Overlay window view (transparent fullscreen)
+ * - #/overlay-test: Overlay test page
+ * - #/click-indicator-test: Click indicator test page
+ * - #/drawing-rendering-test: Drawing rendering test page (Task S04-8)
+ * - #/color-selection-test: Color selection test page (Task S04-9)
+ * - #/fade-pin-mode-test: Fade vs pin mode test page (Task S04-10)
+ * - #/keyboard-display-test: Keyboard display test page (Task S04-12)
+ * - #/password-redaction-test: Password redaction test page (Task S04-13)
+ * - #/overlay-store-test: Overlay store test page (Task S04-17)
+ * - #/element-selector-test: Element selector test page (Task S04-14)
  */
 function App() {
   // Simple hash-based routing
@@ -25,6 +45,80 @@ function App() {
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
+
+  // Overlay page - transparent fullscreen window
+  if (route === '#/overlay') {
+    return <Overlay />
+  }
+
+  // Overlay test page - for testing overlay functionality
+  if (route === '#/overlay-test') {
+    return (
+      <div className="h-screen w-screen overflow-auto bg-background">
+        <OverlayTest />
+      </div>
+    )
+  }
+
+  // Click indicator test page - for testing click indicators
+  if (route === '#/click-indicator-test') {
+    return <ClickIndicatorTest />
+  }
+
+  // Drawing rendering test page - for testing drawing rendering (Task S04-8)
+  if (route === '#/drawing-rendering-test') {
+    return (
+      <div className="h-screen w-screen overflow-auto bg-background">
+        <DrawingRenderingTest />
+      </div>
+    )
+  }
+
+  // Color selection test page - for testing color selection (Task S04-9)
+  if (route === '#/color-selection-test') {
+    return <ColorSelectionTest />
+  }
+
+  // Fade vs pin mode test page - for testing fade and pin modes (Task S04-10)
+  if (route === '#/fade-pin-mode-test') {
+    return <FadePinModeTest />
+  }
+
+  // Keyboard display test page - for testing keyboard display (Task S04-12)
+  if (route === '#/keyboard-display-test') {
+    return (
+      <div className="h-screen w-screen overflow-auto bg-background">
+        <KeyboardDisplayTest />
+      </div>
+    )
+  }
+
+  // Password redaction test page - for testing password redaction (Task S04-13)
+  if (route === '#/password-redaction-test') {
+    return (
+      <div className="h-screen w-screen overflow-auto bg-background">
+        <PasswordRedactionTest />
+      </div>
+    )
+  }
+
+  // Overlay store test page - for testing overlay store (Task S04-17)
+  if (route === '#/overlay-store-test') {
+    return (
+      <div className="h-screen w-screen overflow-auto bg-background">
+        <OverlayStoreTest />
+      </div>
+    )
+  }
+
+  // Element selector test page - for testing element selector (Task S04-14)
+  if (route === '#/element-selector-test') {
+    return (
+      <div className="h-screen w-screen overflow-auto bg-background">
+        <ElementSelectorTest />
+      </div>
+    )
+  }
 
   // Settings page - separate window
   if (route === '#/settings') {

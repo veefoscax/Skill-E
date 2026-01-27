@@ -6,6 +6,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Overlay animations for visual polish */
+@import './styles/overlay-animations.css';
+
 @layer base {
   :root {
     font-family: 'Nunito Sans', system-ui, sans-serif;

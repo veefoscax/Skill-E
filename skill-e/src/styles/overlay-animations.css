@@ -1,0 +1,396 @@
+/**
+ * Overlay Animations - Visual Polish
+ * 
+ * Smooth, GPU-accelerated animations for overlay components.
+ * Optimized for 60fps performance with proper easing curves.
+ * 
+ * Requirements: NFR-4.2, NFR-4.3
+ */
+
+/* ============================================
+   Click Indicator Animations
+   ============================================ */
+
+/**
+ * Click Ripple Animation
+ * Smooth expanding ripple effect on click
+ * Duration: 600ms for natural feel
+ */
+@keyframes click-ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.5);
+    opacity: 0;
+  }
+}
+
+/**
+ * Click Indicator Fade Out
+ * Gentle fade with slight scale down
+ * Duration: 500ms for smooth exit
+ */
+@keyframes click-fade-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+/**
+ * Click Indicator Entrance
+ * Pop-in effect when click appears
+ * Duration: 200ms for snappy feel
+ */
+@keyframes click-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================
+   Drawing Animations
+   ============================================ */
+
+/**
+ * Drawing Fade Out
+ * Smooth fade for drawing elements
+ * Duration: 500ms to match click indicators
+ */
+@keyframes drawing-fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/**
+ * Drawing Stroke Animation
+ * Animated stroke for arrows and rectangles
+ * Duration: 300ms for quick feedback
+ */
+@keyframes drawing-stroke {
+  0% {
+    stroke-dashoffset: 100%;
+  }
+  100% {
+    stroke-dashoffset: 0%;
+  }
+}
+
+/**
+ * Dot Pulse Animation
+ * Subtle pulse for dot markers
+ * Duration: 1s infinite loop
+ */
+@keyframes dot-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+/* ============================================
+   Keyboard Display Animations
+   ============================================ */
+
+/**
+ * Keyboard Slide In
+ * Smooth slide from edge based on position
+ * Duration: 300ms with ease-out
+ */
+@keyframes keyboard-slide-in-bottom {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes keyboard-slide-in-top {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes keyboard-slide-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes keyboard-slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/**
+ * Key Press Animation
+ * Subtle press effect for modifier keys
+ * Duration: 150ms for responsive feel
+ */
+@keyframes key-press {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/**
+ * Text Typing Cursor
+ * Blinking cursor for typed text
+ * Duration: 1s infinite
+ */
+@keyframes text-cursor-blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   Pin Mode Indicator Animations
+   ============================================ */
+
+/**
+ * Pin Mode Toggle
+ * Smooth transition when toggling pin mode
+ * Duration: 200ms
+ */
+@keyframes pin-toggle {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+/**
+ * Color Indicator Pulse
+ * Subtle pulse when color changes
+ * Duration: 300ms
+ */
+@keyframes color-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px transparent;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+/**
+ * GPU Acceleration Hints
+ * Force GPU acceleration for smooth animations
+ */
+.gpu-accelerated {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform: translateZ(0);
+}
+
+/**
+ * Smooth Transitions
+ * Standard easing curves for consistent feel
+ */
+.transition-smooth {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-bounce {
+  transition-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.transition-ease-out {
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/**
+ * Non-Intrusive Shadows
+ * Subtle shadows that don't obscure content
+ */
+.shadow-overlay-subtle {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.shadow-overlay-medium {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.shadow-overlay-strong {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/**
+ * Backdrop Blur Utilities
+ * Consistent blur for glass effect
+ */
+.backdrop-blur-overlay {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.backdrop-blur-overlay-strong {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ============================================
+   Performance Optimizations
+   ============================================ */
+
+/**
+ * Reduce Motion Support
+ * Respect user's motion preferences
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/**
+ * High Contrast Mode Support
+ * Ensure visibility in high contrast mode
+ */
+@media (prefers-contrast: high) {
+  .click-indicator,
+  .drawing-element,
+  .keyboard-display {
+    border: 2px solid currentColor;
+  }
+}
+
+/* ============================================
+   Component-Specific Styles
+   ============================================ */
+
+/**
+ * Click Indicator Enhancements
+ */
+.click-indicator-container {
+  animation: click-pop-in 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.click-indicator.fading {
+  animation: click-fade-out 500ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.click-ripple {
+  animation: click-ripple 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/**
+ * Drawing Element Enhancements
+ */
+.drawing-element.fading {
+  animation: drawing-fade-out 500ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.drawing-element.dot {
+  animation: dot-pulse 1s ease-in-out infinite;
+}
+
+/**
+ * Keyboard Display Enhancements
+ */
+.keyboard-display.position-bottom-left,
+.keyboard-display.position-bottom-right {
+  animation: keyboard-slide-in-bottom 300ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.keyboard-display.position-top-left,
+.keyboard-display.position-top-right {
+  animation: keyboard-slide-in-top 300ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.keyboard-display kbd.active {
+  animation: key-press 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.keyboard-display .text-cursor {
+  animation: text-cursor-blink 1s step-end infinite;
+}
+
+/**
+ * Pin Mode Indicator Enhancements
+ */
+.pin-indicator.toggling {
+  animation: pin-toggle 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.color-indicator.changing {
+  animation: color-pulse 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}

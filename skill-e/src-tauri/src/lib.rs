@@ -25,6 +25,13 @@ use commands::whisper::{
     get_models_directory,
     check_compute_capability,
 };
+use commands::overlay::{
+    create_overlay_window,
+    show_overlay,
+    hide_overlay,
+    toggle_overlay,
+    update_overlay_bounds,
+};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -144,7 +151,13 @@ pub fn run() {
             transcribe_local,
             get_model_download_url,
             get_models_directory,
-            check_compute_capability
+            check_compute_capability,
+            // Overlay window commands
+            create_overlay_window,
+            show_overlay,
+            hide_overlay,
+            toggle_overlay,
+            update_overlay_bounds
         ])
         .setup(|app| {
             // Note: For Tauri v2, window effects (Mica/Vibrancy) are configured in tauri.conf.json
