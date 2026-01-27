@@ -97,6 +97,17 @@ export type RecordingStatus = 'recording' | 'paused' | 'stopped';
 export type StatusIndicatorPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 
 /**
+ * Cursor highlight configuration
+ */
+export interface CursorHighlightConfig {
+  enabled: boolean;
+  size: number;
+  color: string;
+  thickness: number;
+  showClickEffect: boolean;
+}
+
+/**
  * Overlay store state
  */
 export interface OverlayState {
@@ -107,6 +118,9 @@ export interface OverlayState {
   recordingStatus: RecordingStatus;
   statusIndicatorVisible: boolean;
   statusIndicatorPosition: StatusIndicatorPosition;
+  
+  // Cursor highlight (Requirements: FR-4.5)
+  cursorHighlight: CursorHighlightConfig;
   
   // Drawing mode
   isPinMode: boolean;
@@ -141,6 +155,10 @@ export interface OverlayActions {
   setRecordingStatus: (status: RecordingStatus) => void;
   toggleStatusIndicator: () => void;
   setStatusIndicatorPosition: (position: StatusIndicatorPosition) => void;
+  
+  // Cursor highlight actions (Requirements: FR-4.5)
+  toggleCursorHighlight: () => void;
+  setCursorHighlightConfig: (config: Partial<CursorHighlightConfig>) => void;
   
   // Click actions
   addClick: (position: { x: number; y: number }) => void;
@@ -202,6 +220,13 @@ const initialState: OverlayState = {
   recordingStatus: 'stopped',
   statusIndicatorVisible: true,
   statusIndicatorPosition: 'top-right',
+  cursorHighlight: {
+    enabled: true,
+    size: 32,
+    color: '#EF4444',
+    thickness: 2,
+    showClickEffect: true,
+  },
   isPinMode: false,
   currentColor: 'COLOR_1',
   clicks: [],
@@ -261,6 +286,23 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
     set({
       statusIndicatorPosition: position,
     }),
+
+  // Cursor highlight actions (Requirements: FR-4.5)
+  toggleCursorHighlight: () =>
+    set((state) => ({
+      cursorHighlight: {
+        ...state.cursorHighlight,
+        enabled: !state.cursorHighlight.enabled,
+      },
+    })),
+
+  setCursorHighlightConfig: (config) =>
+    set((state) => ({
+      cursorHighlight: {
+        ...state.cursorHighlight,
+        ...config,
+      },
+    })),
 
   // Click actions
   addClick: (position) => {

@@ -38,8 +38,14 @@ Generate advanced SKILL.md files in AgentSkills format with support for variable
 - **FR-6.9**: Generate references/ folder with screenshots
 - **FR-6.10**: Validate skill format before saving
 - **FR-6.11**: Support skill regeneration with different settings
-
-### Programmatic-First Automation Strategy
+- **FR-6.17**: **Multi-Format Export**: Generate `SKILL.md` (Human), `tool_definition.json` (LLM), and `mcp_template.json` (MCP)
+- **FR-6.18**: **Skill Linter**: Enforce best practices (snake_case names, atomic scope, detailed descriptions)
+- **FR-6.19**: **Context Bloat Prevention (Smart Selection)**: Use S05 "Logical Steps" (max ~10 key frames) instead of raw video/frames.
+- **FR-6.20**: **Hierarchical Summarization**:
+  - **Level 1**: High-level goal (e.g., "Create User").
+  - **Level 2**: Step summaries ("Click Submit").
+  - **Level 3**: Detailed logs (only on demand/reference).
+  - *Must compress console/network logs (e.g., "5 errors" vs full dump).*
 _Prefer API/DOM automation; fall back to image-based only when necessary_
 
 #### Step Generation Priority

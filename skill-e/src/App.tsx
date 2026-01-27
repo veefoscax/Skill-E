@@ -22,6 +22,7 @@ import { TimelineTest } from '@/components/TimelineTest'
 import { AutoFadeTest } from '@/components/AutoFadeTest'
 import { StepCounterBadgeTest } from '@/components/StepCounterBadgeTest'
 import { TimelineComprehensiveTest } from '@/components/TimelineComprehensiveTest'
+import { SkillPreviewTest } from '@/components/SkillPreviewTest'
 // import { useWindowPosition } from '@/hooks/useWindowPosition'
 import { useSystemTray } from '@/hooks/useSystemTray'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
@@ -55,6 +56,7 @@ import { useEffect, useState } from 'react'
  * - #/auto-fade-test: Auto-fade logic test page (Task S04-30)
  * - #/step-counter-badge-test: Step counter badge test page (Task S04-31)
  * - #/timeline-comprehensive-test: Timeline comprehensive test page (Task S04-32)
+ * - #/skill-preview-test: Skill preview test page (Task S06-3)
  */
 function App() {
   // Simple hash-based routing
@@ -237,6 +239,15 @@ function App() {
     return (
       <div className="h-screen w-screen overflow-auto bg-background">
         <TimelineComprehensiveTest />
+      </div>
+    )
+  }
+
+  // Skill preview test page - for testing skill preview (Task S06-3)
+  if (route === '#/skill-preview-test') {
+    return (
+      <div className="h-screen w-screen overflow-auto bg-background">
+        <SkillPreviewTest />
       </div>
     )
   }

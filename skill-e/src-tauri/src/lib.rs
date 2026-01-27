@@ -32,6 +32,10 @@ use commands::overlay::{
     toggle_overlay,
     update_overlay_bounds,
 };
+use commands::export::{
+    save_skill,
+    validate_export_path,
+};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -157,7 +161,10 @@ pub fn run() {
             show_overlay,
             hide_overlay,
             toggle_overlay,
-            update_overlay_bounds
+            update_overlay_bounds,
+            // Export commands
+            save_skill,
+            validate_export_path
         ])
         .setup(|app| {
             // Note: For Tauri v2, window effects (Mica/Vibrancy) are configured in tauri.conf.json

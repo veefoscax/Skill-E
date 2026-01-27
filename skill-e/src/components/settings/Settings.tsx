@@ -4,9 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSettingsStore, WHISPER_MODEL_INFO, type WhisperModel } from '@/stores/settings';
 import { validateWhisperApiKey } from '@/lib/whisper';
+import { validateClaudeApiKey } from '@/lib/claude-api';
 import { checkComputeCapability } from '@/lib/whisper-local';
 import { AudioLevelMeter } from '@/components/AudioLevelMeter';
-import { Loader2, Check, X, Eye, EyeOff, Cloud, HardDrive, Cpu, Zap, ChevronDown, Mic, MicOff, FolderOpen, Settings2 } from 'lucide-react';
+import { Loader2, Check, X, Eye, EyeOff, Cloud, HardDrive, Cpu, Zap, ChevronDown, Mic, MicOff, FolderOpen, Settings2, Sparkles } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,8 @@ export function Settings() {
   const {
     whisperApiKey,
     setWhisperApiKey,
+    claudeApiKey,
+    setClaudeApiKey,
     transcriptionMode,
     setTranscriptionMode,
     whisperModel,
@@ -60,6 +63,12 @@ export function Settings() {
   const [isValidating, setIsValidating] = useState(false);
   const [validationStatus, setValidationStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [showApiKey, setShowApiKey] = useState(false);
+
+  // Claude API Key State
+  const [claudeApiKeyInput, setClaudeApiKeyInput] = useState(claudeApiKey);
+  const [isValidatingClaude, setIsValidatingClaude] = useState(false);
+  const [claudeValidationStatus, setClaudeValidationStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
+  const [showClaudeApiKey, setShowClaudeApiKey] = useState(false);
 
   // Microphone Test State
   const [isTestingMic, setIsTestingMic] = useState(false);
@@ -157,6 +166,20 @@ export function Settings() {
       setTimeout(() => setValidationStatus('idle'), 2000);
     } else {
       setValidationStatus('invalid');
+    }
+  };
+
+  const handleSaveClaudeApiKey = async () => {
+    setIsValidatingClaude(true);
+    const isValid = await validateClaudeApiKey(claudeApiKeyInput);
+    setIsValidatingClaude(false);
+
+    if (isValid) {
+      setClaudeValidationStatus('valid');
+      setClaudeApiKey(claudeApiKeyInput);
+      setTimeout(() => setClaudeValidationStatus('idle'), 2000);
+    } else {
+      setClaudeValidationStatus('invalid');
     }
   };
 
@@ -384,6 +407,61 @@ export function Settings() {
             </div>
           </div>
         )}
+
+        {/* Claude API Key Settings */}
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground uppercase">Skill Generation</Label>
+          <div className="p-3 rounded-md border bg-card space-y-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-xs font-medium">Claude API Key</span>
+            </div>
+            <div className="relative">
+              <Input
+                type={showClaudeApiKey ? 'text' : 'password'}
+                placeholder="sk-ant-..."
+                className="pr-20 text-xs h-8"
+                value={claudeApiKeyInput}
+                onChange={(e) => {
+                  setClaudeApiKeyInput(e.target.value);
+                  if (claudeValidationStatus !== 'idle') setClaudeValidationStatus('idle');
+                }}
+              />
+              <div className="absolute right-1 top-1 flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setShowClaudeApiKey(!showClaudeApiKey)}
+                >
+                  {showClaudeApiKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-6 text-[10px] px-2"
+                  disabled={isValidatingClaude || !claudeApiKeyInput}
+                  onClick={handleSaveClaudeApiKey}
+                >
+                  {isValidatingClaude ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+                </Button>
+              </div>
+            </div>
+            {claudeValidationStatus === 'valid' && (
+              <p className="text-[10px] text-green-600 flex items-center gap-1">
+                <Check className="h-3 w-3" /> API Key valid
+              </p>
+            )}
+            {claudeValidationStatus === 'invalid' && (
+              <p className="text-[10px] text-destructive flex items-center gap-1">
+                <X className="h-3 w-3" /> Invalid API Key
+              </p>
+            )}
+            <p className="text-[10px] text-muted-foreground">
+              Required for generating SKILL.md files. Your key is stored locally and securely.
+            </p>
+          </div>
+        </div>
 
         {/* Output Directory */}
         <div className="space-y-2">

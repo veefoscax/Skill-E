@@ -10,15 +10,24 @@ Generates SKILL.md files in AgentSkills format from processed sessions, with pre
 
 ## Phase 1: Skill Generator
 
-- [ ] 1. Generator Implementation
+- [x] 1. Context Preparation & Optimization
+  - **Implement "Smart Context Selection" (FR-6.19)**
+  - Filter S05 data to "Key Steps" only
+  - **Apply Hierarchical Summarization (FR-6.20)**
+  - Compress console/network logs into summaries
+  - Construct compact JSON payload for generator
+  - _Requirements: FR-6.19, FR-6.20_
+
+- [x] 2. Generator Implementation
   - Create src/lib/skill-generator.ts
   - Implement generateSkill() function
   - Create prompt template for Claude
-  - Call Claude API with processed context
+  - Call Claude API with **Optimized Context** (from Task 1)
   - Parse response as markdown
-  - _Requirements: FR-6.1_
+  - Generate tool_definition.json (OpenAI/Anthropic compatible)
+  - _Requirements: FR-6.1, FR-6.17_
 
-- [ ] 2. Prompt Engineering
+- [x] 2. Prompt Engineering
   - Design effective prompt for skill generation
   - Include all context (steps, transcript, annotations)
   - Request specific SKILL.md format
@@ -27,7 +36,7 @@ Generates SKILL.md files in AgentSkills format from processed sessions, with pre
 
 ## Phase 2: Preview Component
 
-- [ ] 3. Skill Preview
+- [x] 3. Skill Preview
   - Create src/components/SkillPreview/SkillPreview.tsx
   - Render markdown with syntax highlighting
   - Parse and display YAML frontmatter
@@ -37,7 +46,7 @@ Generates SKILL.md files in AgentSkills format from processed sessions, with pre
 
 ## Phase 3: Editor Component
 
-- [ ] 4. Skill Editor
+- [x] 4. Skill Editor
   - Create src/components/SkillEditor/SkillEditor.tsx
   - Add markdown editor with highlighting
   - Implement live preview side-by-side
@@ -47,14 +56,14 @@ Generates SKILL.md files in AgentSkills format from processed sessions, with pre
 
 ## Phase 4: Export
 
-- [ ] 5. Export Dialog
+- [x] 5. Export Dialog
   - Create export location picker
   - Default to workspace/skills folder
   - Allow custom folder selection
   - Show preview of folder structure
   - _Requirements: FR-6.4_
 
-- [ ] 6. Save Implementation
+- [x] 6. Save Implementation
   - Create skill folder (skill-name/)
   - Save SKILL.md inside folder
   - Copy reference screenshots if selected
@@ -63,16 +72,19 @@ Generates SKILL.md files in AgentSkills format from processed sessions, with pre
 
 ## Phase 5: Validation
 
-- [ ] 7. Format Validation
+- [x] 7. Format Validation & Linter
+  - Create src/lib/skill-validator.ts
   - Validate YAML frontmatter syntax
+  - **NEW: Lint tool definitions (snake_case, description length)**
+  - **NEW: Check for atomic scope violations**
   - Check required fields (name, description)
   - Show validation errors inline
   - Block save until valid
-  - _Requirements: FR-6.5_
+  - _Requirements: FR-6.5, FR-6.18_
 
 ## Phase 6: Settings
 
-- [ ] 8. API Key Settings
+- [x] 8. API Key Settings
   - Add Claude API key input to settings
   - Validate API key on save
   - Store key securely
@@ -81,7 +93,7 @@ Generates SKILL.md files in AgentSkills format from processed sessions, with pre
 
 ## Phase 7: Testing
 
-- [ ] 9. Export Testing
+- [x] 9. Export Testing
   - Test skill generation with sample processed session
   - Test preview rendering
   - Test editor functionality
@@ -89,7 +101,7 @@ Generates SKILL.md files in AgentSkills format from processed sessions, with pre
   - Test generated skill works in Claude Code
   - _Requirements: All ACs_
 
-- [ ] 10. Checkpoint - Verify Phase Complete
+- [x] 10. Checkpoint - Verify Phase Complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ---

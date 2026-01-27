@@ -31,6 +31,7 @@ import { DrawingCanvas } from './DrawingCanvas';
 import { KeyboardDisplay } from './KeyboardDisplay';
 import { ElementSelector } from './ElementSelector';
 import { StatusIndicator } from './StatusIndicator';
+import { CursorHighlight } from './CursorHighlight';
 import { clickTracker, ClickIndicator as ClickIndicatorType } from '../../lib/overlay/click-tracker';
 import { useOverlayStore } from '../../stores/overlay';
 import { useOverlayHotkeys } from '../../hooks/useOverlayHotkeys';
@@ -46,6 +47,7 @@ export function Overlay() {
     recordingStatus,
     statusIndicatorVisible,
     statusIndicatorPosition,
+    cursorHighlight,
   } = useOverlayStore();
   
   // Enable global hotkeys for overlay
@@ -191,6 +193,27 @@ export function Overlay() {
           status={recordingStatus}
           visible={statusIndicatorVisible}
           position={statusIndicatorPosition}
+        />
+      </div>
+
+      {/* 
+        Layer 6: Cursor Highlight (z-55)
+        - Enlarged cursor ring for better visibility during recording
+        - Follows mouse position in real-time
+        - Shows ripple effect on click
+        - Only visible during recording
+        - Requirements: FR-4.5
+      */}
+      <div 
+        className="absolute inset-0 z-[55]"
+        style={{ pointerEvents: 'none' }}
+        data-layer="cursor-highlight"
+      >
+        <CursorHighlight
+          size={cursorHighlight.size}
+          color={cursorHighlight.color}
+          visible={cursorHighlight.enabled}
+          thickness={cursorHighlight.thickness}
         />
       </div>
 

@@ -82,11 +82,14 @@ export interface RecordingState {
   setAudioBlob: (blob: Blob) => void;
   setAudioPath: (path: string) => void;
   
-  // Step tracking actions (Requirements: FR-4.29)
+  // Step tracking actions (Requirements: FR-4.29, FR-4.38)
   addStep: (step: Omit<CaptureStep, 'id' | 'timestamp'>) => void;
   updateStepNote: (stepId: string, note: string) => void;
   deleteStep: (stepId: string) => void;
   clearSteps: () => void;
+  // Step reordering (Requirements: FR-4.38)
+  moveStep: (stepId: string, direction: 'up' | 'down') => void;
+  reorderSteps: (stepIds: string[]) => void;
   
   reset: () => void;
 }
@@ -231,6 +234,42 @@ export const useRecordingStore = create<RecordingState>()(
       clearSteps: () =>
         set({
           steps: [],
+        }),
+
+      // Step reordering (Requirements: FR-4.38)
+      moveStep: (stepId: string, direction: 'up' | 'down') =>
+        set((state) => {
+          const index = state.steps.findIndex((s) => s.id === stepId);
+          if (index === -1) return state;
+
+          const newSteps = [...state.steps];
+          const newIndex = direction === 'up' ? index - 1 : index + 1;
+
+          // Check bounds
+          if (newIndex < 0 || newIndex >= newSteps.length) {
+            return state;
+          }
+
+          // Swap steps
+          [newSteps[index], newSteps[newIndex]] = [newSteps[newIndex], newSteps[index]];
+
+          return { steps: newSteps };
+        }),
+
+      reorderSteps: (stepIds: string[]) =>
+        set((state) => {
+          // Validate that all provided IDs exist
+          const validIds = stepIds.filter(id => state.steps.some(s => s.id === id));
+          
+          // Create map of existing steps
+          const stepMap = new Map(state.steps.map(s => [s.id, s]));
+          
+          // Reorder according to provided IDs, keeping any unmentioned steps at the end
+          const reordered = validIds.map(id => stepMap.get(id)!);
+          const mentionedIds = new Set(validIds);
+          const remaining = state.steps.filter(s => !mentionedIds.has(s.id));
+          
+          return { steps: [...reordered, ...remaining] };
         }),
 
       reset: () => set(initialState),
