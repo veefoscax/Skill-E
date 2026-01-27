@@ -112,7 +112,7 @@ Implements transparent overlay with click visualization, drawing tools, keyboard
   - Disabled by default
   - _Requirements: FR-4.20_
 
-- [ ] 15. Element Highlighting
+- [x] 15. Element Highlighting
   - Inject highlight CSS into page
   - Highlight element on hover
   - Show selector tooltip

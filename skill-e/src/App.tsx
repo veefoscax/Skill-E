@@ -11,6 +11,7 @@ import { KeyboardDisplayTest } from '@/components/KeyboardDisplayTest'
 import { PasswordRedactionTest } from '@/components/PasswordRedactionTest'
 import { OverlayStoreTest } from '@/components/OverlayStoreTest'
 import { ElementSelectorTest } from '@/components/ElementSelectorTest'
+import { ElementHighlightingTest } from '@/components/ElementHighlightingTest'
 // import { useWindowPosition } from '@/hooks/useWindowPosition'
 import { useSystemTray } from '@/hooks/useSystemTray'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
@@ -33,6 +34,7 @@ import { useEffect, useState } from 'react'
  * - #/password-redaction-test: Password redaction test page (Task S04-13)
  * - #/overlay-store-test: Overlay store test page (Task S04-17)
  * - #/element-selector-test: Element selector test page (Task S04-14)
+ * - #/element-highlighting-test: Element highlighting test page (Task S04-15)
  */
 function App() {
   // Simple hash-based routing
@@ -116,6 +118,15 @@ function App() {
     return (
       <div className="h-screen w-screen overflow-auto bg-background">
         <ElementSelectorTest />
+      </div>
+    )
+  }
+
+  // Element highlighting test page - for testing element highlighting (Task S04-15)
+  if (route === '#/element-highlighting-test') {
+    return (
+      <div className="h-screen w-screen overflow-auto bg-background">
+        <ElementHighlightingTest />
       </div>
     )
   }
