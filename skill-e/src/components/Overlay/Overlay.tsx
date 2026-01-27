@@ -30,6 +30,7 @@ import { ClickIndicator } from './ClickIndicator';
 import { DrawingCanvas } from './DrawingCanvas';
 import { KeyboardDisplay } from './KeyboardDisplay';
 import { ElementSelector } from './ElementSelector';
+import { StatusIndicator } from './StatusIndicator';
 import { clickTracker, ClickIndicator as ClickIndicatorType } from '../../lib/overlay/click-tracker';
 import { useOverlayStore } from '../../stores/overlay';
 import { useOverlayHotkeys } from '../../hooks/useOverlayHotkeys';
@@ -42,6 +43,9 @@ export function Overlay() {
     isPinMode,
     currentColor,
     keyboard,
+    recordingStatus,
+    statusIndicatorVisible,
+    statusIndicatorPosition,
   } = useOverlayStore();
   
   // Enable global hotkeys for overlay
@@ -170,13 +174,34 @@ export function Overlay() {
       </div>
 
       {/* 
-        Debug Indicator (z-50)
+        Layer 5: Status Indicator (z-50)
+        - Minimal recording status indicator
+        - Tiny red dot in corner (8px)
+        - Pulsing animation when recording
+        - Changes to yellow/orange when paused
+        - Optional (can be hidden via settings)
+        - Requirements: FR-4.26
+      */}
+      <div 
+        className="absolute inset-0 z-50"
+        style={{ pointerEvents: 'none' }}
+        data-layer="status-indicator"
+      >
+        <StatusIndicator
+          status={recordingStatus}
+          visible={statusIndicatorVisible}
+          position={statusIndicatorPosition}
+        />
+      </div>
+
+      {/* 
+        Debug Indicator (z-60)
         - Shows overlay is active
         - Shows current drawing mode (color and pin status)
         - Remove or hide in production
       */}
       <div 
-        className="absolute top-4 right-4 z-50 space-y-2"
+        className="absolute top-4 right-4 z-60 space-y-2"
         style={{ pointerEvents: 'none' }}
         data-layer="debug"
       >

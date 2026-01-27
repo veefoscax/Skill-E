@@ -256,7 +256,9 @@ export function Toolbar(_props: ToolbarProps) {
           <Button
             size="icon"
             variant={isPaused ? "default" : "secondary"}
-            className="h-9 w-9 rounded-full"
+            className={`h-9 w-9 rounded-full ${
+              isPaused ? 'record-button-paused' : 'record-button-active'
+            }`}
             onClick={handlePauseRecording}
             title={isPaused ? 'Resume Recording' : 'Pause Recording'}
           >

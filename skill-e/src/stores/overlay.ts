@@ -87,11 +87,26 @@ export interface SelectedElement {
 }
 
 /**
+ * Recording status for status indicator
+ */
+export type RecordingStatus = 'recording' | 'paused' | 'stopped';
+
+/**
+ * Status indicator position
+ */
+export type StatusIndicatorPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+
+/**
  * Overlay store state
  */
 export interface OverlayState {
   // Overlay status
   isActive: boolean;
+  
+  // Recording status indicator
+  recordingStatus: RecordingStatus;
+  statusIndicatorVisible: boolean;
+  statusIndicatorPosition: StatusIndicatorPosition;
   
   // Drawing mode
   isPinMode: boolean;
@@ -121,6 +136,11 @@ export interface OverlayActions {
   activate: () => void;
   deactivate: () => void;
   reset: () => void;
+  
+  // Recording status
+  setRecordingStatus: (status: RecordingStatus) => void;
+  toggleStatusIndicator: () => void;
+  setStatusIndicatorPosition: (position: StatusIndicatorPosition) => void;
   
   // Click actions
   addClick: (position: { x: number; y: number }) => void;
@@ -179,6 +199,9 @@ const initialKeyboardState: KeyboardState = {
  */
 const initialState: OverlayState = {
   isActive: false,
+  recordingStatus: 'stopped',
+  statusIndicatorVisible: true,
+  statusIndicatorPosition: 'top-right',
   isPinMode: false,
   currentColor: 'COLOR_1',
   clicks: [],
@@ -221,6 +244,22 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
     set({
       ...initialState,
       keyboard: { ...initialKeyboardState },
+    }),
+
+  // Recording status
+  setRecordingStatus: (status) =>
+    set({
+      recordingStatus: status,
+    }),
+
+  toggleStatusIndicator: () =>
+    set((state) => ({
+      statusIndicatorVisible: !state.statusIndicatorVisible,
+    })),
+
+  setStatusIndicatorPosition: (position) =>
+    set({
+      statusIndicatorPosition: position,
     }),
 
   // Click actions

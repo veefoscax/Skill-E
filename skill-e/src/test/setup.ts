@@ -4,12 +4,11 @@
  * This file runs before all tests to set up the test environment.
  */
 
-import { expect, afterEach } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { afterEach } from 'vitest';
 
 // Cleanup after each test
 afterEach(() => {
-  cleanup();
+  // Cleanup logic if needed
 });
 
 // Add custom matchers if needed

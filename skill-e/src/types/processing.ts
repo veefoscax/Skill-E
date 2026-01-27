@@ -4,7 +4,7 @@
  */
 
 import type { CaptureFrame, WindowInfo } from './capture';
-import type { TranscriptionSegment } from '../lib/whisper';
+export type { TranscriptionSegment } from '../lib/whisper';
 import type {
   ClickIndicator,
   DrawingElement,
@@ -202,6 +202,10 @@ export interface ProcessedStep {
   variables: DetectedVariable[];
   /** Detected conditionals in this step */
   conditionals: DetectedConditional[];
+  /** OCR-extracted text from screenshot */
+  ocrText?: string;
+  /** OCR text regions with bounding boxes */
+  ocrRegions?: OCRRegion[];
 }
 
 /**
@@ -230,6 +234,8 @@ export interface ProcessedSession {
   allVariables: DetectedVariable[];
   /** All detected conditionals */
   allConditionals: DetectedConditional[];
+  /** OCR results for key frames */
+  ocrResults?: OCRResult[];
   /** Session start time */
   startTime: number;
   /** Session end time */
@@ -310,6 +316,7 @@ export interface ProcessingProgress {
     | 'timeline'
     | 'step_detection'
     | 'classification'
+    | 'ocr'
     | 'context_generation'
     | 'complete'
     | 'error';

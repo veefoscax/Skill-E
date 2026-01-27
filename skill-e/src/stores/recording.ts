@@ -11,6 +11,43 @@ export interface CaptureFrame {
 }
 
 /**
+ * Types of capture steps that can be tracked in the live timeline
+ * Requirements: FR-4.29
+ */
+export type StepType = 'screenshot' | 'click' | 'keystroke' | 'network';
+
+/**
+ * A single step/event captured during recording
+ * Used for the live timeline UI display
+ * Requirements: FR-4.29
+ */
+export interface CaptureStep {
+  /** Unique identifier for this step */
+  id: string;
+  /** Type of capture event */
+  type: StepType;
+  /** Unix timestamp in milliseconds */
+  timestamp: number;
+  /** Human-readable label for display */
+  label: string;
+  /** Optional additional data specific to step type */
+  data?: {
+    /** For click: element selector or position */
+    selector?: string;
+    position?: { x: number; y: number };
+    /** For keystroke: the text that was typed */
+    text?: string;
+    /** For network: HTTP method and URL */
+    method?: string;
+    url?: string;
+    /** For screenshot: frame reference */
+    frameIndex?: number;
+  };
+  /** Optional user annotation/note for this step */
+  note?: string;
+}
+
+/**
  * Recording state interface
  * Manages the state of screen recording sessions
  */
@@ -29,6 +66,9 @@ export interface RecordingState {
   audioBlob: Blob | null;
   audioPath: string | null;
   
+  // Step tracking for live timeline (Requirements: FR-4.29)
+  steps: CaptureStep[];
+  
   // Actions
   startRecording: () => void;
   pauseRecording: () => void;
@@ -41,6 +81,13 @@ export interface RecordingState {
   addFrame: (frame: CaptureFrame) => void;
   setAudioBlob: (blob: Blob) => void;
   setAudioPath: (path: string) => void;
+  
+  // Step tracking actions (Requirements: FR-4.29)
+  addStep: (step: Omit<CaptureStep, 'id' | 'timestamp'>) => void;
+  updateStepNote: (stepId: string, note: string) => void;
+  deleteStep: (stepId: string) => void;
+  clearSteps: () => void;
+  
   reset: () => void;
 }
 
@@ -56,6 +103,7 @@ const initialState = {
   frames: [],
   audioBlob: null,
   audioPath: null,
+  steps: [],
 };
 
 /**
@@ -76,6 +124,7 @@ export const useRecordingStore = create<RecordingState>()(
           frames: [],
           audioBlob: null,
           audioPath: null,
+          steps: [],
         }),
 
       pauseRecording: () =>
@@ -112,6 +161,7 @@ export const useRecordingStore = create<RecordingState>()(
               frames: [],
               audioBlob: null,
               audioPath: null,
+              steps: [],
             };
           }
         }),
@@ -130,6 +180,7 @@ export const useRecordingStore = create<RecordingState>()(
           frames: [],
           audioBlob: null,
           audioPath: null,
+          steps: [],
         }),
 
       updateDuration: (duration: number) =>
@@ -150,6 +201,36 @@ export const useRecordingStore = create<RecordingState>()(
       setAudioPath: (path: string) =>
         set({
           audioPath: path,
+        }),
+
+      // Step tracking actions (Requirements: FR-4.29)
+      addStep: (step) =>
+        set((state) => ({
+          steps: [
+            ...state.steps,
+            {
+              ...step,
+              id: crypto.randomUUID(),
+              timestamp: Date.now(),
+            },
+          ],
+        })),
+
+      updateStepNote: (stepId: string, note: string) =>
+        set((state) => ({
+          steps: state.steps.map((step) =>
+            step.id === stepId ? { ...step, note } : step
+          ),
+        })),
+
+      deleteStep: (stepId: string) =>
+        set((state) => ({
+          steps: state.steps.filter((step) => step.id !== stepId),
+        })),
+
+      clearSteps: () =>
+        set({
+          steps: [],
         }),
 
       reset: () => set(initialState),
