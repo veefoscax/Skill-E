@@ -1,4 +1,4 @@
-# S10: Skill Validation - Implementation Tasks
+veja se precisa atualizar apra# S10: Skill Validation - Implementation Tasks
 
 > **Reference Workflow**: See `.kiro/steering/workflow.md` for execution guidelines.
 

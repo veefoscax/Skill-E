@@ -5,6 +5,7 @@ import { useRecordingStore } from '@/stores'
 import { useAudioRecording } from '@/hooks/useAudioRecording'
 import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { createOverlayWindow, showOverlay, hideOverlay } from '@/lib/overlay/overlay-commands'
 
 interface ToolbarProps {
   className?: string
@@ -42,6 +43,16 @@ export function Toolbar(_props: ToolbarProps) {
     error: audioError,
   } = useAudioRecording()
 
+  // Initialize overlay window on mount
+  useEffect(() => {
+    createOverlayWindow().catch(console.error)
+
+    return () => {
+      // Optional: hide/destroy overlay on unmount
+      hideOverlay().catch(console.error)
+    }
+  }, [])
+
   // Timer logic - runs when recording and not paused
   useEffect(() => {
     let interval: number | undefined
@@ -77,6 +88,15 @@ export function Toolbar(_props: ToolbarProps) {
   const handleStartRecording = async () => {
     console.log('Starting recording with audio...')
     startRecordingState()
+
+    // Show overlay
+    try {
+      await showOverlay()
+      console.log('Overlay shown')
+    } catch (error) {
+      console.error('Failed to show overlay:', error)
+    }
+
     try {
       await startAudio()
       console.log('Audio recording started!')
@@ -95,10 +115,18 @@ export function Toolbar(_props: ToolbarProps) {
     }
   }
 
-  const handleStopRecording = () => {
+  const handleStopRecording = async () => {
     console.log('Stopping recording...')
     stopRecordingState()
     stopAudio()
+
+    // Hide overlay
+    try {
+      await hideOverlay()
+      console.log('Overlay hidden')
+    } catch (error) {
+      console.error('Failed to hide overlay:', error)
+    }
   }
 
   const handleClose = async () => {

@@ -12,6 +12,8 @@ import { PasswordRedactionTest } from '@/components/PasswordRedactionTest'
 import { OverlayStoreTest } from '@/components/OverlayStoreTest'
 import { ElementSelectorTest } from '@/components/ElementSelectorTest'
 import { ElementHighlightingTest } from '@/components/ElementHighlightingTest'
+import { ElementSelectionTest } from '@/components/ElementSelectionTest'
+import { ProcessingProgressTest } from '@/components/ProcessingProgressTest'
 // import { useWindowPosition } from '@/hooks/useWindowPosition'
 import { useSystemTray } from '@/hooks/useSystemTray'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
@@ -35,6 +37,8 @@ import { useEffect, useState } from 'react'
  * - #/overlay-store-test: Overlay store test page (Task S04-17)
  * - #/element-selector-test: Element selector test page (Task S04-14)
  * - #/element-highlighting-test: Element highlighting test page (Task S04-15)
+ * - #/element-selection-test: Element selection test page (Task S04-16)
+ * - #/processing-progress-test: Processing progress test page (Task S05-6)
  */
 function App() {
   // Simple hash-based routing
@@ -127,6 +131,24 @@ function App() {
     return (
       <div className="h-screen w-screen overflow-auto bg-background">
         <ElementHighlightingTest />
+      </div>
+    )
+  }
+
+  // Element selection test page - for testing element selection (Task S04-16)
+  if (route === '#/element-selection-test') {
+    return (
+      <div className="h-screen w-screen overflow-auto bg-background">
+        <ElementSelectionTest />
+      </div>
+    )
+  }
+
+  // Processing progress test page - for testing processing progress (Task S05-6)
+  if (route === '#/processing-progress-test') {
+    return (
+      <div className="h-screen w-screen overflow-auto bg-background">
+        <ProcessingProgressTest />
       </div>
     )
   }

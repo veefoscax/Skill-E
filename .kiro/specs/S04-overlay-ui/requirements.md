@@ -60,10 +60,11 @@ Transparent overlay for visual feedback during recording. Shows click indicators
 - **FR-4.19**: Keyboard display position configurable
 
 ### Recording Feedback
-- **FR-4.25**: **Screen Border**: Optional colored border (Red default) around screen/window when recording
-- **FR-4.26**: **Status Light**: Small pulsing red dot indicator in overlay or toolbar
-- **FR-4.27**: **Pause State**: Border turns Yellow when paused
-- **FR-4.28**: Visual feedback configurable (Border width/opacity)
+### Recording Feedback (Refined)
+- **FR-4.25**: **Toolbar Status**: Pulsing "Record" button in Toolbar (No screen border)
+- **FR-4.26**: **Status Light**: Optional small red dot in overlay corner
+- **FR-4.27**: **Pause State**: Button turns yellow/orange
+- **FR-4.28**: **Minimalist**: No intrusive borders or large indicators
 
 ### Live Timeline UI (Step Bubbles)
 _Inspired by Claude Extension's analysis display_

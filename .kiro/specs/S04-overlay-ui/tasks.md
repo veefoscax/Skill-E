@@ -118,7 +118,7 @@ Implements transparent overlay with click visualization, drawing tools, keyboard
   - Show selector tooltip
   - _Requirements: FR-4.21_
 
-- [ ] 16. Element Selection
+- [x] 16. Element Selection
   - Click captures element info
   - Generate CSS selector (prefer ID, data-testid)
   - Generate XPath as fallback
@@ -160,7 +160,48 @@ Implements transparent overlay with click visualization, drawing tools, keyboard
   - Non-intrusive click indicators
   - _Requirements: NFR-4.3_
 
-## Phase 8: Testing
+## Phase 9: Recording Feedback (Simplified)
+
+- [ ] 25. Toolbar Pulse Animation
+  - Animate record button when active
+  - Pulsing red glow effect
+  - Yellow/Orange state for paused
+  - _Requirements: FR-4.25, FR-4.27_
+
+- [ ] 26. Minimal Overlay Status
+  - Tiny red dot in top-right corner of overlay? (Optional)
+  - _Requirements: FR-4.26_
+
+## Phase 10: Live Timeline UI (New)
+
+- [ ] 27. Step Store Setup
+  - Create step tracking in recording store
+  - Track: Screenshot, Click, Keystroke, Network
+  - _Requirements: FR-4.29_
+
+- [ ] 28. Step Bubble Component
+  - Create src/components/Overlay/Timeline/StepBubble.tsx
+  - Icon + Label layout
+  - Slide-in animation
+  - _Requirements: FR-4.29, FR-4.30_
+
+- [ ] 29. Timeline Container
+  - Create src/components/Overlay/Timeline/Timeline.tsx
+  - Right-edge positioning
+  - Scrollable container
+  - _Requirements: FR-4.39, FR-4.42_
+
+- [ ] 30. Auto-Fade Logic
+  - Steps fade to 50% opacity after 5s
+  - Hover timeline to restore opacity
+  - _Requirements: FR-4.31, FR-4.32_
+
+- [ ] 31. Step Counter Badge
+  - Show total count when collapsed
+  - Toggle expand/collapse
+  - _Requirements: FR-4.33, FR-4.34_
+
+## Phase 11: Testing
 
 - [x] 21. Click Visualization Testing
   - Test click numbering sequence
@@ -185,6 +226,12 @@ Implements transparent overlay with click visualization, drawing tools, keyboard
 
 - [x] 24. Checkpoint - Verify Phase Complete
   - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 32. Timeline Testing
+  - Test step addition animation
+  - Test fade logic
+  - Test expand/collapse
+  - _Requirements: FR-4.29-FR-4.42_
 
 ---
 

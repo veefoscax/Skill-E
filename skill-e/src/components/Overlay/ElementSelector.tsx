@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { useOverlayStore } from '../../stores/overlay';
+import { useOverlayStore, SelectedElement } from '../../stores/overlay';
 import { generateCSSSelector, generateXPath } from '../../lib/overlay/element-selector';
 
 /**
@@ -122,12 +122,80 @@ export function ElementSelector() {
       });
     };
 
-    // Add event listener
+    // Handle click to select element
+    const handleClick = async (e: MouseEvent) => {
+      // Prevent default behavior
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Get element under cursor
+      const element = document.elementFromPoint(e.clientX, e.clientY);
+      
+      if (!element || element === document.body || element === document.documentElement) {
+        return;
+      }
+
+      // Get comprehensive element information with screenshot
+      const rect = element.getBoundingClientRect();
+      const cssSelector = generateCSSSelector(element);
+      const xpath = generateXPath(element);
+
+      // Capture screenshot (this may take a moment)
+      let screenshot: string | undefined;
+      try {
+        // Dynamically import html2canvas
+        const html2canvas = (await import('html2canvas')).default;
+        
+        const canvas = await html2canvas(element as HTMLElement, {
+          backgroundColor: null,
+          logging: false,
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+        });
+        
+        screenshot = canvas.toDataURL('image/png');
+      } catch (error) {
+        console.error('Failed to capture element screenshot:', error);
+      }
+
+      // Create selected element object
+      const selectedElement: SelectedElement = {
+        cssSelector,
+        xpath,
+        tagName: element.tagName.toLowerCase(),
+        textContent: element.textContent?.trim() || '',
+        boundingBox: {
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height,
+        },
+        screenshot,
+        timestamp: Date.now(),
+      };
+
+      // Store the selected element
+      useOverlayStore.getState().selectElement(selectedElement);
+
+      // Visual feedback - flash the element
+      element.classList.add('skill-e-selected');
+      setTimeout(() => {
+        element.classList.remove('skill-e-selected');
+      }, 500);
+
+      // Log for debugging
+      console.log('Element selected:', selectedElement);
+    };
+
+    // Add event listeners
     document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('click', handleClick, true); // Use capture phase
 
     // Cleanup
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('click', handleClick, true);
       if (styleRef.current) {
         styleRef.current.remove();
         styleRef.current = null;
@@ -221,6 +289,19 @@ export function ElementSelector() {
       <style>{`
         .element-selector-indicator {
           cursor: crosshair;
+        }
+        
+        .skill-e-selected {
+          animation: skill-e-flash 0.5s ease-out;
+        }
+        
+        @keyframes skill-e-flash {
+          0%, 100% {
+            background-color: transparent;
+          }
+          50% {
+            background-color: rgba(68, 255, 68, 0.3);
+          }
         }
       `}</style>
     </div>

@@ -99,14 +99,41 @@ export function generateXPath(element: Element): string {
 }
 
 /**
+ * Capture screenshot of a specific element
+ * 
+ * Uses html2canvas to capture a screenshot of just the element.
+ * Returns a base64-encoded PNG image.
+ */
+export async function captureElementScreenshot(element: Element): Promise<string | undefined> {
+  try {
+    // Dynamically import html2canvas to avoid bundling if not needed
+    const html2canvas = (await import('html2canvas')).default;
+    
+    const canvas = await html2canvas(element as HTMLElement, {
+      backgroundColor: null,
+      logging: false,
+      scale: 2, // Higher quality
+      useCORS: true,
+      allowTaint: true,
+    });
+    
+    return canvas.toDataURL('image/png');
+  } catch (error) {
+    console.error('Failed to capture element screenshot:', error);
+    return undefined;
+  }
+}
+
+/**
  * Get element information for recording
  * 
  * Captures comprehensive information about an element for skill generation.
+ * Optionally captures a screenshot of the element.
  */
-export function getElementInfo(element: Element) {
+export async function getElementInfo(element: Element, captureScreenshot = false) {
   const rect = element.getBoundingClientRect();
 
-  return {
+  const info = {
     tagName: element.tagName.toLowerCase(),
     id: element.id || undefined,
     className: element.className || undefined,
@@ -126,7 +153,15 @@ export function getElementInfo(element: Element) {
       width: rect.width,
       height: rect.height,
     },
+    screenshot: undefined as string | undefined,
   };
+
+  // Capture screenshot if requested
+  if (captureScreenshot) {
+    info.screenshot = await captureElementScreenshot(element);
+  }
+
+  return info;
 }
 
 /**
