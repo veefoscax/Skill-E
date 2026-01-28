@@ -12,6 +12,8 @@ import {
   ZhipuProvider,
   MoonshotProvider,
 } from './providers/openai-compatible';
+import { GoogleProvider } from './providers/google';
+import { OllamaProvider } from './providers/ollama';
 import type { ILLMProvider, ProviderConfig, LLMProvider } from './types';
 import {
   PROVIDER_BASE_URLS,
@@ -34,6 +36,10 @@ export function createProvider(config: ProviderConfig): ILLMProvider {
       return new ZhipuProvider(config);
     case 'moonshot':
       return new MoonshotProvider(config);
+    case 'google':
+      return new GoogleProvider(config);
+    case 'ollama':
+      return new OllamaProvider(config);
     default:
       throw new Error(`Unknown provider: ${config.name}`);
   }
@@ -133,8 +139,8 @@ function getDefaultResponsePath(provider: LLMProvider): string {
       return 'content.0.text';
     case 'openai':
     case 'openrouter':
-    case 'zifu':
-    case 'kimi':
+    case 'zhipu':
+    case 'moonshot':
       return 'choices.0.message.content';
     case 'google':
       return 'candidates.0.content.parts.0.text';
@@ -154,8 +160,8 @@ function getDefaultUsagePath(provider: LLMProvider): string | undefined {
       return 'usage';
     case 'openai':
     case 'openrouter':
-    case 'zifu':
-    case 'kimi':
+    case 'zhipu':
+    case 'moonshot':
       return 'usage';
     default:
       return undefined;
@@ -166,7 +172,7 @@ function getDefaultUsagePath(provider: LLMProvider): string | undefined {
  * Get all available providers
  */
 export function getAvailableProviders(): LLMProvider[] {
-  return ['anthropic', 'openai', 'openrouter', 'zhipu', 'moonshot'];
+  return ['anthropic', 'openai', 'openrouter', 'zhipu', 'moonshot', 'google', 'ollama'];
 }
 
 /**

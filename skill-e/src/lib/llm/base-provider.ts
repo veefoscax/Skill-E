@@ -82,6 +82,29 @@ export abstract class BaseLLMProvider implements ILLMProvider {
   }
   
   /**
+   * Stream generator for response body
+   * Converts ReadableStream into async generator
+   */
+  protected async *streamGenerator(response: Response): AsyncGenerator<string> {
+    if (!response.body) {
+      return;
+    }
+    
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        yield decoder.decode(value, { stream: true });
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+  
+  /**
    * Get provider metadata
    * Must be implemented by subclasses
    */
@@ -113,7 +136,7 @@ export abstract class BaseLLMProvider implements ILLMProvider {
    * Can be overridden by subclasses for provider-specific formats
    */
   protected buildRequestBody(
-    prompt: string, 
+    _prompt: string, 
     options: GenerateOptions
   ): Record<string, unknown> {
     // Map parameter names if needed

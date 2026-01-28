@@ -52,7 +52,12 @@ export interface ScreenshotEvent extends BaseTimelineEvent {
 export interface VoiceEvent extends BaseTimelineEvent {
   type: 'voice';
   /** Transcription segment */
-  segment: TranscriptionSegment;
+  segment: {
+    text: string;
+    startTime: number;
+    endTime: number;
+    confidence?: number;
+  };
   /** Classified speech type */
   classification?: SpeechClassification;
 }

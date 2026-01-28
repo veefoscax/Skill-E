@@ -5,10 +5,10 @@
  * - Anthropic (Claude)
  * - OpenAI (GPT)
  * - OpenRouter
- * - Zifu AI (GLM)
- * - Kimi Code (Moonshot)
- * - Google (Gemini) - TODO
- * - Ollama (Local) - TODO
+ * - Zhipu AI (GLM-4)
+ * - Moonshot AI (Kimi)
+ * - Google AI (Gemini)
+ * - Ollama (Local)
  * 
  * @example
  * ```typescript
@@ -40,6 +40,8 @@ export {
   ZhipuProvider,
   MoonshotProvider,
 } from './providers/openai-compatible';
+export { GoogleProvider } from './providers/google';
+export { OllamaProvider } from './providers/ollama';
 export {
   createProvider,
   createProviderSimple,

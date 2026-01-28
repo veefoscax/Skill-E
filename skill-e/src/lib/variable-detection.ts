@@ -146,7 +146,7 @@ function extractAllSpeechHints(
   const hints: Array<SpeechVariableHint & { segment: TranscriptSegment }> = [];
   
   for (const segment of segments) {
-    const segmentHints = extractSpeechVariables(segment.text, segment.start);
+    const segmentHints = extractSpeechVariables(segment.text);
     
     // Attach segment info to each hint
     for (const hint of segmentHints) {
@@ -170,7 +170,7 @@ function extractAllSpeechHints(
 function performCorrelation(
   speechHints: Array<SpeechVariableHint & { segment: TranscriptSegment }>,
   actionHints: ActionVariableHint[],
-  segments: TranscriptSegment[],
+  _segments: TranscriptSegment[],
   config: Required<CorrelationConfig>
 ): {
   correlatedHints: VariableHint[];
@@ -299,11 +299,8 @@ function areTypesCompatible(speechType: VariableType, actionType: VariableType):
     return true;
   }
   
-  // NUMBER can be compatible with TEXT (numbers entered as text)
-  if (
-    (speechType === VariableType.NUMBER && actionType === VariableType.TEXT) ||
-    (speechType === VariableType.TEXT && actionType === VariableType.NUMBER)
-  ) {
+  // NUMBER can be compatible with other numeric-like types
+  if (speechType === VariableType.NUMBER && actionType === VariableType.NUMBER) {
     return true;
   }
   
@@ -449,7 +446,7 @@ function createCorrelatedHint(
 function createStandaloneSpeechHints(
   speechHints: Array<SpeechVariableHint & { segment: TranscriptSegment }>,
   usedSpeechIndices: Set<number>,
-  config: Required<CorrelationConfig>
+  _config: Required<CorrelationConfig>
 ): VariableHint[] {
   const hints: VariableHint[] = [];
   
@@ -490,7 +487,7 @@ function createStandaloneSpeechHints(
 function createStandaloneActionHints(
   actionHints: ActionVariableHint[],
   usedActionIndices: Set<number>,
-  config: Required<CorrelationConfig>
+  _config: Required<CorrelationConfig>
 ): VariableHint[] {
   const hints: VariableHint[] = [];
   

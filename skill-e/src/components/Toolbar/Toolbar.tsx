@@ -164,6 +164,7 @@ export function Toolbar(_props: ToolbarProps) {
 
         // Open to the RIGHT of the toolbar with spacing
         // Calculate smart position relative to toolbar
+        // @ts-expect-error currentMonitor is not in the type definition but exists at runtime
         const monitor = await getCurrentWindow().currentMonitor();
         const screenWidth = monitor?.size.width || 1920;
         const screenHeight = monitor?.size.height || 1080;

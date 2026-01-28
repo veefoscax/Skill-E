@@ -554,7 +554,10 @@ export function toLLMContext(optimizedContext: OptimizedContext): LLMContext {
       timestamp: 0, // Not available in optimized format
       transcriptSegment: '',
     })),
-    summary: optimizedContext.summary,
+    summary: {
+      ...optimizedContext.summary,
+      totalPageLoads: 0, // Not tracked in optimized format
+    },
     references: optimizedContext.references,
   };
 }

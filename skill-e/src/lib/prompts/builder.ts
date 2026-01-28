@@ -59,6 +59,7 @@ function buildXMLSelfClosing(name: string, attributes: Record<string, string>): 
 /**
  * Escape XML special characters
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function escapeXML(text: string): string {
   return text
     .replace(/&/g, '&amp;')

@@ -5,7 +5,8 @@
  * Follows best practices from research on LLM prompt engineering.
  */
 
-import type { OptimizedContext, OptimizedStep } from '../context-optimizer';
+import type { OptimizedContext } from '../context-optimizer';
+// Note: OptimizedStep type is available in context-optimizer module if needed
 
 /**
  * Prompt generation options

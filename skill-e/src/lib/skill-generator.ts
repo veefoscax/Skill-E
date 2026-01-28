@@ -138,9 +138,9 @@ export async function generateSkill(
   let markdown: string;
   
   if (opts.stream && opts.onChunk) {
-    markdown = await generateWithStreaming(prompt, opts);
+    markdown = await generateWithStreaming(prompt, opts as unknown as Required<SkillGenerationOptions>);
   } else {
-    markdown = await generateWithoutStreaming(prompt, opts);
+    markdown = await generateWithoutStreaming(prompt, opts as unknown as Required<SkillGenerationOptions>);
   }
   
   // Parse the generated markdown

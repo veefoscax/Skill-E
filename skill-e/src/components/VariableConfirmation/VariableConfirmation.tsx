@@ -41,10 +41,16 @@ import {
   MoreVertical,
   Save,
   XCircle,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { VariableHint, VariableType } from '@/types/variables';
 import { VariableType as VarType } from '@/types/variables';
+import type { ILLMProvider } from '@/lib/llm/types';
+import { needsLLMEnhancement, enhanceWithLLM } from '@/lib/variable-detection-llm';
+import type { TranscriptSegment } from '@/lib/variable-detection';
+import type { ActionEvent } from '@/lib/variable-detection-llm';
 
 export interface VariableConfirmationProps {
   /** Detected variables to review */
@@ -55,6 +61,14 @@ export interface VariableConfirmationProps {
   onAddManual?: (variable: VariableHint) => void;
   /** Optional className for styling */
   className?: string;
+  /** Optional LLM provider for enhancement */
+  llmProvider?: ILLMProvider;
+  /** Speech segments for LLM enhancement context */
+  speechSegments?: TranscriptSegment[];
+  /** Action events for LLM enhancement context */
+  actions?: ActionEvent[];
+  /** Callback when variables are enhanced by LLM */
+  onEnhanced?: (variables: VariableHint[]) => void;
 }
 
 /**
@@ -537,10 +551,16 @@ export function VariableConfirmation({
   onConfirm,
   onAddManual,
   className,
+  llmProvider,
+  speechSegments = [],
+  actions = [],
+  onEnhanced,
 }: VariableConfirmationProps) {
   const [variables, setVariables] = React.useState<VariableHint[]>(detectedVariables);
   const [showManualAdd, setShowManualAdd] = React.useState(false);
   const [filter, setFilter] = React.useState<'all' | 'detected' | 'confirmed' | 'rejected'>('all');
+  const [isEnhancing, setIsEnhancing] = React.useState(false);
+  const [enhancementError, setEnhancementError] = React.useState<string | null>(null);
 
   // Update variables when detectedVariables prop changes
   React.useEffect(() => {
@@ -629,6 +649,50 @@ export function VariableConfirmation({
     onConfirm(confirmedVars);
   };
 
+  const handleEnhanceWithLLM = async () => {
+    if (!llmProvider) return;
+    
+    setIsEnhancing(true);
+    setEnhancementError(null);
+    
+    try {
+      const preliminaryResult = {
+        variables,
+        conditionals: [],
+        processingTime: 0,
+      };
+      
+      const enhancedResult = await enhanceWithLLM(
+        preliminaryResult,
+        speechSegments,
+        actions,
+        llmProvider,
+        { enabled: true, edgeCaseOnly: true, minConfidenceThreshold: 0.6 }
+      );
+      
+      // Merge enhanced variables with existing confirmed/rejected status
+      const mergedVariables = enhancedResult.variables.map((enhanced) => {
+        const existing = variables.find((v) => v.id === enhanced.id);
+        if (existing) {
+          return { ...enhanced, status: existing.status };
+        }
+        return enhanced;
+      });
+      
+      setVariables(mergedVariables);
+      onEnhanced?.(mergedVariables);
+    } catch (error) {
+      console.error('LLM enhancement failed:', error);
+      setEnhancementError(error instanceof Error ? error.message : 'Enhancement failed');
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
+  // Check if enhancement is available and needed
+  const canEnhance = llmProvider && needsLLMEnhancement({ variables, conditionals: [], processingTime: 0 });
+  const lowConfidenceCount = variables.filter((v) => getConfidenceLevel(v.confidence) === 'low').length;
+
   return (
     <div className={cn('flex flex-col space-y-6', className)}>
       {/* Header */}
@@ -681,6 +745,52 @@ export function VariableConfirmation({
             <div className="text-2xl font-bold text-destructive">{stats.rejected}</div>
           </div>
         </div>
+
+        {/* LLM Enhancement Button */}
+        {llmProvider && (
+          <div className="flex items-center justify-between rounded-lg border bg-card p-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-purple-500" />
+                <span className="text-sm font-medium">AI Enhancement Available</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {lowConfidenceCount > 0
+                  ? `${lowConfidenceCount} low confidence variable${lowConfidenceCount !== 1 ? 's' : ''} can be analyzed with AI`
+                  : 'AI can help validate and improve variable detection'}
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleEnhanceWithLLM}
+              disabled={isEnhancing}
+              className="gap-2"
+            >
+              {isEnhancing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Enhance with AI
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Enhancement Error */}
+        {enhancementError && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              <span>Enhancement failed: {enhancementError}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <Separator />
