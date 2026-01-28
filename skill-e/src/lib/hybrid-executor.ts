@@ -10,18 +10,24 @@
 import type { SkillStep } from './skill-parser';
 import { DOMExecutor, type AutomationResult, type AutomationOptions } from './browser-automation';
 import { ImageExecutor } from './image-executor';
+import { CDPExecutor, type CDPExecutionResult } from './cdp/executor';
+import { isChromeAvailable } from './cdp/client';
 
 /**
  * Execution mode for hybrid executor
+ * - 'cdp': CDP-based (most reliable, bypasses anti-bot)
+ * - 'dom': DOM-based (traditional)
+ * - 'image': Image-based (coordinates)
+ * - 'hybrid': Tries CDP → DOM → Image → Human
  */
-export type ExecutionMode = 'dom' | 'image' | 'hybrid';
+export type ExecutionMode = 'cdp' | 'dom' | 'image' | 'hybrid';
 
 /**
  * Enhanced automation result with execution details
  */
 export interface HybridExecutionResult extends AutomationResult {
   /** Which executor was used successfully */
-  executorUsed?: 'dom' | 'image' | 'none';
+  executorUsed?: 'cdp' | 'dom' | 'image' | 'none';
   
   /** Whether human intervention is needed */
   needsHuman?: boolean;
@@ -31,6 +37,9 @@ export interface HybridExecutionResult extends AutomationResult {
   
   /** Suggestions for manual intervention */
   suggestions?: string[];
+  
+  /** Screenshot after execution */
+  screenshot?: string;
 }
 
 /**
@@ -39,6 +48,12 @@ export interface HybridExecutionResult extends AutomationResult {
 export interface HybridExecutorOptions extends AutomationOptions {
   /** Execution mode (default: 'hybrid') */
   mode?: ExecutionMode;
+  
+  /** CDP port (default: 9222) */
+  cdpPort?: number;
+  
+  /** Whether to try CDP first in hybrid mode (default: true) */
+  useCDP?: boolean;
   
   /** Whether to try image executor if DOM fails (default: true) */
   fallbackToImage?: boolean;
@@ -61,8 +76,11 @@ export interface HybridExecutorOptions extends AutomationOptions {
 export class HybridExecutor {
   private domExecutor: DOMExecutor;
   private imageExecutor: ImageExecutor;
+  private cdpExecutor: CDPExecutor | null = null;
   private defaultOptions: HybridExecutorOptions = {
     mode: 'hybrid',
+    cdpPort: 9222,
+    useCDP: true,
     fallbackToImage: true,
     imageConfidence: 0.7,
     pauseOnFailure: true,
@@ -80,6 +98,28 @@ export class HybridExecutor {
   constructor(targetWindow?: Window) {
     this.domExecutor = new DOMExecutor(targetWindow);
     this.imageExecutor = new ImageExecutor();
+  }
+
+  /**
+   * Initialize CDP executor if available
+   */
+  private async initCDPExecutor(port?: number): Promise<boolean> {
+    if (this.cdpExecutor?.isConnected()) {
+      return true;
+    }
+
+    const isAvailable = await isChromeAvailable(port);
+    if (!isAvailable) {
+      return false;
+    }
+
+    try {
+      this.cdpExecutor = new CDPExecutor({ port });
+      await this.cdpExecutor.connect();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -103,6 +143,9 @@ export class HybridExecutor {
 
     // Determine execution strategy based on mode
     switch (opts.mode) {
+      case 'cdp':
+        return await this.executeCDPOnly(step, opts, executionLog);
+      
       case 'dom':
         return await this.executeDOMOnly(step, opts, executionLog);
       
@@ -113,6 +156,65 @@ export class HybridExecutor {
       default:
         return await this.executeHybrid(step, opts, executionLog);
     }
+  }
+
+  /**
+   * Execute using CDP only
+   */
+  private async executeCDPOnly(
+    step: SkillStep,
+    options: HybridExecutorOptions,
+    executionLog: string[]
+  ): Promise<HybridExecutionResult> {
+    executionLog.push('Attempting CDP execution...');
+
+    // Initialize CDP if needed
+    const cdpAvailable = await this.initCDPExecutor(options.cdpPort);
+    if (!cdpAvailable) {
+      executionLog.push('✗ CDP not available (Chrome not running with debugging port)');
+      return {
+        success: false,
+        error: 'CDP not available. Chrome must be running with --remote-debugging-port flag.',
+        executorUsed: 'none',
+        executionLog,
+        suggestions: [
+          'Start Chrome with: chrome --remote-debugging-port=9222',
+          'Or switch to DOM or Image mode',
+        ],
+      };
+    }
+
+    const result = await this.cdpExecutor!.executeStep(step);
+
+    if (result.success) {
+      executionLog.push('✓ CDP execution succeeded');
+      return {
+        success: true,
+        executorUsed: 'cdp',
+        screenshot: result.screenshot,
+        executionLog,
+      };
+    }
+
+    executionLog.push(`✗ CDP execution failed: ${result.error}`);
+
+    if (options.pauseOnFailure) {
+      return {
+        success: false,
+        error: result.error,
+        executorUsed: 'none',
+        needsHuman: true,
+        executionLog,
+        suggestions: this.generateSuggestions(step, 'dom'),
+      };
+    }
+
+    return {
+      success: false,
+      error: result.error,
+      executorUsed: 'none',
+      executionLog,
+    };
   }
 
   /**
@@ -196,16 +298,45 @@ export class HybridExecutor {
   }
 
   /**
-   * Execute using hybrid approach (DOM first, then image)
+   * Execute using hybrid approach (CDP → DOM → Image → Human)
    */
   private async executeHybrid(
     step: SkillStep,
     options: HybridExecutorOptions,
     executionLog: string[]
   ): Promise<HybridExecutionResult> {
-    // Phase 1: Try DOM first (if selector is available)
+    let phase = 1;
+
+    // Phase 1: Try CDP first (most reliable, bypasses anti-bot)
+    if (options.useCDP) {
+      executionLog.push(`Phase ${phase}: Checking CDP availability...`);
+      
+      const cdpAvailable = await this.initCDPExecutor(options.cdpPort);
+      
+      if (cdpAvailable) {
+        executionLog.push(`Phase ${phase}: Attempting CDP execution...`);
+        const cdpResult = await this.cdpExecutor!.executeStep(step);
+
+        if (cdpResult.success) {
+          executionLog.push('✓ CDP execution succeeded');
+          return {
+            success: true,
+            executorUsed: 'cdp',
+            screenshot: cdpResult.screenshot,
+            executionLog,
+          };
+        }
+
+        executionLog.push(`✗ CDP execution failed: ${cdpResult.error}`);
+      } else {
+        executionLog.push(`Phase ${phase}: CDP not available (Chrome not running with debugging)`);
+      }
+      phase++;
+    }
+
+    // Phase 2: Try DOM (if selector is available)
     if (this.canUseDOMExecutor(step)) {
-      executionLog.push('Phase 1: Attempting DOM execution...');
+      executionLog.push(`Phase ${phase}: Attempting DOM execution...`);
 
       const domResult = await this.domExecutor.executeStep(step, options);
 
@@ -220,12 +351,13 @@ export class HybridExecutor {
 
       executionLog.push(`✗ DOM execution failed: ${domResult.error}`);
     } else {
-      executionLog.push('Phase 1: Skipping DOM execution (no selector available)');
+      executionLog.push(`Phase ${phase}: Skipping DOM execution (no selector available)`);
     }
+    phase++;
 
-    // Phase 2: Fall back to image-based (if enabled and possible)
+    // Phase 3: Fall back to image-based (if enabled and possible)
     if (options.fallbackToImage && this.canUseImageExecutor(step)) {
-      executionLog.push('Phase 2: Falling back to image-based execution...');
+      executionLog.push(`Phase ${phase}: Falling back to image-based execution...`);
 
       const imageResult = await this.imageExecutor.executeStep(step, options);
 
@@ -240,11 +372,11 @@ export class HybridExecutor {
 
       executionLog.push(`✗ Image execution failed: ${imageResult.error}`);
     } else {
-      executionLog.push('Phase 2: Skipping image execution (not available or disabled)');
+      executionLog.push(`Phase ${phase}: Skipping image execution (not available or disabled)`);
     }
 
-    // Phase 3: Both failed - pause for human intervention
-    executionLog.push('Phase 3: Both DOM and image execution failed');
+    // Phase 4: All failed - pause for human intervention
+    executionLog.push(`Phase ${phase}: All automation methods failed`);
 
     if (options.pauseOnFailure) {
       executionLog.push('⏸ Pausing for human intervention');
@@ -260,7 +392,7 @@ export class HybridExecutor {
 
     return {
       success: false,
-      error: 'Both DOM and image execution failed',
+      error: 'All automation methods failed',
       executorUsed: 'none',
       executionLog,
     };
@@ -303,7 +435,7 @@ export class HybridExecutor {
   /**
    * Generate suggestions for manual intervention
    */
-  private generateSuggestions(step: SkillStep, failedMode: 'dom' | 'image' | 'hybrid'): string[] {
+  private generateSuggestions(step: SkillStep, failedMode: 'dom' | 'image' | 'hybrid' | 'cdp'): string[] {
     const suggestions: string[] = [];
 
     switch (step.actionType) {
@@ -353,6 +485,13 @@ export class HybridExecutor {
       suggestions.push('Consider updating the step with better selectors or coordinates');
       suggestions.push('Check if the page has loaded completely');
       suggestions.push('Verify the element is visible and not hidden');
+      suggestions.push('Try running Chrome with: chrome --remote-debugging-port=9222');
+    }
+
+    if (failedMode === 'cdp') {
+      suggestions.push('Chrome must be running with --remote-debugging-port=9222');
+      suggestions.push('Check if Chrome is installed and accessible');
+      suggestions.push('Try using DOM mode instead (--mode dom)');
     }
 
     return suggestions;
@@ -380,10 +519,34 @@ export class HybridExecutor {
   }
 
   /**
+   * Get the CDP executor instance
+   */
+  getCDPExecutor(): CDPExecutor | null {
+    return this.cdpExecutor;
+  }
+
+  /**
+   * Check if CDP is available
+   */
+  async isCDPAvailable(port?: number): Promise<boolean> {
+    return isChromeAvailable(port || this.defaultOptions.cdpPort);
+  }
+
+  /**
    * Clear image executor cache
    */
   clearCache(): void {
     this.imageExecutor.clearCache();
+  }
+
+  /**
+   * Disconnect from CDP
+   */
+  async disconnectCDP(): Promise<void> {
+    if (this.cdpExecutor) {
+      await this.cdpExecutor.disconnect();
+      this.cdpExecutor = null;
+    }
   }
 }
 

@@ -10,7 +10,7 @@ Implements cross-platform build and distribution for Windows, macOS, and Linux. 
 
 ## Phase 1: Icon Assets
 
-- [ ] 1. Create App Icons
+- [x] 1. Create App Icons
   - Create icons/icon.ico (Windows, multi-size)
   - Create icons/icon.icns (macOS, multi-size)
   - Create icons/32x32.png
@@ -21,25 +21,25 @@ Implements cross-platform build and distribution for Windows, macOS, and Linux. 
 
 ## Phase 2: Tauri Bundle Configuration
 
-- [ ] 2. Configure tauri.conf.json
+- [x] 2. Configure tauri.conf.json
   - Set bundle.active = true
   - Set bundle.identifier = "com.skille.app"
   - Configure bundle.icon paths
   - Set category, description, copyright
   - _Requirements: FR-11.1, FR-11.2, FR-11.3_
 
-- [ ] 3. Windows Bundle Config
+- [x] 3. Windows Bundle Config
   - Configure WiX installer
   - Set language to en-US
   - Optional: Add dialog and banner images
   - _Requirements: FR-11.6_
 
-- [ ] 4. macOS Bundle Config
+- [x] 4. macOS Bundle Config
   - Set minimumSystemVersion = "10.15"
   - Configure for universal binary
   - _Requirements: FR-11.11, FR-11.12_
 
-- [ ] 5. Linux Bundle Config
+- [x] 5. Linux Bundle Config
   - Configure AppImage
   - Configure .deb package
   - Set bundleMediaFramework = true
@@ -54,14 +54,14 @@ Implements cross-platform build and distribution for Windows, macOS, and Linux. 
   - Test uninstallation
   - _Requirements: FR-11.1, FR-11.6_
 
-- [ ] 7. Test macOS Build
+- [~] 7. Test macOS Build
   - Run `pnpm tauri build` on Mac
   - Verify DMG is created
   - Test installation (drag to Applications)
   - Test Gatekeeper compatibility
   - _Requirements: FR-11.2, FR-11.11_
 
-- [ ] 8. Test Linux Build
+- [~] 8. Test Linux Build
   - Run `pnpm tauri build` on Linux/WSL
   - Verify AppImage is created
   - Test AppImage execution
@@ -69,14 +69,14 @@ Implements cross-platform build and distribution for Windows, macOS, and Linux. 
 
 ## Phase 4: CI/CD Pipeline
 
-- [ ] 9. Create GitHub Actions Workflow
+- [x] 9. Create GitHub Actions Workflow
   - Create .github/workflows/release.yml
   - Configure matrix for all 3 platforms
   - Install Rust and Node dependencies
   - Run tauri build
   - _Requirements: FR-11.5_
 
-- [ ] 10. Upload Artifacts
+- [x] 10. Upload Artifacts
   - Use tauri-action for build
   - Upload to GitHub Release
   - Create draft release on tag
@@ -84,13 +84,13 @@ Implements cross-platform build and distribution for Windows, macOS, and Linux. 
 
 ## Phase 5: Auto-Updates (Post-Hackathon)
 
-- [ ] 11. Configure Updater Plugin
+- [~] 11. Configure Updater Plugin
   - Add tauri-plugin-updater
   - Set endpoints to GitHub releases
   - Generate keypair for signing
   - _Requirements: FR-11.21_
 
-- [ ] 12. Implement Update Check
+- [~] 12. Implement Update Check
   - Check for updates on app start
   - Show notification when available
   - Download in background
@@ -99,7 +99,7 @@ Implements cross-platform build and distribution for Windows, macOS, and Linux. 
 
 ## Phase 6: Build Scripts
 
-- [ ] 13. Create Build Scripts
+- [x] 13. Create Build Scripts
   - Create scripts/build-all.ps1 (Windows)
   - Create scripts/build-all.sh (Unix)
   - Build frontend first, then Tauri
@@ -107,14 +107,14 @@ Implements cross-platform build and distribution for Windows, macOS, and Linux. 
 
 ## Phase 7: Testing
 
-- [ ] 14. Cross-Platform Verification
+- [~] 14. Cross-Platform Verification
   - Install on clean Windows machine
   - Install on clean macOS machine
   - Verify all features work
   - Test system tray on both
   - _Requirements: All_
 
-- [ ] 15. Checkpoint - Verify Phase Complete
+- [~] 15. Checkpoint - Verify Phase Complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ---

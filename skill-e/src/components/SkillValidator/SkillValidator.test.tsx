@@ -255,7 +255,7 @@ describe('SkillValidator - Progress Tracking Logic', () => {
       successRate: 0.5,
     };
     
-    const sessionState = 'paused';
+    const sessionState = 'paused' as string;
     
     // Should not show estimate when paused
     const shouldShowEstimate = 

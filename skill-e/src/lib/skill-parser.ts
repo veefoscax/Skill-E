@@ -70,6 +70,18 @@ export interface ParsedSkill {
   /** Skill description */
   description: string;
   
+  /** Skill version */
+  version?: string;
+  
+  /** Skill author */
+  author?: string;
+  
+  /** Creation date */
+  created?: string;
+  
+  /** Skill title (from markdown heading) */
+  title?: string;
+  
   /** All extracted steps */
   steps: SkillStep[];
   
@@ -194,9 +206,17 @@ export function parseSkill(markdown: string): ParsedSkill {
   // Extract steps from Instructions section
   const steps = extractSteps(markdown);
   
+  // Extract title from first heading
+  const titleMatch = markdown.match(/^#\s+(.+)$/m);
+  const title = titleMatch ? titleMatch[1] : undefined;
+  
   return {
     name: frontmatter.name || 'unnamed-skill',
     description: frontmatter.description || '',
+    version: frontmatter.version,
+    author: frontmatter.author,
+    created: frontmatter.created,
+    title,
     steps,
     parameters,
     prerequisites,

@@ -72,6 +72,9 @@ export interface ExecutionTimelineEntry {
 /**
  * Execution session state
  */
+/** Alias for session config */
+export type ExecutionConfig = ExecutionSessionConfig;
+
 export type ExecutionSessionState = 
   | 'idle'           // Not started
   | 'running'        // Currently executing
@@ -134,6 +137,9 @@ export interface ExecutionSessionStats {
   /** Success rate (0-1) */
   successRate: number;
 }
+
+/** Alias for execution stats */
+export type ExecutionStats = ExecutionSessionStats;
 
 /**
  * Execution session
@@ -334,7 +340,7 @@ export class ExecutionSession {
   /**
    * Execute a single step
    */
-  private async executeStep(step: SkillStep): Promise<void> {
+  async executeStep(step: SkillStep): Promise<HybridExecutionResult> {
     const stepStartTime = Date.now();
     this.stepStartTimes.set(step.id, stepStartTime);
     
@@ -402,6 +408,7 @@ export class ExecutionSession {
         });
         
         this.emit('stepComplete', { step, result, sessionId: this.sessionId });
+        return result;
       } else {
         // Categorize the error for better handling
         const categorizedError = categorizeError(step, result);
@@ -425,8 +432,7 @@ export class ExecutionSession {
           });
           
           // Retry the step
-          await this.executeStep(step);
-          return;
+          return await this.executeStep(step);
         }
         
         // Max retries reached or cannot retry - offer rollback if state was saved
@@ -461,6 +467,7 @@ export class ExecutionSession {
           savedState,
           sessionId: this.sessionId 
         });
+        return result;
       }
     } catch (error) {
       // Unexpected error
@@ -496,6 +503,14 @@ export class ExecutionSession {
         savedState,
         sessionId: this.sessionId 
       });
+      
+      // Return error result
+      return {
+        success: false,
+        error: categorizedError.message,
+        executorUsed: 'none',
+        executionLog: [],
+      };
     }
   }
 
