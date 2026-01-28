@@ -8,6 +8,8 @@
  */
 
 import type { OptimizedContext } from './context-optimizer';
+import type { DocReference } from '../types/context-search';
+import { formatReferencesSection, shouldIncludeReferences } from './skill-references-formatter';
 
 /**
  * Generated skill content
@@ -97,12 +99,15 @@ export interface SkillGenerationOptions {
   
   /** Callback for streaming chunks */
   onChunk?: (chunk: string) => void;
+  
+  /** Documentation references to include (optional) */
+  docReferences?: DocReference[];
 }
 
 /**
  * Default generation options
  */
-const DEFAULT_OPTIONS: Required<Omit<SkillGenerationOptions, 'apiKey' | 'onChunk'>> = {
+const DEFAULT_OPTIONS: Required<Omit<SkillGenerationOptions, 'apiKey' | 'onChunk' | 'docReferences'>> = {
   provider: 'anthropic',
   model: 'claude-3-5-sonnet-20241022',
   maxTokens: 4000,
@@ -132,7 +137,7 @@ export async function generateSkill(
   }
   
   // Build the prompt
-  const prompt = buildSkillPrompt(context);
+  const prompt = buildSkillPrompt(context, opts.docReferences);
   
   // Call the LLM
   let markdown: string;
@@ -141,6 +146,18 @@ export async function generateSkill(
     markdown = await generateWithStreaming(prompt, opts as unknown as Required<SkillGenerationOptions>);
   } else {
     markdown = await generateWithoutStreaming(prompt, opts as unknown as Required<SkillGenerationOptions>);
+  }
+  
+  // Append documentation references if provided
+  if (opts.docReferences && shouldIncludeReferences(opts.docReferences)) {
+    const referencesSection = formatReferencesSection(opts.docReferences, {
+      headingLevel: 2,
+      maxSnippetLength: 400,
+    });
+    
+    if (referencesSection) {
+      markdown += '\n\n' + referencesSection;
+    }
   }
   
   // Parse the generated markdown
@@ -172,9 +189,10 @@ export async function generateSkill(
  * Build the skill generation prompt
  * 
  * @param context - Optimized context
+ * @param docReferences - Optional documentation references
  * @returns Prompt string
  */
-function buildSkillPrompt(context: OptimizedContext): string {
+function buildSkillPrompt(context: OptimizedContext, docReferences?: DocReference[]): string {
   const { taskGoal, keySteps, fullNarration, variables, conditionals, summary } = context;
   
   // Format steps
@@ -224,6 +242,25 @@ function buildSkillPrompt(context: OptimizedContext): string {
       }).join('\n')
     : 'None detected';
   
+  // Format documentation references
+  let referencesText = '';
+  if (docReferences && docReferences.length > 0) {
+    referencesText = '\n\n## Referenced Documentation\n\n';
+    referencesText += 'The following libraries/APIs were detected and documentation was fetched:\n\n';
+    
+    for (const ref of docReferences.slice(0, 3)) { // Limit to top 3 for prompt
+      referencesText += `### ${ref.library}\n`;
+      referencesText += `**${ref.title}**\n`;
+      referencesText += `${ref.snippet.slice(0, 200)}...\n\n`;
+      
+      if (ref.codeExample) {
+        referencesText += `Example:\n\`\`\`\n${ref.codeExample.slice(0, 150)}\n\`\`\`\n\n`;
+      }
+    }
+    
+    referencesText += '*Note: Full documentation references will be appended automatically.*\n';
+  }
+  
   return `# Objective
 
 You are an expert at creating Agent Skills from demonstration recordings.
@@ -257,6 +294,7 @@ ${variablesText}
 ## Detected Conditions
 
 ${conditionalsText}
+${referencesText}
 
 # Generation Instructions
 

@@ -183,7 +183,7 @@ export const PROVIDER_BASE_URLS: Record<LLMProvider, string> = {
   anthropic: 'https://api.anthropic.com/v1',
   openai: 'https://api.openai.com/v1',
   openrouter: 'https://openrouter.ai/api/v1',
-  zhipu: 'https://open.bigmodel.cn/api/paas/v4',
+  zhipu: 'https://api.z.ai/v1',
   moonshot: 'https://api.moonshot.ai/v1',
   google: 'https://generativelanguage.googleapis.com/v1beta',
   ollama: 'http://localhost:11434/api',

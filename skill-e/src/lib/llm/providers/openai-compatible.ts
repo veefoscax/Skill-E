@@ -223,7 +223,7 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
  * Zhipu AI Provider (GLM models)
  * 
  * Zhipu AI (智谱AI) provides GLM-4, GLM-4V, and other models.
- * Platform: https://open.bigmodel.cn (China) or https://z.ai (International)
+ * Platform: https://z.ai (Worldwide) or https://open.bigmodel.cn (China)
  * 
  * Note: Zhipu uses OpenAI-compatible API format.
  */
@@ -240,8 +240,8 @@ export class ZhipuProvider extends OpenAICompatibleProvider {
       id: 'zhipu' as LLMProvider,
       name: 'Zhipu AI (GLM-4)',
       description: 'GLM-4, GLM-4V, and GLM-3 models from Zhipu AI (智谱AI)',
-      website: 'https://www.zhipuai.cn',
-      docsUrl: 'https://open.bigmodel.cn/dev/api',
+      website: 'https://z.ai',
+      docsUrl: 'https://docs.z.ai',
       requiresApiKey: true,
       hasFreeTier: true,
       popularModels: ['glm-4', 'glm-4v', 'glm-4-air', 'glm-3-turbo'],
