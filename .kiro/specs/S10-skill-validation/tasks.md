@@ -146,21 +146,36 @@ Implements interactive skill testing with step-by-step execution, error feedback
   - Benefit from existing subscription
   - _Requirements: FR-10.11_
 
-## Phase 9: Testing
+## Phase 9: Semantic Judge (Quality)
 
-- [ ] 19. Executor Testing
+- [ ] 19. Semantic Validator Logic
+  - Create src/lib/semantic-judge.ts
+  - Implement LLM critique prompt (compare Goal vs Skill)
+  - Define scoring rubrics (0-100)
+  - Return structured feedback (Strengths, Weaknesses, Score)
+  - _Requirements: FR-10.12, FR-10.13_
+
+- [ ] 20. Quality Badge UI
+  - Show score component in Skill Validator
+  - Show "Verified" shield if >90
+  - Show breakdown tooltip on hover
+  - _Requirements: FR-10.14_
+
+## Phase 10: Testing
+
+- [ ] 21. Executor Testing
   - Test DOM executor with mock page
   - Test image executor with templates
   - Test hybrid fallback logic
   - _Requirements: FR-10.4, FR-10.5_
 
-- [ ] 20. Integration Testing
+- [ ] 22. Integration Testing
   - Test full validation flow
   - Test feedback and retry
   - Test skill update on fix
   - _Requirements: All_
 
-- [ ] 21. Checkpoint - Verify Phase Complete
+- [ ] 23. Checkpoint - Verify Phase Complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ---

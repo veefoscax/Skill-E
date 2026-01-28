@@ -25,6 +25,11 @@ Interactive skill testing and validation system. Allows users to run the generat
 **I want** to refine the skill based on test results
 **So that** the final skill is reliable
 
+### US5: Quality Scoring (Semantic Judge)
+**As a** skill creator
+**I want** to see a "Quality Score" (0-100) and semantic critique
+**So that** I know if the skill is safe, clear, and complete before saving
+
 ## Functional Requirements
 
 - **FR-10.1**: Step-by-step skill execution with visual feedback
@@ -38,6 +43,9 @@ Interactive skill testing and validation system. Allows users to run the generat
 - **FR-10.9**: Success/failure tracking per step
 - **FR-10.10**: Rollback capability for destructive actions
 - **FR-10.11**: Integration with Antigravity/Claude Code execution
+- **FR-10.12**: **Semantic Judge**: LLM-based critique of the generated skill vs user intent.
+- **FR-10.13**: **Quality Score**: 0-100 score based on Clarity, Safety, and Completeness.
+- **FR-10.14**: **Verified Badge**: Visual indicator for high-scoring skills (>90).
 
 ## Non-Functional Requirements
 
@@ -86,7 +94,15 @@ Interactive skill testing and validation system. Allows users to run the generat
 - [ ] Can delegate execution to Antigravity (if available)
 - [ ] Can delegate to Claude Code (if available)
 - [ ] Uses existing subscriptions (no extra cost)
+- [ ] Uses existing subscriptions (no extra cost)
 - _Requirements: FR-10.11_
+
+### AC7: Semantic Judge
+- [ ] LLM compares "Task Goal" (S05) vs "Generated Skill" (S06)
+- [ ] Returns structured critique (Safety, Clarity, Completeness)
+- [ ] Calculates weighted score (0-100)
+- [ ] Shows "Verified" badge if score is high
+- _Requirements: FR-10.12, FR-10.13, FR-10.14_
 
 ## Dependencies
 - S06: Skill Export (skill format)
