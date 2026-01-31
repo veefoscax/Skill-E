@@ -128,6 +128,44 @@ fn cancel_recording() -> Result<(), String> {
     Ok(())
 }
 
+/// Open a folder in the system file manager
+#[tauri::command]
+fn open_folder(path: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Open DevTools for debugging (only works in debug builds or with devtools feature)
+#[tauri::command]
+fn open_devtools(window: tauri::Window) -> Result<(), String> {
+    #[cfg(debug_assertions)]
+    {
+        window.open_devtools();
+    }
+    // In release builds, this is a no-op unless the app is built with the devtools feature
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Recording state storage
 static RECORDING_STATE: Mutex<Option<RecordingState>> = Mutex::new(None);
@@ -245,6 +283,8 @@ pub fn run() {
             add_recording_frame,
             set_recording_audio,
             create_settings_window,
+            open_folder,
+            open_devtools,
         ])
         .setup(|app| {
             // Note: For Tauri v2, window effects (Mica/Vibrancy) are configured in tauri.conf.json

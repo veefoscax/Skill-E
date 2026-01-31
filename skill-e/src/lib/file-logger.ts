@@ -91,3 +91,22 @@ export const logger = {
   warn: (...args: any[]) => log('warn', ...args),
   error: (...args: any[]) => log('error', ...args),
 };
+
+/**
+ * Simple file log function - for direct use
+ * Logs to console and tries to write to file
+ */
+export async function fileLog(message: string, level: 'info' | 'error' | 'warn' = 'info'): Promise<void> {
+  const timestamp = new Date().toISOString();
+  const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
+  
+  // Always log to console
+  console[level](logEntry);
+  
+  // Try to write to file
+  try {
+    await writeLog(`${level.toUpperCase()}: ${message}`);
+  } catch (e) {
+    // Silent fail - console log is enough
+  }
+}

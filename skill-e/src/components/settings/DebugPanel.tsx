@@ -4,13 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useSettingsStore } from '@/stores/settings';
 import { fetchOllamaModels } from '@/lib/ollama';
 import { checkModelExists, getModelsDirectory } from '@/lib/whisper-real';
-import { Loader2, CheckCircle, XCircle, AlertTriangle, Terminal } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Terminal, Bug, FolderOpen, ShieldCheck, AlertCircle } from 'lucide-react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { invoke } from '@tauri-apps/api/core';
+import { appDataDir, tempDir, join } from '@tauri-apps/api/path';
 
 export function DebugPanel() {
     const settings = useSettingsStore();
 
     const [ollamaStatus, setOllamaStatus] = useState<{ status: 'idle' | 'loading' | 'success' | 'error', message: string, details?: string }>({ status: 'idle', message: '' });
     const [whisperStatus, setWhisperStatus] = useState<{ status: 'idle' | 'loading' | 'success' | 'error', message: string, path?: string }>({ status: 'idle', message: '' });
+    const [logsPath, setLogsPath] = useState<string>('');
 
     const testOllama = async () => {
         setOllamaStatus({ status: 'loading', message: 'Testing connection...' });
@@ -62,6 +66,45 @@ export function DebugPanel() {
         }
     };
 
+    const openDevTools = async () => {
+        try {
+            // In Tauri v2, we need to use the webview window API
+            // For now, use keyboard shortcut F12 or Ctrl+Shift+I in the app
+            // Or we can emit an event to open devtools
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('open_devtools');
+        } catch (e) {
+            console.error('Failed to open DevTools:', e);
+            // Fallback: show message
+            alert('Press F12 or Ctrl+Shift+I to open DevTools');
+        }
+    };
+
+    const openLogsFolder = async () => {
+        try {
+            const temp = await tempDir();
+            const logsDir = await join(temp, 'skill-e-logs');
+            await invoke('open_folder', { path: logsDir });
+        } catch (e) {
+            console.error('Failed to open logs folder:', e);
+            // Fallback: try to get the path and show it
+            const temp = await tempDir();
+            const logsDir = await join(temp, 'skill-e-logs');
+            alert(`Logs folder:\n${logsDir}`);
+        }
+    };
+
+    const openModelsFolder = async () => {
+        try {
+            const modelsDir = await getModelsDirectory();
+            await invoke('open_folder', { path: modelsDir });
+        } catch (e) {
+            console.error('Failed to open models folder:', e);
+            const modelsDir = await getModelsDirectory();
+            alert(`Models folder:\n${modelsDir}`);
+        }
+    };
+
     return (
         <Card className="border-dashed">
             <CardHeader className="pb-3">
@@ -72,6 +115,61 @@ export function DebugPanel() {
                 <CardDescription>Verify your environment before recording</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+
+                {/* Permission Info */}
+                <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 rounded-md p-3">
+                    <div className="flex items-start gap-2">
+                        <ShieldCheck className="h-4 w-4 text-green-600 mt-0.5" />
+                        <div className="text-xs text-green-800">
+                            <p className="font-semibold">No Admin Required</p>
+                            <p className="opacity-80 mt-1">
+                                Skill-E runs in user space only. All files (models, logs, sessions) are stored in your user profile (%LOCALAPPDATA%).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Debug Tools */}
+                <div className="border rounded-md p-3 bg-blue-50/50">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                            <Bug className="h-4 w-4" />
+                            Debug Tools
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={openDevTools}
+                            className="text-xs"
+                        >
+                            <Terminal className="h-3 w-3 mr-1" />
+                            Open Console
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={openLogsFolder}
+                            className="text-xs"
+                        >
+                            <FolderOpen className="h-3 w-3 mr-1" />
+                            Open Logs
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={openModelsFolder}
+                            className="text-xs col-span-2"
+                        >
+                            <FolderOpen className="h-3 w-3 mr-1" />
+                            Open Models Folder
+                        </Button>
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-2">
+                        Logs are saved in %TEMP%\skill-e-logs\ even in portable mode
+                    </p>
+                </div>
 
                 {/* Ollama Check */}
                 <div className="border rounded-md p-3">

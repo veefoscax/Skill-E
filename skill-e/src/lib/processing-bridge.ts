@@ -7,7 +7,6 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { processSession } from './processing';
-// Import removed - now using generateLLMContext from processing.ts
 import { generateSkill } from './skill-generator';
 import { useSettingsStore } from '@/stores/settings';
 import type { ProcessingProgress } from '../types/processing';
@@ -16,12 +15,37 @@ import type { TranscriptionResult } from './whisper';
 import { transcribeAudio } from './whisper';
 import { readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { downloadModel as downloadWhisperModel } from './whisper-real';
+import { addFailedSession, FailedSession } from './failed-sessions';
+import { fileLog } from './file-logger';
 
 export interface ProcessingResult {
   success: boolean;
   skillMarkdown?: string;
   error?: string;
   processingTime: number;
+  failedSession?: FailedSession;
+}
+
+/**
+ * Transcription Error Types
+ */
+export type TranscriptionErrorType = 
+  | 'MODEL_NOT_FOUND'
+  | 'MODEL_DOWNLOAD_FAILED'
+  | 'WHISPER_TIMEOUT'
+  | 'WHISPER_FAILED'
+  | 'API_KEY_MISSING'
+  | 'API_FAILED'
+  | 'CONVERSION_FAILED'
+  | 'NO_AUDIO';
+
+export interface TranscriptionError {
+  type: TranscriptionErrorType;
+  message: string;
+  details?: string;
+  canRetry: boolean;
+  canUseApi: boolean;
+  canDownloadModel: boolean;
 }
 
 /**
@@ -30,6 +54,7 @@ export interface ProcessingResult {
  */
 async function convertWebMToWav(webmBlob: Blob): Promise<Blob> {
   console.log('🎤 Converting WebM to WAV...', 'Size:', webmBlob.size, 'bytes');
+  await fileLog(`Converting WebM to WAV, size: ${webmBlob.size} bytes`);
 
   const audioContext = new AudioContext({ sampleRate: 16000 }); // Whisper expects 16kHz
 
@@ -46,6 +71,7 @@ async function convertWebMToWav(webmBlob: Blob): Promise<Blob> {
     ]);
 
     console.log('🎤 Audio decoded:', audioBuffer.duration, 'seconds,', audioBuffer.sampleRate, 'Hz');
+    await fileLog(`Audio decoded: ${audioBuffer.duration}s at ${audioBuffer.sampleRate}Hz`);
 
     // Convert to mono 16-bit PCM
     const numberOfChannels = 1; // Mono
@@ -103,6 +129,7 @@ async function convertWebMToWav(webmBlob: Blob): Promise<Blob> {
     }
 
     console.log('🎤 Conversion complete:', samples.length, 'samples');
+    await fileLog(`WAV conversion complete: ${samples.length} samples`);
     audioContext.close();
     return new Blob([buffer], { type: 'audio/wav' });
   } catch (error) {
@@ -112,137 +139,243 @@ async function convertWebMToWav(webmBlob: Blob): Promise<Blob> {
 }
 
 /**
- * Transcribe audio using multiple fallback methods:
- * 1. Whisper Local (Rust) - with WebM to WAV conversion
- * 2. Whisper API (OpenAI)
- * 3. Generic transcript from filename (last resort - not mock)
+ * Transcribe using OpenAI Whisper API
  */
-async function transcribeWithFallback(audioPath: string): Promise<TranscriptionResult> {
-  console.log('🎤 =========================================');
-  console.log('🎤 TRANSCRIPTION FALLBACK CHAIN STARTED');
-  console.log('🎤 Audio path:', audioPath);
-  console.log('🎤 =========================================');
+async function transcribeWithApi(audioPath: string, apiKey: string): Promise<TranscriptionResult> {
+  console.log('🎤 [API] Using OpenAI Whisper API...');
+  await fileLog('Using OpenAI Whisper API');
 
-  // Try 1: Whisper API (OpenAI) if API key available
-  const settings = useSettingsStore.getState();
-  console.log('🎤 Checking Whisper API availability...');
-  console.log('🎤   - API Key exists:', !!settings.llmApiKey);
-  console.log('🎤   - Provider:', settings.llmProvider);
-
-  if (settings.llmApiKey && settings.llmProvider !== 'ollama') {
-    try {
-      console.log('🎤 [Fallback 1/3] Trying Whisper API...');
-
-      // Read audio file using Tauri FS
-      const audioBytes = await readFile(audioPath);
-      console.log('🎤   - Audio file read:', audioBytes.length, 'bytes');
-      const audioBlob = new Blob([audioBytes], { type: 'audio/webm' });
-
-      const result = await transcribeAudio(audioBlob, settings.llmApiKey);
-      console.log('🎤 ✅ Whisper API SUCCESS:', result.text.substring(0, 100));
-      return result;
-    } catch (e) {
-      console.warn('🎤 ❌ Whisper API failed:', e);
-    }
-  } else {
-    console.log('🎤 [Fallback 1/3] SKIPPED - No API key or using Ollama');
-  }
-
-  // Try 2: Web Speech API (browser native)
-  console.log('🎤 [Fallback 2/3] Checking Web Speech API...');
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  console.log('🎤   - Web Speech API available:', !!SpeechRecognition);
-
-  if (SpeechRecognition) {
-    try {
-      console.log('🎤 [Fallback 2/3] Trying Web Speech API...');
-      return await new Promise((resolve, reject) => {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'pt-BR';
-        recognition.continuous = true;
-        recognition.interimResults = false;
-
-        const segments: Array<{ id: number; start: number; end: number; text: string }> = [];
-        let fullText = '';
-
-        recognition.onresult = (event: any) => {
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            const start = event.results[i][0].timestamp || i * 3;
-            segments.push({
-              id: i + 1,
-              start,
-              end: start + 3,
-              text: transcript
-            });
-            fullText += transcript + ' ';
-          }
-        };
-
-        recognition.onend = () => {
-          if (fullText.trim()) {
-            resolve({
-              text: fullText.trim(),
-              segments: segments,
-              language: 'pt-BR',
-              duration: segments.length > 0 ? segments[segments.length - 1].end : 0
-            });
-          } else {
-            reject(new Error('No speech detected'));
-          }
-        };
-
-        recognition.onerror = (e: any) => reject(e);
-        recognition.start();
-        setTimeout(() => recognition.stop(), 15000); // 15s max
-      });
-    } catch (e) {
-      console.warn('🎤 Web Speech API failed:', e);
-    }
-  }
-
-  // Last resort: Create transcript from session info (NOT generic mock)
-  // This extracts any info we have rather than making up "Navigate to page..."
-  console.log('🎤 [Fallback 3/3] Using session-derived transcript (no STT available)');
-  console.log('🎤 ⚠️  WARNING: No transcription service available!');
-  console.log('🎤   - Local Whisper: Failed or model not downloaded');
-  console.log('🎤   - Whisper API: No API key configured');
-  console.log('🎤   - Web Speech API: Not available in this environment');
-
-  // Extract timestamp from session dir for context
-  const sessionMatch = audioPath.match(/session-(\d+)/);
-  const timestamp = sessionMatch ? parseInt(sessionMatch[1]) : Date.now();
-  const date = new Date(timestamp);
-
-  const fallbackResult = {
-    text: `Recording from ${date.toLocaleString()}. No transcription available - please review screenshots to understand the workflow.`,
-    segments: [
-      {
-        id: 1,
-        start: 0,
-        end: 5,
-        text: `Recording from ${date.toLocaleString()}.`
-      },
-      {
-        id: 2,
-        start: 6,
-        end: 10,
-        text: 'No transcription available - please review screenshots.'
-      }
-    ],
-    language: 'unknown',
-    duration: 10
-  };
-
-  console.log('🎤 Fallback result:', fallbackResult.text);
-  console.log('🎤 =========================================');
-  console.log('🎤 TRANSCRIPTION FALLBACK CHAIN COMPLETE');
-  console.log('🎤 =========================================');
-
-  return fallbackResult;
+  // Read audio file
+  const audioBytes = await readFile(audioPath);
+  console.log('🎤 [API] Audio file read:', audioBytes.length, 'bytes');
+  
+  const audioBlob = new Blob([audioBytes], { type: 'audio/webm' });
+  
+  const result = await transcribeAudio(audioBlob, apiKey);
+  console.log('🎤 [API] SUCCESS:', result.text.substring(0, 100));
+  await fileLog(`API transcription success: ${result.text.substring(0, 50)}...`);
+  
+  return result;
 }
 
-// Dummy function removed. Real generation now handled via skill-generator.ts
+/**
+ * Main transcription function - tries local first, then API if configured
+ * NO GENERIC FALLBACK - fails properly to allow retry
+ */
+async function transcribeAudioWithFallback(
+  audioPath: string,
+  onProgress: (progress: ProcessingProgress) => void
+): Promise<TranscriptionResult> {
+  console.log('🎤 =========================================');
+  console.log('🎤 TRANSCRIPTION STARTED');
+  console.log('🎤 Audio path:', audioPath);
+  console.log('🎤 =========================================');
+  await fileLog(`Transcription started for: ${audioPath}`);
+
+  const settings = useSettingsStore.getState();
+  const targetModel = settings.whisperModel || 'tiny';
+  const useGpu = settings.useGpu || false;
+
+  // Try 1: Local Whisper (preferred)
+  console.log(`🎤 [Step 1] Trying Local Whisper (model: ${targetModel}, GPU: ${useGpu})...`);
+  await fileLog(`Trying local Whisper with model: ${targetModel}`);
+
+  try {
+    // Check if model exists
+    let whisperAvailable = await invoke<boolean>('check_model_exists', { model: targetModel });
+    console.log('🎤 Model available:', whisperAvailable);
+
+    // AUTO-DOWNLOAD: If model not available, try to download it
+    if (!whisperAvailable) {
+      console.log(`🎤 Model '${targetModel}' not found. Attempting auto-download...`);
+      await fileLog(`Model not found, attempting download...`);
+      
+      onProgress({
+        stage: 'loading',
+        percentage: 20,
+        currentStep: `Downloading Whisper model (${targetModel}, ~75MB)...`
+      });
+
+      try {
+        await downloadWhisperModel(targetModel, (downloaded, total) => {
+          const percent = Math.round((downloaded / total) * 100);
+          console.log(`🎤 Download progress: ${percent}% (${Math.round(downloaded/1024/1024)}MB / ${Math.round(total/1024/1024)}MB)`);
+        });
+
+        // Check again if model is now available
+        whisperAvailable = await invoke<boolean>('check_model_exists', { model: targetModel });
+        console.log('🎤 Model available after download:', whisperAvailable);
+
+        if (!whisperAvailable) {
+          throw new Error('Model download completed but model still not found');
+        }
+      } catch (downloadError) {
+        console.error('🎤 Model download failed:', downloadError);
+        await fileLog(`Model download failed: ${downloadError}`);
+        
+        // If API key is available, try API as fallback
+        if (settings.whisperApiKey) {
+          console.log('🎤 Local model failed, trying API fallback...');
+          return await transcribeWithApi(audioPath, settings.whisperApiKey);
+        }
+        
+        // Otherwise fail with specific error
+        const error: TranscriptionError = {
+          type: 'MODEL_DOWNLOAD_FAILED',
+          message: `Failed to download Whisper model '${targetModel}'`,
+          details: downloadError instanceof Error ? downloadError.message : 'Unknown error',
+          canRetry: true,
+          canUseApi: true,
+          canDownloadModel: true
+        };
+        throw error;
+      }
+    }
+
+    if (whisperAvailable) {
+      // Read WebM file
+      console.log('🎤 Reading WebM file...');
+      const webmBytes = await readFile(audioPath);
+      console.log('🎤 WebM file size:', webmBytes.length, 'bytes');
+
+      if (webmBytes.length === 0) {
+        throw {
+          type: 'NO_AUDIO',
+          message: 'Audio file is empty',
+          canRetry: false,
+          canUseApi: false,
+          canDownloadModel: false
+        } as TranscriptionError;
+      }
+
+      const webmBlob = new Blob([webmBytes], { type: 'audio/webm' });
+
+      // Convert to WAV
+      onProgress({
+        stage: 'loading',
+        percentage: 22,
+        currentStep: 'Converting audio format...'
+      });
+
+      console.log('🎤 Converting WebM to WAV...');
+      let wavBlob: Blob;
+      try {
+        wavBlob = await convertWebMToWav(webmBlob);
+      } catch (convError) {
+        console.error('🎤 Conversion failed:', convError);
+        await fileLog(`Conversion failed: ${convError}`);
+        
+        // Try API if available
+        if (settings.whisperApiKey) {
+          console.log('🎤 Conversion failed, trying API fallback...');
+          return await transcribeWithApi(audioPath, settings.whisperApiKey);
+        }
+        
+        throw {
+          type: 'CONVERSION_FAILED',
+          message: 'Failed to convert audio format',
+          details: convError instanceof Error ? convError.message : 'Unknown error',
+          canRetry: true,
+          canUseApi: true,
+          canDownloadModel: false
+        } as TranscriptionError;
+      }
+      
+      console.log('🎤 WAV blob size:', wavBlob.size, 'bytes');
+
+      // Save WAV to temp file
+      const wavPath = audioPath.replace('.webm', '.wav');
+      console.log('🎤 Saving WAV to:', wavPath);
+      const wavBytes = new Uint8Array(await wavBlob.arrayBuffer());
+      await writeFile(wavPath, wavBytes);
+
+      console.log('🎤 WAV file saved successfully');
+
+      // Transcribe using local Whisper
+      onProgress({
+        stage: 'loading',
+        percentage: 25,
+        currentStep: 'Running local Whisper...'
+      });
+
+      console.log(`🎤 Calling transcribe_local with 180s timeout... (Model: ${targetModel})`);
+      await fileLog('Calling local Whisper...');
+
+      // Wrap Rust invoke in a timeout race to prevent infinite hanging
+      const transcriptionPromise = invoke<{
+        text: string;
+        segments: Array<{ id: number; start: number; end: number; text: string }>;
+        language: string;
+        duration: number;
+      }>('transcribe_local', {
+        audioPath: wavPath,
+        model: targetModel,
+        useGpu: useGpu
+      });
+
+      const result = await Promise.race([
+        transcriptionPromise,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Whisper transcription timed out (180s)')), 180000))
+      ]);
+
+      console.log('🎤 Transcription result received');
+      await fileLog('Local Whisper transcription successful');
+
+      return {
+        text: result.text,
+        segments: result.segments,
+        language: result.language,
+        duration: result.duration
+      };
+    }
+  } catch (error) {
+    console.error('🎤 Local Whisper ERROR:', error);
+    await fileLog(`Local Whisper failed: ${error}`);
+
+    // If it's already a TranscriptionError, re-throw
+    if (error && typeof error === 'object' && 'type' in error) {
+      throw error;
+    }
+
+    // If API key is configured, try API as fallback
+    if (settings.whisperApiKey) {
+      try {
+        return await transcribeWithApi(audioPath, settings.whisperApiKey);
+      } catch (apiError) {
+        console.error('🎤 API fallback also failed:', apiError);
+        await fileLog(`API fallback failed: ${apiError}`);
+        
+        throw {
+          type: 'API_FAILED',
+          message: 'Both local Whisper and API transcription failed',
+          details: apiError instanceof Error ? apiError.message : 'Unknown error',
+          canRetry: true,
+          canUseApi: true,
+          canDownloadModel: true
+        } as TranscriptionError;
+      }
+    }
+
+    // No fallback available - fail properly
+    throw {
+      type: 'WHISPER_FAILED',
+      message: error instanceof Error ? error.message : 'Local Whisper transcription failed',
+      details: 'Local Whisper failed and no API key is configured',
+      canRetry: true,
+      canUseApi: true,
+      canDownloadModel: true
+    } as TranscriptionError;
+  }
+
+  // Should not reach here
+  throw {
+    type: 'WHISPER_FAILED',
+    message: 'Unknown transcription error',
+    canRetry: true,
+    canUseApi: true,
+    canDownloadModel: true
+  } as TranscriptionError;
+}
 
 /**
  * Process a recording session and generate SKILL.md
@@ -284,6 +417,9 @@ export async function processRecordingAndGenerateSkill(
       throw new Error('No session directory provided for processing.');
     }
 
+    console.log('📁 Session directory:', sessionDir);
+    await fileLog(`Processing session: ${sessionDir}`);
+
     // Load manifest from disk using existing command
     const manifest = await invoke<{
       frames: Array<{
@@ -294,12 +430,11 @@ export async function processRecordingAndGenerateSkill(
       audioPath?: string;
       startTime: number;
       endTime: number;
-    }>('load_session_manifest', { sessionDir }); // Use load_session_manifest instead of get_recording_data
+    }>('load_session_manifest', { sessionDir });
 
     const recordingData = {
       frames: manifest.frames.map(f => ({
         timestamp: f.timestamp,
-        // Fix path: manifest has relative path, we need absolute or asset protocol
         path: f.imagePath.startsWith('http') || f.imagePath.includes(':')
           ? f.imagePath
           : `${sessionDir}/${f.imagePath}`,
@@ -312,8 +447,6 @@ export async function processRecordingAndGenerateSkill(
 
     // Validate we have data
     if (!recordingData.frames || recordingData.frames.length === 0) {
-      // Force non-empty constraint warning but allow proceeding if we have audio? No, we need frames.
-      // throw new Error('No screen capture frames available.');
       console.warn('Processing found 0 frames. This might be a bug.');
     }
 
@@ -321,13 +454,12 @@ export async function processRecordingAndGenerateSkill(
       console.warn('No audio path in manifest. Checking options...');
       if (options.audioPath) recordingData.audioPath = options.audioPath;
       else console.warn('No audio recording available.');
-      // We don't throw here anymore to allow "silent" recordings if needed, 
-      // but for S09 we expect audio.
     }
 
     console.log(`Processing ${recordingData.frames.length} frames with audio: ${recordingData.audioPath}`);
+    await fileLog(`Frames: ${recordingData.frames.length}, Audio: ${recordingData.audioPath || 'none'}`);
 
-    // Stage 2: Transcribe audio (tenta Whisper local, senão usa Web Speech API ou mock)
+    // Stage 2: Transcribe audio
     onProgress({
       stage: 'loading',
       percentage: 20,
@@ -335,134 +467,57 @@ export async function processRecordingAndGenerateSkill(
     });
 
     let transcription: TranscriptionResult | null = null;
+    
     if (recordingData.audioPath || options.audioPath) {
       const audioPath = recordingData.audioPath || options.audioPath!;
-      console.log('🎤 AUDIO PATH:', audioPath);
-
+      
       try {
-        // Try 1: Whisper Local with WebM to WAV conversion
-        // UPDATED: Use dynamic model and GPU settings
-        const settings = useSettingsStore.getState();
-        const targetModel = settings.whisperModel || 'tiny';
-        const useGpu = settings.useGpu || false;
+        transcription = await transcribeAudioWithFallback(audioPath, onProgress);
+        console.log('🎤 Transcription successful:', transcription.text.substring(0, 100));
+        await fileLog(`Transcription success: ${transcription.text.substring(0, 50)}...`);
+      } catch (error) {
+        console.error('🎤 Transcription failed:', error);
+        await fileLog(`Transcription FAILED: ${error}`);
 
-        console.log(`🎤 Step 1: Checking if Whisper model '${targetModel}' exists... (GPU: ${useGpu})`);
-
-        // Check if model exists
-        let whisperAvailable = await invoke<boolean>('check_model_exists', { model: targetModel });
-        console.log('🎤 Model available:', whisperAvailable);
-
-        // AUTO-DOWNLOAD: If model not available, try to download it
-        if (!whisperAvailable) {
-          console.log(`🎤 Model '${targetModel}' not found. Attempting auto-download...`);
-          onProgress({
-            stage: 'loading',
-            percentage: 20,
-            currentStep: `Downloading Whisper model (${targetModel}, ~75MB)...`
-          });
-
-          try {
-            await downloadWhisperModel(targetModel, (downloaded, total) => {
-              const percent = Math.round((downloaded / total) * 100);
-              console.log(`🎤 Download progress: ${percent}% (${Math.round(downloaded/1024/1024)}MB / ${Math.round(total/1024/1024)}MB)`);
-            });
-
-            // Check again if model is now available
-            whisperAvailable = await invoke<boolean>('check_model_exists', { model: targetModel });
-            console.log('🎤 Model available after download:', whisperAvailable);
-
-            if (!whisperAvailable) {
-              throw new Error(`Model download completed but model still not found`);
-            }
-          } catch (downloadError) {
-            console.error('🎤 Model download failed:', downloadError);
-            throw new Error(`Failed to download Whisper model '${targetModel}'. Please check your internet connection.`);
+        // Save failed session for reprocessing
+        const failedSession: FailedSession = {
+          id: `session-${Date.now()}`,
+          originalSessionDir: sessionDir,
+          audioPath: audioPath,
+          frames: recordingData.frames,
+          startTime: recordingData.startTime,
+          endTime: recordingData.endTime,
+          error: error instanceof Error ? error.message : 'Transcription failed',
+          errorType: (error as TranscriptionError)?.type || 'WHISPER_FAILED',
+          timestamp: Date.now(),
+          annotations: options.annotations || {
+            clicks: [],
+            drawings: [],
+            selectedElements: [],
+            keyboardInputs: []
           }
-        }
+        };
 
-        if (whisperAvailable) {
-          // Read WebM file
-          console.log('🎤 Step 2: Reading WebM file...');
-          const webmBytes = await readFile(audioPath);
-          console.log('🎤 WebM file size:', webmBytes.length, 'bytes');
-
-          const webmBlob = new Blob([webmBytes], { type: 'audio/webm' });
-
-          // Convert to WAV
-          onProgress({
-            stage: 'loading',
-            percentage: 22,
-            currentStep: 'Converting audio format...'
-          });
-
-          console.log('🎤 Step 3: Converting WebM to WAV...');
-          const wavBlob = await convertWebMToWav(webmBlob);
-          console.log('🎤 WAV blob size:', wavBlob.size, 'bytes');
-
-          // Save WAV to temp file
-          const wavPath = audioPath.replace('.webm', '.wav');
-          console.log('🎤 Step 4: Saving WAV to:', wavPath);
-          const wavBytes = new Uint8Array(await wavBlob.arrayBuffer());
-          await writeFile(wavPath, wavBytes);
-
-          console.log('🎤 WAV file saved successfully');
-
-          // Transcribe using local Whisper
-          onProgress({
-            stage: 'loading',
-            percentage: 25,
-            currentStep: 'Running local Whisper...'
-          });
-
-          console.log(`🎤 Step 5: Calling transcribe_local with 60s timeout... (Model: ${targetModel})`);
-
-          // Wrap Rust invoke in a timeout race to prevent infinite hanging
-          const transcriptionPromise = invoke<{
-            text: string;
-            segments: Array<{ id: number; start: number; end: number; text: string }>;
-            language: string;
-            duration: number;
-          }>('transcribe_local', {
-            audioPath: wavPath,
-            model: targetModel,
-            useGpu: useGpu
-          });
-
-          const result = await Promise.race([
-            transcriptionPromise,
-            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Whisper transcription timed out (180s)')), 180000))
-          ]);
-
-          console.log('🎤 Step 6: Transcription result received');
-          transcription = {
-            text: result.text,
-            segments: result.segments,
-            language: result.language,
-            duration: result.duration
-          };
-
-          console.log('🎤 Whisper Local success:', transcription.text.substring(0, 100));
-        } else {
-          console.warn(`🎤 Whisper model '${targetModel}' NOT found, falling back...`);
-          throw new Error(`Whisper model '${targetModel}' not found`);
-        }
-      } catch (e) {
-        console.error('🎤 Whisper Local ERROR:', e);
-        // Fallback: try API or Web Speech
-        console.log('🎤 Trying fallback transcription...');
-        transcription = await transcribeWithFallback(audioPath);
+        await addFailedSession(failedSession);
+        
+        // Return failure with options
+        const transError = error as TranscriptionError;
+        return {
+          success: false,
+          error: transError?.message || 'Transcription failed',
+          processingTime: Date.now() - startTime,
+          failedSession
+        };
       }
     } else {
-      // Sem áudio - gera transcrição demo
-      transcription = {
-        text: 'Demo transcription: Click the button. Enter text. Submit form.',
-        segments: [
-          { id: 1, start: 0, end: 3, text: 'Demo transcription: Click the button.' },
-          { id: 2, start: 4, end: 6, text: 'Enter text.' },
-          { id: 3, start: 7, end: 9, text: 'Submit form.' },
-        ],
-        language: 'en',
-        duration: 9
+      // No audio - can't proceed without transcription
+      const error = 'No audio recording available. Cannot generate skill without voice explanation.';
+      await fileLog(error);
+      
+      return {
+        success: false,
+        error,
+        processingTime: Date.now() - startTime
       };
     }
 
@@ -475,7 +530,7 @@ export async function processRecordingAndGenerateSkill(
 
     const captureSession: CaptureSession = {
       id: options.sessionId || `session-${Date.now()}`,
-      directory: '', // Will be set by backend
+      directory: '',
       startTime: recordingData.startTime,
       endTime: recordingData.endTime,
       frames: recordingData.frames.map((f, index) => ({
@@ -506,7 +561,6 @@ export async function processRecordingAndGenerateSkill(
         keyboardInputs: [],
       },
       (progress) => {
-        // Map internal progress to UI progress (50-90%)
         const mappedPercentage = 50 + (progress.percentage * 0.4);
         onProgress({
           ...progress,
@@ -522,27 +576,19 @@ export async function processRecordingAndGenerateSkill(
       currentStep: 'Generating SKILL.md with AI...'
     });
 
-    // 5a. Generate LLM Context (not optimize)
     const { generateLLMContext } = await import('./processing');
     const llmContext = await generateLLMContext(processedSession);
 
-    // 5b. Get Settings (API Key & Provider)
     const { llmApiKey, llmProvider, llmBaseUrl, llmModel } = useSettingsStore.getState();
 
-    // Validate key (unless Ollama)
     if (!llmApiKey && llmProvider !== 'ollama') {
       throw new Error('LLM API Key not found. Please configure it in Settings.');
     }
 
-    // 5c. Generate Skill with LLM
-    // Map internal provider to skill-generator types
     let genProvider = llmProvider;
-
-    // Map specific providers to their compatibility layer
     if (llmProvider === 'custom' || llmProvider === 'moonshot') {
-      genProvider = 'openai'; // Use OpenAI client 
+      genProvider = 'openai';
     }
-    // Ollama handled natively
 
     const generatedSkillResult = await generateSkill(llmContext, {
       provider: genProvider as any,
@@ -551,7 +597,6 @@ export async function processRecordingAndGenerateSkill(
       baseUrl: llmBaseUrl
     });
 
-    // generateSkill retorna string diretamente
     const skillMarkdown = generatedSkillResult as string;
 
     // Stage 6: Save to file
@@ -575,6 +620,8 @@ export async function processRecordingAndGenerateSkill(
       currentStep: 'Complete!'
     });
 
+    await fileLog(`Processing completed successfully in ${processingTime}ms`);
+
     return {
       success: true,
       skillMarkdown,
@@ -584,6 +631,7 @@ export async function processRecordingAndGenerateSkill(
   } catch (error) {
     const processingTime = Date.now() - startTime;
     console.error('Processing failed:', error);
+    await fileLog(`Processing failed: ${error}`);
 
     onProgress({
       stage: 'error',
@@ -598,6 +646,26 @@ export async function processRecordingAndGenerateSkill(
       processingTime
     };
   }
+}
+
+/**
+ * Retry processing a failed session
+ */
+export async function retryFailedSession(
+  failedSession: FailedSession,
+  onProgress: (progress: ProcessingProgress) => void
+): Promise<ProcessingResult> {
+  console.log('🔄 Retrying failed session:', failedSession.id);
+  await fileLog(`Retrying failed session: ${failedSession.id}`);
+
+  return processRecordingAndGenerateSkill(
+    {
+      sessionId: failedSession.originalSessionDir,
+      audioPath: failedSession.audioPath,
+      annotations: failedSession.annotations
+    },
+    onProgress
+  );
 }
 
 /**
@@ -629,7 +697,6 @@ export async function processRecordingMock(
     currentStep: 'Complete!'
   });
 
-  // Generate mock SKILL.md
   const skillMarkdown = `---
 name: demo-skill
 description: Auto-generated skill from recording

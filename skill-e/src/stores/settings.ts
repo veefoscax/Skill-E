@@ -52,13 +52,18 @@ export interface SettingsState {
 }
 
 // Provider Defaults
-export const LLM_DEFAULTS: Record<LLMProvider, { label: string; baseUrl?: string; defaultModel?: string }> = {
+export const LLM_DEFAULTS: Record<LLMProvider, { label: string; baseUrl?: string; defaultModel?: string; headers?: Record<string, string> }> = {
   openai: { label: 'OpenAI', defaultModel: 'gpt-4o' },
   anthropic: { label: 'Anthropic', defaultModel: 'claude-3-5-sonnet-20240620' },
   google: { label: 'Google Gemini', defaultModel: 'gemini-1.5-flash' },
   ollama: { label: 'Ollama (Local)', baseUrl: 'http://localhost:11434', defaultModel: 'llama3' },
   moonshot: { label: 'Moonshot AI', baseUrl: 'https://api.moonshot.cn/v1', defaultModel: 'moonshot-v1-8k' },
-  'kimi-code': { label: 'Kimi (Coding)', baseUrl: 'https://api.moonshot.cn/v1', defaultModel: 'moonshot-v1-8k' },
+  'kimi-code': { 
+    label: 'Kimi Code', 
+    baseUrl: 'https://api.kimi.com/coding/v1', 
+    defaultModel: 'kimi-k2',
+    headers: {}
+  },
   demo: { label: 'Demo Mode (Mock)', defaultModel: 'mock-gpt-4' },
   custom: { label: 'Custom Endpoint', baseUrl: 'http://localhost:1234/v1' }
 };
@@ -80,7 +85,7 @@ export const useSettingsStore = create<SettingsState>()(
       outputDir: null,
       transcriptionMode: 'local_whisper',
       whisperModel: 'tiny',
-      useGpu: false, // Default to FALSE to ensure stability on standard builds
+      useGpu: false,
       whisperApiKey: '',
       llmProvider: 'demo',
       llmApiKey: '',
@@ -127,6 +132,24 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'skill-e-settings',
+      // IMPORTANT: Não persistir API keys para o portable não salvar credenciais
+      partialize: (state) => ({
+        frameRate: state.frameRate,
+        outputDir: state.outputDir,
+        transcriptionMode: state.transcriptionMode,
+        whisperModel: state.whisperModel,
+        useGpu: state.useGpu,
+        // whisperApiKey: NÃO persistir
+        llmProvider: state.llmProvider,
+        // llmApiKey: NÃO persistir
+        // claudeApiKey: NÃO persistir
+        llmModel: state.llmModel,
+        llmBaseUrl: state.llmBaseUrl,
+        microphoneId: state.microphoneId,
+        selectedMicId: state.selectedMicId,
+        isOnboardingCompleted: state.isOnboardingCompleted,
+        windowPosition: state.windowPosition,
+      }),
     }
   )
 );
