@@ -42,6 +42,8 @@ export interface CaptureStep {
     url?: string;
     /** For screenshot: frame reference */
     frameIndex?: number;
+    /** OS Window Context */
+    window?: { title: string; process_name: string; bounds: any };
   };
   /** Optional user annotation/note for this step */
   note?: string;
@@ -56,19 +58,22 @@ export interface RecordingState {
   isRecording: boolean;
   isPaused: boolean;
   isAnnotationMode: boolean;
-  
+
   // Timing
   startTime: number | null;
   duration: number; // in seconds
-  
+
   // Captured data
   frames: CaptureFrame[];
   audioBlob: Blob | null;
   audioPath: string | null;
-  
+
   // Step tracking for live timeline (Requirements: FR-4.29)
   steps: CaptureStep[];
-  
+
+  // Session directory for saving files (shared across components)
+  sessionDirectory: string | null;
+
   // Actions
   startRecording: () => void;
   pauseRecording: () => void;
@@ -78,10 +83,12 @@ export interface RecordingState {
   toggleAnnotationMode: () => void;
   cancelRecording: () => void;
   updateDuration: (duration: number) => void;
+  setDuration: (duration: number) => void;
   addFrame: (frame: CaptureFrame) => void;
   setAudioBlob: (blob: Blob) => void;
   setAudioPath: (path: string) => void;
-  
+  setSessionDirectory: (dir: string | null) => void;
+
   // Step tracking actions (Requirements: FR-4.29, FR-4.38)
   addStep: (step: Omit<CaptureStep, 'id' | 'timestamp'>) => void;
   updateStepNote: (stepId: string, note: string) => void;
@@ -90,7 +97,7 @@ export interface RecordingState {
   // Step reordering (Requirements: FR-4.38)
   moveStep: (stepId: string, direction: 'up' | 'down') => void;
   reorderSteps: (stepIds: string[]) => void;
-  
+
   reset: () => void;
 }
 
@@ -107,6 +114,7 @@ const initialState = {
   audioBlob: null,
   audioPath: null,
   steps: [],
+  sessionDirectory: null,
 };
 
 /**
@@ -191,6 +199,11 @@ export const useRecordingStore = create<RecordingState>()(
           duration,
         }),
 
+      setDuration: (duration: number) =>
+        set({
+          duration,
+        }),
+
       addFrame: (frame: CaptureFrame) =>
         set((state) => ({
           frames: [...state.frames, frame],
@@ -204,6 +217,11 @@ export const useRecordingStore = create<RecordingState>()(
       setAudioPath: (path: string) =>
         set({
           audioPath: path,
+        }),
+
+      setSessionDirectory: (dir: string | null) =>
+        set({
+          sessionDirectory: dir,
         }),
 
       // Step tracking actions (Requirements: FR-4.29)
@@ -260,15 +278,15 @@ export const useRecordingStore = create<RecordingState>()(
         set((state) => {
           // Validate that all provided IDs exist
           const validIds = stepIds.filter(id => state.steps.some(s => s.id === id));
-          
+
           // Create map of existing steps
           const stepMap = new Map(state.steps.map(s => [s.id, s]));
-          
+
           // Reorder according to provided IDs, keeping any unmentioned steps at the end
           const reordered = validIds.map(id => stepMap.get(id)!);
           const mentionedIds = new Set(validIds);
           const remaining = state.steps.filter(s => !mentionedIds.has(s.id));
-          
+
           return { steps: [...reordered, ...remaining] };
         }),
 

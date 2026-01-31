@@ -20,7 +20,13 @@ import { invoke } from '@tauri-apps/api/core';
  * The window is created hidden and must be shown with showOverlay().
  */
 export async function createOverlayWindow(): Promise<void> {
-  await invoke('create_overlay_window');
+  try {
+    await invoke('create_overlay_window');
+    console.log('[Overlay] Window created successfully');
+  } catch (error) {
+    console.error('[Overlay] Failed to create window:', error);
+    // Don't throw - app can work without overlay
+  }
 }
 
 /**
@@ -30,7 +36,13 @@ export async function createOverlayWindow(): Promise<void> {
  * The overlay window must be created first with createOverlayWindow().
  */
 export async function showOverlay(): Promise<void> {
-  await invoke('show_overlay');
+  try {
+    await invoke('show_overlay');
+    console.log('[Overlay] Window shown successfully');
+  } catch (error) {
+    console.error('[Overlay] Failed to show window:', error);
+    // Don't throw - recording can continue without overlay
+  }
 }
 
 /**
@@ -39,7 +51,13 @@ export async function showOverlay(): Promise<void> {
  * Hides the overlay but keeps it in memory for quick re-showing.
  */
 export async function hideOverlay(): Promise<void> {
-  await invoke('hide_overlay');
+  try {
+    await invoke('hide_overlay');
+    console.log('[Overlay] Window hidden successfully');
+  } catch (error) {
+    console.error('[Overlay] Failed to hide window:', error);
+    // Don't throw
+  }
 }
 
 /**
@@ -48,7 +66,11 @@ export async function hideOverlay(): Promise<void> {
  * Shows the overlay if hidden, hides it if visible.
  */
 export async function toggleOverlay(): Promise<void> {
-  await invoke('toggle_overlay');
+  try {
+    await invoke('toggle_overlay');
+  } catch (error) {
+    console.error('[Overlay] Failed to toggle window:', error);
+  }
 }
 
 /**
@@ -60,5 +82,9 @@ export async function toggleOverlay(): Promise<void> {
  * - Display resolution changes
  */
 export async function updateOverlayBounds(): Promise<void> {
-  await invoke('update_overlay_bounds');
+  try {
+    await invoke('update_overlay_bounds');
+  } catch (error) {
+    console.error('[Overlay] Failed to update bounds:', error);
+  }
 }

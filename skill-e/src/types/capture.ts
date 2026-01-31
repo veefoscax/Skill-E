@@ -68,6 +68,8 @@ export interface SessionManifest {
   intervalMs: number;
   /** All captured frames */
   frames: FrameMetadata[];
+  /** Optional audio recording path */
+  audioPath?: string;
 }
 
 /**

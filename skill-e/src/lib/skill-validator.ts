@@ -382,7 +382,8 @@ function validateToolDefinition(toolDefinition: ToolDefinition): ValidationError
       });
     } else {
       // Validate each property
-      for (const [propName, propSchema] of Object.entries(toolDefinition.input_schema.properties)) {
+      for (const [propName, propSchemaRaw] of Object.entries(toolDefinition.input_schema.properties)) {
+        const propSchema = propSchemaRaw as { description?: string; type?: string };
         // Check property name format (snake_case)
         if (!/^[a-z][a-z0-9_]*$/.test(propName)) {
           errors.push({

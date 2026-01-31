@@ -9,6 +9,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use futures_util::StreamExt;
+
 
 /// Transcription segment with timestamps
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,6 +31,7 @@ pub struct LocalTranscriptionResult {
 }
 
 /// Model download progress
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelDownloadProgress {
     pub model: String,
@@ -245,23 +248,24 @@ pub async fn transcribe_local(
             .map_err(|e| format!("Transcription failed: {}", e))?;
         
         // Extract results
-        let num_segments = state.full_n_segments()
-            .map_err(|e| format!("Failed to get segment count: {}", e))?;
+        let num_segments = state.full_n_segments();
         
         let mut segments = Vec::new();
         let mut full_text = String::new();
         
         for i in 0..num_segments {
-            let text = state.full_get_segment_text(i)
-                .map_err(|e| format!("Failed to get segment text: {}", e))?;
-            let start = state.full_get_segment_t0(i)
-                .map_err(|e| format!("Failed to get segment start: {}", e))?;
-            let end = state.full_get_segment_t1(i)
-                .map_err(|e| format!("Failed to get segment end: {}", e))?;
+            let segment = state.get_segment(i)
+                .ok_or_else(|| format!("Failed to get segment {}", i))?;
             
-            // Convert from centiseconds to seconds
-            let start_sec = start as f64 / 100.0;
-            let end_sec = end as f64 / 100.0;
+            let text = segment.to_str()
+                .map_err(|e| format!("Failed to decode segment {}: {}", i, e))?
+                .to_string();
+            let start = segment.start_timestamp();
+            let end = segment.end_timestamp();
+            
+            // Convert from milliseconds to seconds
+            let start_sec = start as f64 / 1000.0;
+            let end_sec = end as f64 / 1000.0;
             
             segments.push(TranscriptionSegment {
                 id: i as i32,
@@ -316,6 +320,78 @@ pub fn get_models_directory() -> Result<String, String> {
         .map_err(|e| format!("Failed to create models directory: {}", e))?;
     
     Ok(models_dir.to_string_lossy().to_string())
+}
+
+/// Download a Whisper model from Hugging Face with progress
+#[tauri::command]
+pub async fn download_model(
+    model: String,
+    on_progress: tauri::ipc::Channel<u64>
+) -> Result<String, String> {
+    let whisper_model: WhisperModel = model.into();
+    let models_dir = get_models_dir()?;
+    
+    // Create directory if it doesn't exist
+    std::fs::create_dir_all(&models_dir)
+        .map_err(|e| format!("Failed to create models directory: {}", e))?;
+    
+    let model_path = models_dir.join(whisper_model.filename());
+    
+    // Check if already exists
+    if model_path.exists() {
+        return Ok(format!("Model already exists at: {}", model_path.display()));
+    }
+    
+    let url = whisper_model.download_url();
+    
+    println!("Downloading model from: {}", url);
+    
+    // Download the file
+    let client = reqwest::Client::new();
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to download model: {}", e))?;
+    
+    let total_size = response
+        .content_length()
+        .ok_or("Failed to get content length")?;
+    
+    println!("Total size: {} bytes", total_size);
+    
+    let mut file = std::fs::File::create(&model_path)
+        .map_err(|e| format!("Failed to create file: {}", e))?;
+    
+    let mut downloaded: u64 = 0;
+    let mut stream = response.bytes_stream();
+    
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| format!("Download error: {}", e))?;
+        std::io::copy(&mut chunk.as_ref(), &mut file)
+            .map_err(|e| format!("Failed to write to file: {}", e))?;
+        downloaded += chunk.len() as u64;
+        
+        // Send progress update
+        let _ = on_progress.send(downloaded);
+    }
+    
+    println!("Download complete: {}", model_path.display());
+    Ok(format!("Model downloaded to: {}", model_path.display()))
+}
+
+/// Ensure a model exists, download if needed
+#[tauri::command]
+pub async fn ensure_model(model: String) -> Result<String, String> {
+    let whisper_model: WhisperModel = model.into();
+    let models_dir = get_models_dir()?;
+    let model_path = models_dir.join(whisper_model.filename());
+    
+    if model_path.exists() {
+        return Ok(format!("Model exists: {}", model_path.display()));
+    }
+    
+    Err("Model not found. Please download it manually.".to_string())
 }
 
 // Unit tests

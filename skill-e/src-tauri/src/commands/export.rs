@@ -238,3 +238,36 @@ pub async fn validate_export_path(
     
     Ok(true)
 }
+
+/// Simple save SKILL.md to a default location
+/// 
+/// Saves to app data directory for quick access
+#[tauri::command]
+pub async fn save_skill_md(content: String) -> Result<String, String> {
+    use std::path::PathBuf;
+
+    
+    // Try to get app data dir, fallback to temp
+    let base_path = dirs::data_dir()
+        .or_else(dirs::home_dir)
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("Skill-E")
+        .join("exports");
+    
+    // Create directory
+    fs::create_dir_all(&base_path)
+        .map_err(|e| format!("Failed to create exports directory: {}", e))?;
+    
+    // Generate filename with timestamp
+    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+    let filename = format!("SKILL_{}.md", timestamp);
+    let file_path = base_path.join(&filename);
+    
+    // Write file
+    fs::write(&file_path, &content)
+        .map_err(|e| format!("Failed to write SKILL.md: {}", e))?;
+    
+    println!("Saved SKILL.md to: {}", file_path.display());
+    
+    Ok(file_path.to_string_lossy().to_string())
+}

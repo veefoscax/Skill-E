@@ -1,9 +1,15 @@
 [package]
 name = "skill-e"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "Create Agent Skills by demonstration - Record your screen and voice to generate Agent Skills"
+authors = ["Skill-E Team <contact@skille.app>"]
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/veefoscax/Skill-E"
+homepage = "https://github.com/veefoscax/Skill-E"
+keywords = ["agent", "skills", "automation", "recording", "ai"]
+categories = ["developer-tools", "productivity"]
+rust-version = "1.70"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -29,14 +35,21 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 hound = "3.5"  # For reading WAV audio files
 dirs = "5.0"   # For finding local app data directory
+chrono = "0.4"  # For timestamps
+reqwest = { version = "0.12", features = ["stream"] } # For downloading models
+tokio = { version = "1", features = ["fs", "sync"] } # Async file operations
+futures-util = "0.3" # Stream utilities
 
 # Local Whisper transcription - optional, compile without if whisper.cpp fails
 # Enable cuda feature for GPU: whisper-rs = { version = "0.15", features = ["cuda"] }
 whisper-rs = { version = "0.15", optional = true }
 tauri-plugin-dialog = "2.6.0"
+rdev = "0.5" # Global input hook for S09 Step Recording
+tauri-plugin-http = "2.0.0-beta.0"
+tauri-plugin-fs = "2.0.0-beta.0"
 
 [features]
-default = []
+default = ["local-whisper"]
 local-whisper = ["whisper-rs"]
 cuda = ["whisper-rs", "whisper-rs/cuda"]
 

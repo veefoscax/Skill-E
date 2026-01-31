@@ -7,12 +7,12 @@ export { useRecordingStore } from './recording';
 export type { RecordingState, CaptureFrame, CaptureStep, StepType } from './recording';
 
 export { useSettingsStore } from './settings';
-export type { SettingsState, WindowPosition, TranscriptionMode, WhisperModel } from './settings';
+export type { SettingsState, TranscriptionMode, WhisperModel } from './settings';
 
 export { useOverlayStore, COLORS, getColorHex, redactPassword, getPasswordPlaceholder } from './overlay';
-export type { 
-  OverlayState, 
-  OverlayActions, 
+export type {
+  OverlayState,
+  OverlayActions,
   OverlayStore,
   ColorKey,
   FadeState,
@@ -30,10 +30,10 @@ export type {
 
 export { useProviderStore } from './provider';
 export type { ProviderState } from './provider';
-export { 
-  getProviderDisplayName, 
-  requiresApiKey, 
-  isFreeProvider, 
+export {
+  getProviderDisplayName,
+  requiresApiKey,
+  isFreeProvider,
   getProviderDescription,
-  validateApiKey 
+  validateApiKey
 } from './provider';

@@ -1,247 +1,132 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { invoke } from '@tauri-apps/api/core';
 
-/**
- * Window position for persistence
- */
-export interface WindowPosition {
-  x: number;
-  y: number;
-}
-
-/**
- * Transcription mode - API (cloud) or Local (whisper.cpp)
- */
-export type TranscriptionMode = 'api' | 'local';
-
-/**
- * Whisper model sizes - ordered by speed/quality tradeoff
- * All models are multilingual (support Portuguese and other languages)
- * 
- * - tiny: Fastest, lowest quality, ~75MB - for slow CPUs without GPU
- * - base: Fast, decent quality, ~140MB
- * - small: Good balance, ~500MB
- * - medium: High quality, ~1.5GB
- * - large-v3: Best quality, ~3GB - requires good GPU
- * - turbo: Large-v3 distilled, faster with GPU, ~800MB
- */
+export type TranscriptionMode = 'cloud_openai' | 'local_whisper' | 'browser_native';
+export type LLMProvider = 'openai' | 'anthropic' | 'google' | 'ollama' | 'demo' | 'custom' | 'moonshot' | 'kimi-code';
 export type WhisperModel = 'tiny' | 'base' | 'small' | 'medium' | 'large-v3' | 'turbo';
 
-/**
- * Settings state interface
- * Manages application settings and user preferences
- */
 export interface SettingsState {
-  // API Keys
-  whisperApiKey: string;
-  claudeApiKey: string;
-  openaiApiKey: string;
+  // Capture
+  frameRate: number;
+  outputDir: string | null;
 
-  // Transcription settings
+  // Transcription
   transcriptionMode: TranscriptionMode;
   whisperModel: WhisperModel;
   useGpu: boolean;
+  whisperApiKey: string;
 
-  // Output settings
-  outputDir: string;
+  // LLM
+  llmProvider: LLMProvider;
+  llmApiKey: string;
+  claudeApiKey: string; // Backward compat
+  llmModel: string;
+  llmBaseUrl: string; // custom or ollama URL
 
-  // Recording settings
-  captureInterval: number; // milliseconds between frames
-  captureQuality: number; // 0-100
-  selectedMicId: string;
+  // Audio
+  microphoneId: string;
+  selectedMicId: string; // Backward compat alias
 
-  // Window settings
-  windowPosition: WindowPosition | null;
-  alwaysOnTop: boolean;
-
-  // Hotkey settings
-  recordingHotkey: string;
-  annotationHotkey: string;
-
-  // Theme
-  theme: 'light' | 'dark' | 'system';
+  // App State
+  isOnboardingCompleted: boolean;
+  windowPosition: { x: number; y: number } | null;
 
   // Actions
-  setWhisperApiKey: (key: string) => void;
-  setClaudeApiKey: (key: string) => void;
-  setOpenaiApiKey: (key: string) => void;
+  setFrameRate: (fps: number) => void;
+  setOutputDir: (dir: string | null) => void;
   setTranscriptionMode: (mode: TranscriptionMode) => void;
   setWhisperModel: (model: WhisperModel) => void;
-  setUseGpu: (value: boolean) => void;
+  setUseGpu: (useGpu: boolean) => void;
+  setWhisperApiKey: (key: string) => void;
+  setLlmProvider: (provider: LLMProvider) => void;
+  setLlmApiKey: (key: string) => void;
+  setClaudeApiKey: (key: string) => void;
+  setLlmModel: (model: string) => void;
+  setLlmBaseUrl: (url: string) => void;
+  setMicrophoneId: (id: string) => void;
   setSelectedMicId: (id: string) => void;
-  setOutputDir: (dir: string) => void;
-  setCaptureInterval: (interval: number) => void;
-  setCaptureQuality: (quality: number) => void;
-  setWindowPosition: (position: WindowPosition) => void;
-  setAlwaysOnTop: (value: boolean) => void;
-  setRecordingHotkey: (hotkey: string) => void;
-  setAnnotationHotkey: (hotkey: string) => void;
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setOnboardingCompleted: (completed: boolean) => void;
+  setWindowPosition: (pos: { x: number; y: number } | null) => void;
   reset: () => void;
 }
 
-/**
- * Default settings
- */
-const defaultSettings = {
-  whisperApiKey: '',
-  claudeApiKey: '',
-  openaiApiKey: '',
-  transcriptionMode: 'api' as TranscriptionMode, // Default to API (easier setup)
-  whisperModel: 'turbo' as WhisperModel, // Best for GPU users, fallback to tiny
-  useGpu: true, // Assume GPU available, can be toggled
-  outputDir: '',
-  captureInterval: 1000, // 1 second
-  captureQuality: 80,
-  selectedMicId: 'default',
-  windowPosition: null,
-  alwaysOnTop: true,
-  recordingHotkey: 'Ctrl+Shift+R',
-  annotationHotkey: 'Ctrl+Shift+A',
-  theme: 'dark' as const,
+// Provider Defaults
+export const LLM_DEFAULTS: Record<LLMProvider, { label: string; baseUrl?: string; defaultModel?: string }> = {
+  openai: { label: 'OpenAI', defaultModel: 'gpt-4o' },
+  anthropic: { label: 'Anthropic', defaultModel: 'claude-3-5-sonnet-20240620' },
+  google: { label: 'Google Gemini', defaultModel: 'gemini-1.5-flash' },
+  ollama: { label: 'Ollama (Local)', baseUrl: 'http://localhost:11434', defaultModel: 'llama3' },
+  moonshot: { label: 'Moonshot AI', baseUrl: 'https://api.moonshot.cn/v1', defaultModel: 'moonshot-v1-8k' },
+  'kimi-code': { label: 'Kimi (Coding)', baseUrl: 'https://api.moonshot.cn/v1', defaultModel: 'moonshot-v1-8k' },
+  demo: { label: 'Demo Mode (Mock)', defaultModel: 'mock-gpt-4' },
+  custom: { label: 'Custom Endpoint', baseUrl: 'http://localhost:1234/v1' }
 };
 
-/**
- * Settings store with Zustand
- * Persists user settings across sessions
- */
+// Whisper Model Info
+export const WHISPER_MODEL_INFO: Record<string, { name: string; size: string; description: string; gpuRecommended: boolean }> = {
+  tiny: { name: 'Tiny', size: '~75MB', description: 'Fastest, lowest accuracy. Good for testing.', gpuRecommended: false },
+  base: { name: 'Base', size: '~142MB', description: 'Balanced speed and accuracy.', gpuRecommended: false },
+  small: { name: 'Small', size: '~466MB', description: 'Good accuracy, slower on CPU.', gpuRecommended: false },
+  medium: { name: 'Medium', size: '~1.5GB', description: 'High accuracy, heavy on CPU.', gpuRecommended: true },
+  'large-v3': { name: 'Large V3', size: '~3.1GB', description: 'State of the art accuracy. Requires GPU.', gpuRecommended: true },
+  turbo: { name: 'Turbo', size: '~809MB', description: 'Optimized Large model for speed.', gpuRecommended: true }
+};
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      ...defaultSettings,
+      frameRate: 1,
+      outputDir: null,
+      transcriptionMode: 'local_whisper',
+      whisperModel: 'tiny',
+      useGpu: false, // Default to FALSE to ensure stability on standard builds
+      whisperApiKey: '',
+      llmProvider: 'demo',
+      llmApiKey: '',
+      claudeApiKey: '',
+      llmModel: '',
+      llmBaseUrl: '',
+      microphoneId: 'default',
+      selectedMicId: 'default',
+      isOnboardingCompleted: false,
+      windowPosition: null,
 
-      setWhisperApiKey: (key: string) =>
-        set({
-          whisperApiKey: key,
-        }),
-
-      setClaudeApiKey: (key: string) =>
-        set({
-          claudeApiKey: key,
-        }),
-
-      setOpenaiApiKey: (key: string) =>
-        set({
-          openaiApiKey: key,
-        }),
-
-      setTranscriptionMode: (mode: TranscriptionMode) =>
-        set({
-          transcriptionMode: mode,
-        }),
-
-      setWhisperModel: (model: WhisperModel) =>
-        set({
-          whisperModel: model,
-        }),
-
-      setUseGpu: (value: boolean) =>
-        set({
-          useGpu: value,
-          // Auto-adjust model based on GPU availability
-          whisperModel: value ? 'turbo' : 'tiny',
-        }),
-
-      setSelectedMicId: (id: string) =>
-        set({
-          selectedMicId: id,
-        }),
-
-      setOutputDir: (dir: string) =>
-        set({
-          outputDir: dir,
-        }),
-
-      setCaptureInterval: (interval: number) =>
-        set({
-          captureInterval: interval,
-        }),
-
-      setCaptureQuality: (quality: number) =>
-        set({
-          captureQuality: Math.max(0, Math.min(100, quality)),
-        }),
-
-      setWindowPosition: (position: WindowPosition) =>
-        set({
-          windowPosition: position,
-        }),
-
-      setAlwaysOnTop: (value: boolean) =>
-        set({
-          alwaysOnTop: value,
-        }),
-
-      setRecordingHotkey: (hotkey: string) =>
-        set({
-          recordingHotkey: hotkey,
-        }),
-
-      setAnnotationHotkey: (hotkey: string) =>
-        set({
-          annotationHotkey: hotkey,
-        }),
-
-      setTheme: (theme: 'light' | 'dark' | 'system') =>
-        set({
-          theme,
-        }),
-
-      reset: () => set(defaultSettings),
+      setFrameRate: (fps) => set({ frameRate: fps }),
+      setOutputDir: (dir) => set({ outputDir: dir }),
+      setTranscriptionMode: (mode) => set({ transcriptionMode: mode }),
+      setWhisperModel: (model) => set({ whisperModel: model }),
+      setUseGpu: (useGpu) => set({ useGpu }),
+      setWhisperApiKey: (key) => set({ whisperApiKey: key }),
+      setLlmProvider: (provider) => set({ llmProvider: provider }),
+      setLlmApiKey: (key) => set({ llmApiKey: key }),
+      setClaudeApiKey: (key) => set({ claudeApiKey: key }),
+      setLlmModel: (model) => set({ llmModel: model }),
+      setLlmBaseUrl: (url) => set({ llmBaseUrl: url }),
+      setMicrophoneId: (id) => set({ microphoneId: id, selectedMicId: id }),
+      setSelectedMicId: (id) => set({ selectedMicId: id, microphoneId: id }),
+      setOnboardingCompleted: (completed) => set({ isOnboardingCompleted: completed }),
+      setWindowPosition: (pos) => set({ windowPosition: pos }),
+      reset: () => set({
+        frameRate: 1,
+        outputDir: null,
+        transcriptionMode: 'local_whisper',
+        whisperModel: 'tiny',
+        useGpu: false,
+        whisperApiKey: '',
+        llmProvider: 'demo',
+        llmApiKey: '',
+        claudeApiKey: '',
+        llmModel: '',
+        llmBaseUrl: '',
+        microphoneId: 'default',
+        selectedMicId: 'default',
+        isOnboardingCompleted: false,
+        windowPosition: null
+      })
     }),
     {
-      name: 'settings-storage',
-      // Persist all settings
+      name: 'skill-e-settings',
     }
   )
 );
-
-/**
- * Helper: Get recommended model based on GPU availability
- */
-export function getRecommendedModel(hasGpu: boolean): WhisperModel {
-  return hasGpu ? 'turbo' : 'tiny';
-}
-
-/**
- * Helper: Model info for display
- */
-export const WHISPER_MODEL_INFO: Record<WhisperModel, { name: string; size: string; description: string; gpuRecommended: boolean }> = {
-  tiny: {
-    name: 'Tiny',
-    size: '~75MB',
-    description: 'Fastest, for basic transcription without GPU',
-    gpuRecommended: false,
-  },
-  base: {
-    name: 'Base',
-    size: '~140MB',
-    description: 'Fast with decent accuracy',
-    gpuRecommended: false,
-  },
-  small: {
-    name: 'Small',
-    size: '~500MB',
-    description: 'Good balance of speed and quality',
-    gpuRecommended: false,
-  },
-  medium: {
-    name: 'Medium',
-    size: '~1.5GB',
-    description: 'High accuracy, slower on CPU',
-    gpuRecommended: true,
-  },
-  'large-v3': {
-    name: 'Large V3',
-    size: '~3GB',
-    description: 'Best accuracy, requires GPU',
-    gpuRecommended: true,
-  },
-  turbo: {
-    name: 'Turbo',
-    size: '~800MB',
-    description: 'Large V3 distilled - fast + accurate with GPU',
-    gpuRecommended: true,
-  },
-};
-

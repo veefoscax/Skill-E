@@ -8,7 +8,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   optimizeContext,
   DEFAULT_OPTIMIZATION_CONFIG,
-  type OptimizedContext,
   type OptimizationConfig,
   toLLMContext,
 } from './context-optimizer';

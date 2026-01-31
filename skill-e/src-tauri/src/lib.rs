@@ -1,10 +1,10 @@
 use tauri::Manager;
-use tauri::{PhysicalPosition, Emitter};
+use tauri::PhysicalPosition;
 use tray_icon::{TrayIconBuilder, menu::{Menu, MenuItem}};
-use tauri_plugin_global_shortcut::ShortcutState;
 
 // Commands module
 mod commands;
+mod input_listener;
 use commands::capture::{
     capture_screen, 
     get_active_window, 
@@ -24,6 +24,8 @@ use commands::whisper::{
     get_model_download_url,
     get_models_directory,
     check_compute_capability,
+    download_model,
+    ensure_model,
 };
 use commands::overlay::{
     create_overlay_window,
@@ -35,7 +37,12 @@ use commands::overlay::{
 use commands::export::{
     save_skill,
     validate_export_path,
+    save_skill_md,
 };
+
+// Recording state for get_recording_data
+use std::sync::Mutex;
+use std::collections::HashMap;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -122,12 +129,73 @@ fn cancel_recording() -> Result<(), String> {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// Recording state storage
+static RECORDING_STATE: Mutex<Option<RecordingState>> = Mutex::new(None);
+
+#[derive(Default, Clone, serde::Serialize)]
+struct RecordingState {
+    frames: Vec<FrameData>,
+    audio_path: Option<String>,
+}
+
+#[derive(Clone, serde::Serialize)]
+struct FrameData {
+    timestamp: u64,
+    path: String,
+    cursor_x: Option<i32>,
+    cursor_y: Option<i32>,
+}
+
+/// Get recording data for processing
+#[tauri::command]
+fn get_recording_data() -> Result<RecordingState, String> {
+    let state = RECORDING_STATE.lock().map_err(|e| e.to_string())?;
+    Ok(state.clone().unwrap_or_default())
+}
+
+/// Initialize recording (clear previous state)
+#[tauri::command]
+fn initialize_recording() -> Result<(), String> {
+    let mut state = RECORDING_STATE.lock().map_err(|e| e.to_string())?;
+    *state = Some(RecordingState::default());
+    println!("Recording state initialized");
+    Ok(())
+}
+
+/// Add a frame to recording state
+#[tauri::command]
+fn add_recording_frame(
+    timestamp: u64, 
+    path: String,
+    cursor_x: Option<i32>,
+    cursor_y: Option<i32>
+) -> Result<(), String> {
+    let mut state = RECORDING_STATE.lock().map_err(|e| e.to_string())?;
+    if let Some(ref mut rec) = *state {
+        rec.frames.push(FrameData { timestamp, path, cursor_x, cursor_y });
+    }
+    Ok(())
+}
+
+/// Set audio path in recording state
+#[tauri::command]
+fn set_recording_audio(path: String) -> Result<(), String> {
+    let mut state = RECORDING_STATE.lock().map_err(|e| e.to_string())?;
+    if let Some(ref mut rec) = *state {
+        rec.audio_path = Some(path);
+    }
+    Ok(())
+}
+
 pub fn run() {
     tauri::Builder::default()
+        .manage(Mutex::new(HashMap::<String, String>::new()))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_screenshots::init())
+        .plugin(tauri_plugin_http::init()) // ADDED
+        .plugin(tauri_plugin_fs::init())   // ADDED
         .invoke_handler(tauri::generate_handler![
             greet,
             get_window_position,
@@ -142,6 +210,9 @@ pub fn run() {
             capture_screen,
             get_active_window,
             get_cursor_position,
+            // S09 Recording Control
+            commands::capture::start_capture,
+            commands::capture::stop_capture,
             create_session_directory,
             save_session_manifest,
             load_session_manifest,
@@ -156,6 +227,8 @@ pub fn run() {
             get_model_download_url,
             get_models_directory,
             check_compute_capability,
+            download_model,
+            ensure_model,
             // Overlay window commands
             create_overlay_window,
             show_overlay,
@@ -164,22 +237,42 @@ pub fn run() {
             update_overlay_bounds,
             // Export commands
             save_skill,
-            validate_export_path
+            validate_export_path,
+            save_skill_md,
+            // Recording data
+            get_recording_data,
+            initialize_recording,
+            add_recording_frame,
+            set_recording_audio,
+            create_settings_window,
         ])
         .setup(|app| {
             // Note: For Tauri v2, window effects (Mica/Vibrancy) are configured in tauri.conf.json
             // The transparent window with backdrop-blur CSS provides the glass effect
 
-            // Setup system tray - use mem::forget to keep it alive
+            // setup_tray(app)?;
             setup_tray(app)?;
-
-            // Setup global shortcuts
-            setup_global_shortcuts(app)?;
+            
+            // Start Global Input Listener (S09)
+            input_listener::start_input_listener(app.handle().clone());
 
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[tauri::command]
+fn create_settings_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("settings") {
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+    } else {
+        // Window usually exists but is hidden/created by tauri.conf.json
+        // If not, we might need to recreate it, but strictly speaking tauri v2 usually keeps them
+        return Err("Settings window not found".to_string());
+    }
+    Ok(())
 }
 
 fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -267,62 +360,5 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     }));
 
-    Ok(())
-}
-
-fn setup_global_shortcuts(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    use tauri_plugin_global_shortcut::GlobalShortcutExt;
-
-    println!("Setting up global shortcuts...");
-
-    let _app_handle = app.handle().clone();
-
-    // Register Ctrl+Shift+R (Cmd+Shift+R on macOS) for toggle recording
-    #[cfg(target_os = "macos")]
-    let record_shortcut = "CommandOrControl+Shift+R";
-    #[cfg(not(target_os = "macos"))]
-    let record_shortcut = "Ctrl+Shift+R";
-
-    println!("Registering shortcut: {}", record_shortcut);
-    app.global_shortcut().on_shortcut(record_shortcut, move |_app, _shortcut, event| {
-        if event.state == ShortcutState::Pressed {
-            println!("Hotkey pressed: Toggle Recording");
-            if let Some(window) = _app.get_webview_window("main") {
-                // Emit event to frontend
-                let _ = window.emit("hotkey-toggle-recording", ());
-            }
-        }
-    })?;
-
-    // Register Ctrl+Shift+A (Cmd+Shift+A on macOS) for toggle annotation
-    #[cfg(target_os = "macos")]
-    let annotation_shortcut = "CommandOrControl+Shift+A";
-    #[cfg(not(target_os = "macos"))]
-    let annotation_shortcut = "Ctrl+Shift+A";
-
-    println!("Registering shortcut: {}", annotation_shortcut);
-    app.global_shortcut().on_shortcut(annotation_shortcut, move |_app, _shortcut, event| {
-        if event.state == ShortcutState::Pressed {
-            println!("Hotkey pressed: Toggle Annotation");
-            if let Some(window) = _app.get_webview_window("main") {
-                // Emit event to frontend
-                let _ = window.emit("hotkey-toggle-annotation", ());
-            }
-        }
-    })?;
-
-    // Register Esc for cancel recording
-    println!("Registering shortcut: Escape");
-    app.global_shortcut().on_shortcut("Escape", move |_app, _shortcut, event| {
-        if event.state == ShortcutState::Pressed {
-            println!("Hotkey pressed: Cancel Recording");
-            if let Some(window) = _app.get_webview_window("main") {
-                // Emit event to frontend
-                let _ = window.emit("hotkey-cancel-recording", ());
-            }
-        }
-    })?;
-
-    println!("Global shortcuts registered successfully!");
     Ok(())
 }

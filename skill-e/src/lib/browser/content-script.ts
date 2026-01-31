@@ -287,6 +287,7 @@ function captureNetwork(): void {
   };
 
   XMLHttpRequest.prototype.send = function (body?: Document | BodyInit | null) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const xhr = this;
     const method =
       ((xhr as unknown as Record<string, unknown>)._captureMethod as string) ||

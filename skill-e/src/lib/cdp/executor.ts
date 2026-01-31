@@ -131,6 +131,13 @@ export class CDPExecutor {
   }
 
   /**
+   * Close the executor and disconnect from Chrome
+   */
+  async close(): Promise<void> {
+    await this.disconnect();
+  }
+
+  /**
    * Execute a skill step
    */
   async executeStep(step: SkillStep): Promise<CDPExecutionResult> {

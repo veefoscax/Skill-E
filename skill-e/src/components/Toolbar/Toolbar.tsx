@@ -1,337 +1,330 @@
-import { Button } from '@/components/ui/button'
-import { Circle, Square, Pause, Pencil, X, Settings } from 'lucide-react'
-import { useEffect } from 'react'
-import { useRecordingStore } from '@/stores'
-import { useAudioRecording } from '@/hooks/useAudioRecording'
-import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { createOverlayWindow, showOverlay, hideOverlay } from '@/lib/overlay/overlay-commands'
+/**
+ * Toolbar - Main floating toolbar for recording
+ * 
+ * Features:
+ * - Shows recording controls
+ * - Launches InlineOverlay when recording
+ * - Provides feedback during operations
+ */
+
+import { useEffect, useState, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { emit } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { Settings, Circle, Square, Pause, Play, X, Loader2 } from 'lucide-react';
+import { Button } from '../ui/button';
+import { useAudioRecording } from '../../hooks/useAudioRecording';
+import { useCapture } from '../../hooks/useCapture';
+import { useRecordingStore } from '../../stores/recording';
+
 
 interface ToolbarProps {
-  className?: string
+  onStart?: () => Promise<void>;
+  onStop: () => void;
 }
 
-/**
- * Floating Toolbar Component
- * 
- * Provides recording controls for Skill-E:
- * - Start/Pause/Stop recording buttons
- * - Timer display showing recording duration
- * - Annotation mode toggle
- * - Draggable area for window positioning
- * 
- * Requirements: FR-1.1, AC1, FR-3.1
- */
-export function Toolbar(_props: ToolbarProps) {
+export function Toolbar({ onStart, onStop }: ToolbarProps) {
+  // Recording state from store
   const {
     isRecording,
     isPaused,
     duration,
-    startRecording: startRecordingState,
-    pauseRecording: pauseRecordingState,
-    resumeRecording: resumeRecordingState,
-    stopRecording: stopRecordingState,
-    updateDuration,
-  } = useRecordingStore()
+    startRecording,
+    stopRecording,
+    pauseRecording,
+    resumeRecording,
+    setDuration
+  } = useRecordingStore();
 
-  // Audio recording hook - actual microphone capture
+
+
+  // Audio recording
   const {
     startRecording: startAudio,
     stopRecording: stopAudio,
-    pauseRecording: pauseAudio,
-    resumeRecording: resumeAudio,
-    error: audioError,
-  } = useAudioRecording()
+    isRecording: isAudioRecording
+  } = useAudioRecording();
 
-  // Initialize overlay window on mount
+  // Screen capture
+  const {
+    startCapture,
+    stopCapture,
+    getCurrentSession,
+    updateManifestAudio
+  } = useCapture();
+
+  // Local state
+  const [isStarting, setIsStarting] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Timer effect
   useEffect(() => {
-    createOverlayWindow().catch(console.error)
-
-    return () => {
-      // Optional: hide/destroy overlay on unmount
-      hideOverlay().catch(console.error)
-    }
-  }, [])
-
-  // Timer logic - runs when recording and not paused
-  useEffect(() => {
-    let interval: number | undefined
+    let interval: ReturnType<typeof setInterval> | null = null;
 
     if (isRecording && !isPaused) {
-      interval = window.setInterval(() => {
-        updateDuration(duration + 1)
-      }, 1000)
+      interval = setInterval(() => {
+        setDuration(duration + 1);
+      }, 1000);
     }
 
     return () => {
-      if (interval) {
-        clearInterval(interval)
-      }
-    }
-  }, [isRecording, isPaused, duration, updateDuration])
+      if (interval) clearInterval(interval);
+    };
+  }, [isRecording, isPaused, duration, setDuration]);
 
-  // Log audio errors
-  useEffect(() => {
-    if (audioError) {
-      console.error('Audio recording error:', audioError)
-    }
-  }, [audioError])
+  // Format duration
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
-  // Format elapsed time as MM:SS
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
-  // Recording control handlers - integrate state AND audio
+  // Start recording
   const handleStartRecording = async () => {
-    console.log('Starting recording with audio...')
-    startRecordingState()
-
-    // Show overlay
-    try {
-      await showOverlay()
-      console.log('Overlay shown')
-    } catch (error) {
-      console.error('Failed to show overlay:', error)
-    }
+    setIsStarting(true);
+    setError(null);
 
     try {
-      await startAudio()
-      console.log('Audio recording started!')
+      // If onStart prop is provided (from App), use it (it handles everything)
+      if (onStart) {
+        console.log('Toolbar: Using onStart from App');
+        await onStart();
+        emit('recording:start');
+        console.log('Toolbar: Recording started via App');
+        return;
+      }
+
+      // Fallback: use internal logic (old behavior)
+      console.log('Toolbar: Using internal start logic');
+      await invoke('initialize_recording');
+      await startRecording();
+
+      try {
+        await startCapture(1000);
+        console.log('Screen capture started');
+      } catch (captureError) {
+        console.warn('Screen capture failed:', captureError);
+      }
+
+      try {
+        await startAudio();
+      } catch (audioError) {
+        console.warn('Audio recording failed:', audioError);
+      }
+
+      emit('recording:start');
+      console.log('Recording started successfully');
+
     } catch (error) {
-      console.error('Failed to start audio:', error)
+      console.error('Failed to start recording:', error);
+      setError('Failed to start: ' + String(error));
+      stopRecording();
+    } finally {
+      setIsStarting(false);
     }
-  }
+  };
 
-  const handlePauseRecording = () => {
-    if (isPaused) {
-      resumeRecordingState()
-      resumeAudio()
-    } else {
-      pauseRecordingState()
-      pauseAudio()
-    }
-  }
-
+  // Stop recording
   const handleStopRecording = async () => {
-    console.log('Stopping recording...')
-    stopRecordingState()
-    stopAudio()
+    setIsStopping(true);
+    setError(null);
 
-    // Hide overlay
     try {
-      await hideOverlay()
-      console.log('Overlay hidden')
+      // If onStart prop is provided (meaning App manages recording), 
+      // we should let App handle the stop logic via onStop callback
+      if (onStart) {
+        console.log('Toolbar: Stopping via App onStop');
+        emit('recording:stop');
+        await stopRecording(); // Update store state
+        onStop(); // App handles the rest
+        console.log('Toolbar: Stop callback completed');
+        return;
+      }
+
+      // Fallback: use internal logic
+      console.log('Toolbar: Using internal stop logic');
+      let currentSessionDir: string | null = null;
+      try {
+        const session = getCurrentSession();
+        if (session) currentSessionDir = session.directory;
+        await stopCapture();
+        console.log('Screen capture stopped');
+      } catch (e) {
+        console.warn('Screen capture stop warning:', e);
+      }
+
+      let savedAudioPath: string | null = null;
+      try {
+        savedAudioPath = await stopAudio();
+        console.log('Audio stopped, saved to:', savedAudioPath);
+      } catch (e) {
+        console.warn('Audio stop warning:', e);
+      }
+
+      if (currentSessionDir && savedAudioPath) {
+        await updateManifestAudio(currentSessionDir, savedAudioPath);
+      }
+
+      emit('recording:stop');
+      await stopRecording();
+
+      if (currentSessionDir) {
+        (window as any).__LAST_SESSION_DIR__ = currentSessionDir;
+      }
+      onStop();
+
     } catch (error) {
-      console.error('Failed to hide overlay:', error)
+      console.error('Failed to stop recording:', error);
+      setError('Failed to stop: ' + String(error));
+    } finally {
+      setIsStopping(false);
     }
-  }
+  };
 
-  const handleClose = async () => {
+  // Pause/Resume
+  const handlePauseResume = async () => {
     try {
-      const window = getCurrentWindow()
-      await window.hide()
-      console.log('Window hidden successfully')
-    } catch (error) {
-      console.error('Error hiding window:', error)
-    }
-  }
-
-  const handleOpenSettings = async () => {
-    try {
-      // Check if settings window already exists
-      const existingWindow = await WebviewWindow.getByLabel('settings')
-
-      if (existingWindow) {
-        // Calculate new position
-        const mainWindow = getCurrentWindow()
-        const position = await mainWindow.outerPosition()
-        const size = await mainWindow.outerSize()
-        const settingsX = position.x + size.width + 10
-        const settingsY = position.y
-
-        // Move and show
-        await existingWindow.setPosition(new PhysicalPosition(settingsX, settingsY))
-        await existingWindow.show()
-        await existingWindow.setFocus()
+      if (isPaused) {
+        await resumeRecording();
       } else {
-        // Calculate position relative to toolbar
-        const mainWindow = getCurrentWindow()
-        const position = await mainWindow.outerPosition()
-        const size = await mainWindow.outerSize()
-
-        // Open to the RIGHT of the toolbar with spacing
-        // Calculate smart position relative to toolbar
-        // @ts-expect-error currentMonitor is not in the type definition but exists at runtime
-        const monitor = await getCurrentWindow().currentMonitor();
-        const screenWidth = monitor?.size.width || 1920;
-        const screenHeight = monitor?.size.height || 1080;
-        const scale = monitor?.scaleFactor || 1;
-
-        const settingsW = 300;
-        const settingsH = 400;
-        const toolbarW = size.width;
-        const toolbarH = size.height;
-
-        let targetX = position.x + toolbarW + 10; // Try Right first
-        let targetY = position.y;
-
-        // Check horizontal fit
-        if (targetX + settingsW > screenWidth) {
-          // Not enough space on right, try left
-          targetX = position.x - settingsW - 10;
-        }
-
-        // Validate vertical fit (keep within screen)
-        if (targetY + settingsH > screenHeight) {
-          targetY = screenHeight - settingsH - 10;
-        }
-        if (targetY < 0) targetY = 10;
-
-        // If left also fails (very narrow screen?), center it
-        if (targetX < 0) {
-          targetX = (screenWidth - settingsW) / 2;
-          targetY = (screenHeight - settingsH) / 2;
-        }
-
-        console.log(`Positioning Settings at (${targetX}, ${targetY}) for Toolbar (${position.x}, ${position.y})`);
-
-        // Create new settings window
-        console.log('Creating settings window at', targetX, targetY);
-        const settingsWindow = new WebviewWindow('settings', {
-          url: 'index.html#/settings',
-          title: 'Skill-E Settings',
-          width: settingsW,
-          height: settingsH,
-          x: Math.round(targetX),
-          y: Math.round(targetY),
-          resizable: false,
-          decorations: false,
-          transparent: true,
-          alwaysOnTop: true,
-          skipTaskbar: true,
-        })
-
-        settingsWindow.once('tauri://created', () => {
-          console.log('Settings window created successfully')
-        })
-
-        settingsWindow.once('tauri://error', (e) => {
-          console.error('Error creating settings window:', e)
-        })
+        await pauseRecording();
       }
     } catch (error) {
-      console.error('Error opening settings:', error)
+      console.error('Pause/Resume error:', error);
     }
-  }
+  };
+
+  // Open settings
+  const openSettings = async () => {
+    try {
+      await invoke('create_settings_window');
+    } catch (error) {
+      console.error('Failed to open settings:', error);
+    }
+  };
+
+  // Close toolbar (minimize to tray)
+  const handleClose = async () => {
+    const window = getCurrentWindow();
+    await window.hide();
+  };
 
   return (
-    <div
-      data-tauri-drag-region
-      className="bg-background/80 backdrop-blur-xl border border-border rounded-lg shadow-2xl flex items-center gap-3"
-      style={{
-        width: '100%',
-        height: '100%',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        padding: '8px 16px',
-      }}
-    >
-      {/* Buttons on left - NOT draggable */}
-      <div style={{ pointerEvents: 'auto' }} className="flex items-center gap-3">
-        {/* Start/Pause Button */}
-        {!isRecording ? (
-          <Button
-            size="icon"
-            variant="default"
-            className="h-9 w-9 rounded-full"
-            onClick={handleStartRecording}
-            title="Start Recording (Ctrl+Shift+R)"
-          >
-            <Circle className="h-4 w-4 fill-current" />
-          </Button>
-        ) : (
-          <Button
-            size="icon"
-            variant={isPaused ? "default" : "secondary"}
-            className={`h-9 w-9 rounded-full ${
-              isPaused ? 'record-button-paused' : 'record-button-active'
-            }`}
-            onClick={handlePauseRecording}
-            title={isPaused ? 'Resume Recording' : 'Pause Recording'}
-          >
-            {isPaused ? (
-              <Circle className="h-4 w-4 fill-current" />
-            ) : (
-              <Pause className="h-4 w-4" />
-            )}
-          </Button>
+    <>
+      {/* Inline Overlay moved to separate window */}
+
+      {/* Main Toolbar */}
+      <div
+        data-tauri-drag-region
+        className={`
+          relative
+          flex items-center justify-between gap-3 
+          w-full h-full
+          px-4 py-2
+          bg-white rounded-xl shadow-sm
+          border border-gray-200
+          transition-all duration-200
+          cursor-default
+          ${isRecording ? 'ring-2 ring-red-500 ring-offset-2' : ''}
+        `}
+      >
+        {/* Status indicator */}
+        {isRecording && (
+          <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-red-500 animate-pulse'}`} />
+          </div>
         )}
 
-        {/* Stop Button */}
-        <Button
-          size="icon"
-          variant="outline"
-          className="h-9 w-9"
-          disabled={!isRecording}
-          onClick={handleStopRecording}
-          title="Stop Recording"
-        >
-          <Square className="h-4 w-4" />
-        </Button>
-      </div>
+        {/* Timer */}
+        <div className="font-mono text-lg font-semibold min-w-[4rem] text-center">
+          {formatDuration(duration)}
+        </div>
 
-      {/* Timer Display - DRAGGABLE */}
-      <div className="flex-1 text-center select-none">
-        <span
-          className={`text-sm font-mono ${isRecording && !isPaused
-            ? 'text-destructive font-semibold'
-            : 'text-muted-foreground'
-            }`}
-        >
-          {formatTime(duration)}
-        </span>
-      </div>
+        {/* Use step count from store */}
+        <div className="bg-gray-100 rounded px-2 py-1 text-xs font-medium text-gray-600">
+          {useRecordingStore(s => s.steps.length)} steps
+        </div>
 
-      {/* Buttons on right - NOT draggable */}
-      <div style={{ pointerEvents: 'auto' }} className="flex items-center gap-3">
-        {/* Settings Button */}
+        {/* Divider */}
+        <div className="w-px h-8 bg-gray-200" />
+
+        {/* Recording Controls */}
+        {!isRecording ? (
+          // Start button
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleStartRecording}
+            disabled={isStarting}
+            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+          >
+            {isStarting ? (
+              <Loader2 className="w-6 h-6 animate-spin" />
+            ) : (
+              <Circle className="w-6 h-6" />
+            )}
+          </Button>
+        ) : (
+          // Recording controls
+          <>
+            {/* Pause/Resume */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handlePauseResume}
+              disabled={isStopping}
+            >
+              {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+            </Button>
+
+            {/* Stop - Now with process indication */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleStopRecording}
+              disabled={isStopping}
+              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+              title="Parar e Processar"
+            >
+              {isStopping ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Square className="w-5 h-5 fill-current" />
+              )}
+            </Button>
+          </>
+        )}
+
+        {/* Divider */}
+        <div className="w-px h-8 bg-gray-200" />
+
+        {/* Settings */}
         <Button
-          size="icon"
           variant="ghost"
-          className="h-9 w-9"
-          onClick={handleOpenSettings}
-          title="Settings"
+          size="icon"
+          onClick={openSettings}
         >
-          <Settings className="h-4 w-4" />
+          <Settings className="w-5 h-5 text-gray-600" />
         </Button>
 
-        {/* Annotation Mode Toggle */}
+        {/* Close */}
         <Button
-          size="icon"
           variant="ghost"
-          className="h-9 w-9"
-          disabled
-          title="Annotation Mode (Coming Soon)"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-
-        {/* Close Button */}
-        <Button
           size="icon"
-          variant="ghost"
-          className="h-7 w-7"
           onClick={handleClose}
-          title="Hide to Tray"
+          className="text-gray-400 hover:text-gray-600"
         >
-          <X className="h-3 w-3" />
+          <X className="w-5 h-5" />
         </Button>
       </div>
-    </div>
-  )
-}
 
+      {/* Error Display */}
+      {error && (
+        <div className="fixed top-20 right-4 z-[10001] bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+    </>
+  );
+}

@@ -195,7 +195,7 @@ export class DocCache {
           localStorage.removeItem(key);
           evicted++;
         }
-      } catch (error) {
+      } catch (_error) {
         // If we can't parse it, remove it
         localStorage.removeItem(key);
         evicted++;
@@ -226,7 +226,7 @@ export class DocCache {
 
         const entry: CacheEntry = JSON.parse(cached);
         entries.push({ key, cachedAt: entry.cachedAt });
-      } catch (error) {
+      } catch (_error) {
         // If we can't parse it, remove it
         localStorage.removeItem(key);
       }
@@ -285,7 +285,7 @@ export class DocCache {
 
         const entry: CacheEntry = JSON.parse(cached);
         libraries.add(entry.result.library);
-      } catch (error) {
+      } catch (_error) {
         // Skip invalid entries
       }
     }
@@ -369,7 +369,7 @@ export class DocCache {
         misses: this.misses,
       };
       localStorage.setItem(DocCache.STATS_KEY, JSON.stringify(stats));
-    } catch (error) {
+    } catch (_error) {
       // Ignore errors when saving stats
     }
   }

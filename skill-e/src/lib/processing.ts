@@ -28,6 +28,9 @@ import type {
   SelectedElement,
   KeyboardState,
 } from '../stores/overlay';
+import { extractTextFromImages } from './ocr';
+import { getClassificationStats } from './speech-classifier';
+import { readFile } from '@tauri-apps/plugin-fs'; // ADDED: Use Tauri FS
 
 /**
  * Session data loaded from various sources
@@ -127,16 +130,20 @@ export function buildTimeline(sessionData: SessionData): TimelineEvent[] {
   // Add voice events (if transcription available)
   if (sessionData.transcription) {
     const sessionStartTime = sessionData.captureSession.startTime;
-    
+
     for (const segment of sessionData.transcription.segments) {
       // Convert segment timestamps (in seconds) to absolute timestamps
       const absoluteTimestamp = sessionStartTime + (segment.start * 1000);
-      
+
       const event: VoiceEvent = {
         id: `voice-${segment.id}`,
         type: 'voice',
         timestamp: absoluteTimestamp,
-        segment,
+        segment: {
+          text: segment.text,
+          startTime: (segment as any).startTime || (segment as any).start || 0,
+          endTime: (segment as any).endTime || (segment as any).end || 0,
+        },
       };
       timeline.push(event);
     }
@@ -214,14 +221,14 @@ export function detectVoicePauses(
     // If pause is longer than threshold, create a pause event
     if (pauseDurationMs >= pauseThresholdMs) {
       const pauseTimestamp = sessionStartTime + (currentSegment.end * 1000);
-      
+
       const pauseEvent: PauseEvent = {
         id: `pause-${i}`,
         type: 'pause',
         timestamp: pauseTimestamp,
         duration: pauseDurationMs,
       };
-      
+
       pauses.push(pauseEvent);
     }
   }
@@ -304,7 +311,10 @@ export function createProgress(
  */
 export function detectSteps(
   timeline: TimelineEvent[],
-  sessionData: SessionData
+  sessionData: SessionData & {
+    allVariables: import('../types/processing').DetectedVariable[];
+    allConditionals: import('../types/processing').DetectedConditional[];
+  }
 ): ProcessedStep[] {
   if (timeline.length === 0) {
     return [];
@@ -358,7 +368,7 @@ export function detectSteps(
     // Finalize current step if we should start a new one or if this is the last event
     if ((shouldStartNewStep || isLastEvent) && currentStepEvents.length > 0) {
       const stepEndTime = event.timestamp;
-      
+
       // Create the processed step
       const step = createProcessedStep(
         stepNumber,
@@ -367,7 +377,7 @@ export function detectSteps(
         currentStepEvents,
         sessionData
       );
-      
+
       steps.push(step);
 
       // Start new step (if not the last event)
@@ -397,13 +407,16 @@ function createProcessedStep(
   startTime: number,
   endTime: number,
   events: TimelineEvent[],
-  sessionData: SessionData
+  sessionData: SessionData & {
+    allVariables: import('../types/processing').DetectedVariable[];
+    allConditionals: import('../types/processing').DetectedConditional[];
+  }
 ): ProcessedStep {
   // Find representative screenshot (prefer one closest to the middle of the step)
   const screenshotEvents = events.filter(
     (e): e is ScreenshotEvent => e.type === 'screenshot'
   );
-  
+
   let representativeScreenshot: CaptureFrame | undefined;
   if (screenshotEvents.length > 0) {
     // Use the middle screenshot as representative
@@ -422,11 +435,11 @@ function createProcessedStep(
   const clicks = events
     .filter((e): e is ClickEvent => e.type === 'click')
     .map((e) => e.click);
-  
+
   const drawings = events
     .filter((e): e is DrawingEvent => e.type === 'drawing')
     .map((e) => e.drawing);
-  
+
   const selectedElements = events
     .filter((e): e is ElementSelectionEvent => e.type === 'element_selection')
     .map((e) => e.element);
@@ -461,8 +474,8 @@ function createProcessedStep(
     windowTitle,
     applicationName,
     events,
-    variables: [], // TODO: Populate in speech classification task
-    conditionals: [], // TODO: Populate in speech classification task
+    variables: sessionData.allVariables.filter(v => v.timestamp >= startTime && v.timestamp <= endTime),
+    conditionals: sessionData.allConditionals.filter(c => c.timestamp >= startTime && c.timestamp <= endTime),
   };
 }
 
@@ -483,17 +496,33 @@ export async function generateLLMContext(
   processedSession: ProcessedSession,
   maxKeyFrames: number = 10
 ): Promise<import('../types/processing').LLMContext> {
-  // Generate task description from first transcript segment or use default
-  const taskDescription = processedSession.fullTranscript
-    ? processedSession.fullTranscript.split('.')[0] + '.'
-    : 'Demonstration recording';
+  // Generate task description from multiple sources
+  let taskDescription = '';
+  
+  if (processedSession.fullTranscript && processedSession.fullTranscript.trim()) {
+    // Priority 1: Use transcript if available (USE FULL TRANSCRIPT, not just first sentence)
+    taskDescription = processedSession.fullTranscript.trim();
+  } else {
+    // Priority 2: Build from application context and actions
+    const apps = [...new Set(processedSession.steps.map(s => s.applicationName).filter(Boolean))];
+    const totalClicks = processedSession.steps.reduce((acc, s) => acc + s.annotations.clicks.length, 0);
+    const totalInputs = processedSession.steps.reduce((acc, s) => acc + s.annotations.keyboardInputs.length, 0);
+    const totalSteps = processedSession.steps.length;
+    
+    if (apps.length > 0) {
+      taskDescription = `Workflow demonstration in ${apps.join(', ')}`;
+      taskDescription += ` (${totalSteps} steps, ${totalClicks} clicks, ${totalInputs} text inputs)`;
+    } else {
+      taskDescription = `Recorded workflow (${totalSteps} steps, ${totalClicks} interactions)`;
+    }
+  }
 
   // Select key frames (limit to maxKeyFrames)
   const selectedSteps = selectKeySteps(processedSession.steps, maxKeyFrames);
 
   // Build LLM steps with screenshots and context
   const llmSteps: import('../types/processing').LLMStep[] = [];
-  
+
   for (const step of selectedSteps) {
     // Read screenshot and convert to base64 (if available)
     let screenshotBase64: string | undefined;
@@ -507,7 +536,7 @@ export async function generateLLMContext(
 
     // Build notes from annotations
     const notes: string[] = [];
-    
+
     // Add drawing annotations as notes
     for (const drawing of step.annotations.drawings) {
       if (drawing.isPinned) {
@@ -517,12 +546,12 @@ export async function generateLLMContext(
         notes.push(`Drawing annotation: ${drawingType} at (${x}, ${y})`);
       }
     }
-    
+
     // Add element selections as notes
     for (const element of step.annotations.selectedElements) {
       notes.push(`Selected element: ${element.tagName} - "${element.textContent.substring(0, 50)}"`);
     }
-    
+
     // Add keyboard inputs as notes
     if (step.annotations.keyboardInputs.length > 0) {
       const keyCount = step.annotations.keyboardInputs.length;
@@ -544,25 +573,69 @@ export async function generateLLMContext(
       annotations: step.annotations.drawings.length + step.annotations.selectedElements.length,
     };
 
+    // Build rich description from multiple sources
+    let stepDescription = step.transcript;
+    
+    if (!stepDescription || stepDescription.trim() === '') {
+      // No transcript - build description from actions
+      const clickDescriptions: string[] = [];
+      
+      for (const click of step.annotations.clicks.slice(0, 3)) {
+        const app = step.windowTitle || step.applicationName || 'application';
+        const x = Math.round(click.position?.x || 0);
+        const y = Math.round(click.position?.y || 0);
+        clickDescriptions.push(`Click at position (${x}, ${y}) in ${app}`);
+      }
+      
+      if (clickDescriptions.length > 0) {
+        stepDescription = clickDescriptions.join('; ');
+      } else if (step.annotations.keyboardInputs.length > 0) {
+        stepDescription = `Type ${step.annotations.keyboardInputs.length} character(s)`;
+      } else if (step.windowTitle) {
+        stepDescription = `Interact with ${step.windowTitle}`;
+      } else {
+        stepDescription = `Step ${step.stepNumber}: Automated action`;
+      }
+      
+      // Add OCR context if available
+      const ocrResult = processedSession.ocrResults?.find(o => step.screenshotPath?.includes(o.frameId));
+      if (ocrResult?.text) {
+        const shortText = ocrResult.text.substring(0, 100).replace(/\n/g, ' ');
+        if (shortText.length > 10) {
+          stepDescription += ` (Screen shows: "${shortText}...")`;
+        }
+      }
+    }
+
     // Create LLM step
     const llmStep: import('../types/processing').LLMStep = {
       number: step.stepNumber,
-      description: step.transcript || `Step ${step.stepNumber}`,
+      description: stepDescription,
       screenshot: screenshotBase64,
       notes,
       timeRange: step.timeRange,
       actions,
+      applicationName: step.applicationName,
+      windowTitle: step.windowTitle,
     };
-    
+
     llmSteps.push(llmStep);
   }
+
+  // Debug: Log what we're generating
+  console.log('📋 generateLLMContext:');
+  console.log('   Task:', taskDescription);
+  console.log('   Steps:', llmSteps.length);
+  llmSteps.forEach(s => {
+    console.log(`   Step ${s.number}: ${s.description?.substring(0, 80)}...`);
+  });
 
   // Calculate summary statistics
   const summary = {
     totalClicks: processedSession.allAnnotations.clicks.length,
     totalTextInputs: processedSession.allAnnotations.keyboardInputs.length,
     totalPageLoads: countWindowChanges(processedSession.timeline),
-    totalAnnotations: 
+    totalAnnotations:
       processedSession.allAnnotations.drawings.length +
       processedSession.allAnnotations.selectedElements.length,
     durationSeconds: Math.round(processedSession.duration / 1000),
@@ -665,26 +738,29 @@ function countWindowChanges(timeline: TimelineEvent[]): number {
  */
 async function readImageAsBase64(imagePath: string): Promise<string> {
   try {
-    // Universal approach: use fetch which works in both Tauri and web
-    // In Tauri, this uses the custom protocol
-    const response = await fetch(imagePath);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.status}`);
+    // UPDATED: Use Tauri FS to read file directly
+    const bytes = await readFile(imagePath);
+
+    // Convert Uint8Array to base64
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
     }
-    
-    const blob = await response.blob();
-    
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Failed to read image'));
-      reader.readAsDataURL(blob);
-    });
+    const base64 = btoa(binary);
+
+    // Assume PNG for now (or detect from extension)
+    // Most screenshots are WebP or PNG in this app
+    const isWebp = imagePath.toLowerCase().endsWith('.webp');
+    const mimeType = isWebp ? 'image/webp' : 'image/png';
+
+    return `data:${mimeType};base64,${base64}`;
   } catch (error) {
-    console.warn('Failed to read image as base64:', error);
-    // Return placeholder for testing
-    return `data:image/png;base64,placeholder_for_${imagePath}`;
+    console.warn(`Failed to read image as base64 using FS: ${imagePath}`, error);
+
+    // Fallback? Probably not if blocked.
+    // Return placeholder
+    return `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKwftQAAAABJRU5ErkJggg==`;
   }
 }
 
@@ -743,35 +819,32 @@ export async function processSession(
     timeline.push(...windowChanges);
     timeline.sort((a, b) => a.timestamp - b.timestamp);
 
-    // Stage 3: Step detection
-    onProgress?.(createProgress('step_detection', 50, 'Detecting steps...'));
-    const steps = detectSteps(timeline, sessionData);
+    // Stage 3: Speech classification (Moved before step detection)
+    onProgress?.(createProgress('classification', 40, 'Classifying speech...'));
 
-    // Stage 4: Speech classification and OCR
-    onProgress?.(createProgress('classification', 65, 'Classifying speech...'));
-    
-    // Import speech classifier
-    const { getClassificationStats } = await import('./speech-classifier');
-    
     // Classify speech segments
     let allVariables: import('../types/processing').DetectedVariable[] = [];
     let allConditionals: import('../types/processing').DetectedConditional[] = [];
-    
+
     if (sessionData.transcription?.segments) {
       const stats = getClassificationStats(sessionData.transcription.segments);
       allVariables = stats.allVariables;
       allConditionals = stats.allConditionals;
     }
-    
+
+    // Stage 4: Step detection
+    onProgress?.(createProgress('step_detection', 60, 'Detecting steps...'));
+    const steps = detectSteps(timeline, { ...sessionData, allVariables, allConditionals });
+
     // Stage 4b: OCR extraction
     onProgress?.(createProgress('classification', 75, 'Extracting text from screenshots...'));
-    
+
     // Extract OCR from key frames only (max 10 to avoid performance issues)
     const keyFramePaths = steps
       .map(step => step.screenshotPath)
       .filter((path): path is string => !!path)
       .slice(0, 10);
-    
+
     let ocrResults: import('../types/processing').OCRResult[] = [];
     if (keyFramePaths.length > 0) {
       try {
@@ -801,23 +874,9 @@ export async function processSession(
       allConditionals,
       ocrResults,
       startTime: sessionData.captureSession.startTime,
-      endTime: sessionData.captureSession.endTime || sessionData.captureSession.startTime,
+      endTime: sessionData.captureSession.endTime || Date.now(),
     };
 
-    // Stage 5: Context generation
-    onProgress?.(createProgress('context_generation', 90, 'Generating LLM context...'));
-    
-    // Enrich steps with OCR data
-    for (const step of steps) {
-      const matchingOcr = ocrResults.find(
-        ocr => step.screenshotPath && ocr.frameId && step.screenshotPath.includes(ocr.frameId)
-      );
-      if (matchingOcr) {
-        step.ocrText = matchingOcr.text;
-        step.ocrRegions = matchingOcr.regions;
-      }
-    }
-    
     // Generate LLM context (will be used by skill generation in future tasks)
     await generateLLMContext(processedSession);
 

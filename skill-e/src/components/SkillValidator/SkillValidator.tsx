@@ -9,13 +9,13 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  X, 
-  CheckCircle2, 
-  AlertCircle, 
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  X,
+  CheckCircle2,
+  AlertCircle,
   Clock,
   Shield,
   ChevronRight,
@@ -46,29 +46,30 @@ import type { ExecutionConfig } from '@/lib/skill-executor';
 import type { SemanticValidationResult } from '@/lib/semantic-judge';
 import { StepRunner } from '@/components/StepRunner';
 import { FeedbackDialog } from '@/components/FeedbackDialog';
+import { StepEditor } from '@/components/StepEditor/StepEditor';
 
 export interface SkillValidatorProps {
   /** SKILL.md content to validate */
   skillMarkdown: string;
-  
+
   /** Semantic validation result (optional, will skip if not provided) */
   semanticValidation?: SemanticValidationResult;
-  
+
   /** Execution configuration */
   config?: Partial<ExecutionConfig>;
-  
+
   /** Called when validation completes */
   onComplete?: (stats: ExecutionStats) => void;
-  
+
   /** Called when user cancels */
   onCancel?: () => void;
-  
+
   /** Called when a step fails with error */
   onStepError?: (step: SkillStep, error: string) => void;
-  
+
   /** Called when skill is updated with fixes */
   onSkillUpdate?: (updatedMarkdown: string) => void;
-  
+
   /** Optional className */
   className?: string;
 }
@@ -92,7 +93,7 @@ export function SkillValidator({
   const [parsedSkill, setParsedSkill] = useState<ParsedSkill | null>(null);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
-  
+
   // Execution state
   const [session, setSession] = useState<ExecutionSession | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(-1);
@@ -100,11 +101,12 @@ export function SkillValidator({
   const [isExecuting, setIsExecuting] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [executionStats, setExecutionStats] = useState<ExecutionStats | null>(null);
-  
+
   // Error handling
   const [currentError, setCurrentError] = useState<{ step: SkillStep; error: string } | null>(null);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
-  
+  const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
+
   // Settings
   const [showSettings, setShowSettings] = useState(false);
   const [executionConfig, setExecutionConfig] = useState<ExecutionConfig>({
@@ -117,69 +119,69 @@ export function SkillValidator({
     maxRetries: 2,
     ...config,
   });
-  
+
   // Timeline log
   const [timeline, setTimeline] = useState<Array<{ time: string; message: string; type: 'info' | 'success' | 'error' | 'warning' }>>([]);
   const timelineEndRef = useRef<HTMLDivElement>(null);
-  
+
   // Parse skill on mount
   useEffect(() => {
     try {
       const parsed = parseSkill(skillMarkdown);
       setParsedSkill(parsed);
-      
+
       const validation = validateSkill(skillMarkdown);
       setValidationResult(validation);
-      
+
       // Initialize step statuses
       const statuses: Record<number, 'pending' | 'running' | 'success' | 'error' | 'skipped'> = {};
       parsed.steps.forEach((_, i) => {
         statuses[i] = 'pending';
       });
       setStepStatuses(statuses);
-      
+
       addToTimeline('Skill parsed successfully', 'success');
     } catch (error) {
       setParseError(error instanceof Error ? error.message : 'Failed to parse skill');
       addToTimeline('Failed to parse skill', 'error');
     }
   }, [skillMarkdown]);
-  
+
   // Auto-scroll timeline
   useEffect(() => {
     timelineEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [timeline]);
-  
+
   const addToTimeline = useCallback((message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') => {
     const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     setTimeline(prev => [...prev, { time, message, type }]);
   }, []);
-  
+
   // Start execution
   const handleStart = useCallback(async () => {
     if (!parsedSkill) return;
-    
+
     addToTimeline('Starting execution session...', 'info');
-    
+
     const newSession = new ExecutionSession(parsedSkill, executionConfig);
     setSession(newSession);
     setIsExecuting(true);
     setIsPaused(false);
     setCurrentStepIndex(0);
-    
+
     // Set first step to running
     setStepStatuses((prev: Record<number, 'pending' | 'running' | 'success' | 'error' | 'skipped'>) => ({ ...prev, 0: 'running' }));
-    
+
     // Execute steps
     try {
       for (let i = 0; i < parsedSkill.steps.length; i++) {
         setCurrentStepIndex(i);
         setStepStatuses((prev: Record<number, 'pending' | 'running' | 'success' | 'error' | 'skipped'>) => ({ ...prev, [i]: 'running' }));
-        
+
         addToTimeline(`Executing step ${i + 1}: ${parsedSkill.steps[i].instruction}`, 'info');
-        
+
         const result = await newSession.executeStep(parsedSkill.steps[i]);
-        
+
         if (result.success) {
           setStepStatuses((prev: Record<number, 'pending' | 'running' | 'success' | 'error' | 'skipped'>) => ({ ...prev, [i]: 'success' }));
           addToTimeline(`Step ${i + 1} completed successfully`, 'success');
@@ -188,44 +190,44 @@ export function SkillValidator({
           setCurrentError({ step: parsedSkill.steps[i], error: result.error || 'Step requires human intervention' });
           setShowFeedbackDialog(true);
           setIsPaused(true);
-          
+
           if (onStepError) {
             onStepError(parsedSkill.steps[i], result.error || 'Human intervention required');
           }
-          
+
           // Wait for user to handle
           return;
         } else {
           setStepStatuses((prev: Record<number, 'pending' | 'running' | 'success' | 'error' | 'skipped'>) => ({ ...prev, [i]: 'error' }));
           setCurrentError({ step: parsedSkill.steps[i], error: result.error || 'Step failed' });
-          
+
           if (executionConfig.pauseOnError) {
             setShowFeedbackDialog(true);
             setIsPaused(true);
           }
-          
+
           if (onStepError) {
             onStepError(parsedSkill.steps[i], result.error || 'Step failed');
           }
-          
+
           if (!executionConfig.continueOnFailure) {
             return;
           }
         }
-        
+
         // Check if paused
         if (newSession.isPaused()) {
           setIsPaused(true);
           return;
         }
       }
-      
+
       // Complete
       const stats = newSession.getStats();
       setExecutionStats(stats);
       setIsExecuting(false);
       addToTimeline('Execution completed', 'success');
-      
+
       if (onComplete) {
         onComplete(stats);
       }
@@ -234,11 +236,11 @@ export function SkillValidator({
       setIsExecuting(false);
     }
   }, [parsedSkill, executionConfig, onComplete, onStepError]);
-  
+
   // Pause/Resume
   const handlePauseResume = useCallback(() => {
     if (!session) return;
-    
+
     if (isPaused) {
       session.resume();
       setIsPaused(false);
@@ -249,7 +251,7 @@ export function SkillValidator({
       addToTimeline('Execution paused', 'warning');
     }
   }, [session, isPaused]);
-  
+
   // Cancel
   const handleCancel = useCallback(() => {
     if (session) {
@@ -258,12 +260,12 @@ export function SkillValidator({
     setIsExecuting(false);
     setIsPaused(false);
     addToTimeline('Execution cancelled', 'warning');
-    
+
     if (onCancel) {
       onCancel();
     }
   }, [session, onCancel]);
-  
+
   // Reset
   const handleReset = useCallback(() => {
     setSession(null);
@@ -273,7 +275,7 @@ export function SkillValidator({
     setExecutionStats(null);
     setCurrentError(null);
     setShowFeedbackDialog(false);
-    
+
     // Reset step statuses
     if (parsedSkill) {
       const statuses: Record<number, 'pending' | 'running' | 'success' | 'error' | 'skipped'> = {};
@@ -282,54 +284,54 @@ export function SkillValidator({
       });
       setStepStatuses(statuses);
     }
-    
+
     setTimeline([]);
     addToTimeline('Session reset', 'info');
   }, [parsedSkill]);
-  
+
   // Handle feedback dialog close
   const handleFeedbackClose = useCallback(() => {
     setShowFeedbackDialog(false);
   }, []);
-  
+
   // Handle step fix
   const handleStepFix = useCallback((fixedStep: SkillStep) => {
     if (!parsedSkill || currentStepIndex < 0) return;
-    
+
     // Update the step in the skill
     const updatedSteps = [...parsedSkill.steps];
     updatedSteps[currentStepIndex] = fixedStep;
-    
+
     const updatedSkill = {
       ...parsedSkill,
       steps: updatedSteps,
     };
-    
+
     setParsedSkill(updatedSkill);
-    
+
     // Generate updated markdown
     const updatedMarkdown = generateSkillMarkdown(updatedSkill);
-    
+
     if (onSkillUpdate) {
       onSkillUpdate(updatedMarkdown);
     }
-    
+
     addToTimeline(`Step ${currentStepIndex + 1} updated with fix`, 'success');
-    
+
     // Retry the step
     setShowFeedbackDialog(false);
     setIsPaused(false);
-    
+
     // Continue execution
     if (session) {
       session.resume();
     }
   }, [parsedSkill, currentStepIndex, session, onSkillUpdate]);
-  
+
   // Generate markdown from parsed skill
   const generateSkillMarkdown = (skill: ParsedSkill): string => {
     const lines: string[] = [];
-    
+
     // Frontmatter
     lines.push('---');
     lines.push(`name: ${skill.name}`);
@@ -339,11 +341,11 @@ export function SkillValidator({
     if (skill.created) lines.push(`created: ${skill.created}`);
     lines.push('---');
     lines.push('');
-    
+
     // Title
     lines.push(`# ${skill.title || skill.name}`);
     lines.push('');
-    
+
     // Parameters
     if (skill.parameters && skill.parameters.length > 0) {
       lines.push('## Parameters');
@@ -355,11 +357,11 @@ export function SkillValidator({
       });
       lines.push('');
     }
-    
+
     // Instructions
     lines.push('## Instructions');
     lines.push('');
-    
+
     skill.steps.forEach((step, i) => {
       lines.push(`### Step ${i + 1}: ${step.instruction.slice(0, 50)}${step.instruction.length > 50 ? '...' : ''}`);
       lines.push('');
@@ -369,17 +371,17 @@ export function SkillValidator({
       }
       lines.push('');
     });
-    
+
     return lines.join('\n');
   };
-  
+
   // Get progress percentage
   const getProgress = () => {
     if (!parsedSkill) return 0;
     const completed = Object.values(stepStatuses).filter(s => s === 'success' || s === 'error' || s === 'skipped').length;
     return (completed / parsedSkill.steps.length) * 100;
   };
-  
+
   // Get status counts
   const getStatusCounts = () => {
     const statuses = Object.values(stepStatuses);
@@ -391,7 +393,7 @@ export function SkillValidator({
       skipped: statuses.filter(s => s === 'skipped').length,
     };
   };
-  
+
   if (parseError) {
     return (
       <div className={cn("flex flex-col items-center justify-center h-full p-8", className)}>
@@ -405,7 +407,7 @@ export function SkillValidator({
       </div>
     );
   }
-  
+
   if (!parsedSkill) {
     return (
       <div className={cn("flex items-center justify-center h-full", className)}>
@@ -413,10 +415,10 @@ export function SkillValidator({
       </div>
     );
   }
-  
+
   const counts = getStatusCounts();
   const progress = getProgress();
-  
+
   return (
     <TooltipProvider>
       <div className={cn("flex flex-col h-full bg-background", className)}>
@@ -427,12 +429,12 @@ export function SkillValidator({
               <h1 className="text-lg font-semibold">{parsedSkill.name}</h1>
               <p className="text-sm text-muted-foreground">{parsedSkill.description}</p>
             </div>
-            
+
             {/* Quality Badge */}
             {semanticValidation && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge 
+                  <Badge
                     variant={semanticValidation.isVerified ? "default" : "secondary"}
                     className={cn(
                       "gap-1 cursor-help",
@@ -474,7 +476,7 @@ export function SkillValidator({
                 </TooltipContent>
               </Tooltip>
             )}
-            
+
             {/* Validation Errors */}
             {validationResult && !validationResult.valid && (
               <Tooltip>
@@ -494,7 +496,7 @@ export function SkillValidator({
               </Tooltip>
             )}
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Settings */}
             <Button
@@ -504,7 +506,7 @@ export function SkillValidator({
             >
               <Settings className="h-4 w-4" />
             </Button>
-            
+
             {/* Cancel */}
             <Button
               variant="ghost"
@@ -515,7 +517,7 @@ export function SkillValidator({
             </Button>
           </div>
         </div>
-        
+
         {/* Progress Bar */}
         <div className="px-4 py-2 border-b bg-muted/30">
           <div className="flex items-center gap-4">
@@ -524,7 +526,7 @@ export function SkillValidator({
               {counts.success}/{parsedSkill.steps.length} steps
             </span>
           </div>
-          
+
           {/* Status Counts */}
           <div className="flex items-center gap-4 mt-2 text-xs">
             <span className="text-muted-foreground">Status:</span>
@@ -535,7 +537,7 @@ export function SkillValidator({
             {counts.skipped > 0 && <Badge variant="outline" className="text-xs">{counts.skipped} Skipped</Badge>}
           </div>
         </div>
-        
+
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Step List */}
@@ -546,7 +548,7 @@ export function SkillValidator({
                 {parsedSkill.steps.map((step, index) => {
                   const status = stepStatuses[index] || 'pending';
                   const isActive = index === currentStepIndex;
-                  
+
                   return (
                     <Card
                       key={index}
@@ -587,7 +589,7 @@ export function SkillValidator({
               </div>
             </div>
           </div>
-          
+
           {/* Right Panel - Execution View */}
           <div className="flex-1 flex flex-col min-w-0">
             {currentStepIndex >= 0 && parsedSkill.steps[currentStepIndex] ? (
@@ -602,8 +604,7 @@ export function SkillValidator({
                   // Continue to next step
                 }}
                 onEdit={(step) => {
-                  // TODO: Open step editor
-                  console.log('Edit step:', step);
+                  setEditingStepIndex(currentStepIndex);
                 }}
               />
             ) : (
@@ -613,7 +614,7 @@ export function SkillValidator({
                     <Sparkles className="h-16 w-16 text-muted-foreground/50 mb-4" />
                     <h2 className="text-xl font-semibold mb-2">Ready to Validate</h2>
                     <p className="text-muted-foreground text-center max-w-md mb-6">
-                      This skill has {parsedSkill.steps.length} steps. 
+                      This skill has {parsedSkill.steps.length} steps.
                       Click Start to begin execution.
                     </p>
                     <div className="flex gap-2">
@@ -622,7 +623,7 @@ export function SkillValidator({
                         Start Validation
                       </Button>
                     </div>
-                    
+
                     {/* Semantic Validation Preview */}
                     {semanticValidation && (
                       <Card className="mt-8 p-4 max-w-md w-full">
@@ -637,8 +638,8 @@ export function SkillValidator({
                           {semanticValidation.score}/100
                         </div>
                         <div className="text-sm text-muted-foreground mb-3">
-                          {semanticValidation.isVerified 
-                            ? 'This skill is production-ready' 
+                          {semanticValidation.isVerified
+                            ? 'This skill is production-ready'
                             : 'This skill needs improvement before production use'}
                         </div>
                         <div className="space-y-1 text-xs">
@@ -671,7 +672,7 @@ export function SkillValidator({
                     )}
                   </>
                 )}
-                
+
                 {executionStats && (
                   <>
                     <CheckCircle2 className="h-16 w-16 text-green-600 mb-4" />
@@ -694,7 +695,7 @@ export function SkillValidator({
                 )}
               </div>
             )}
-            
+
             {/* Timeline */}
             <div className="border-t bg-muted/20 p-3 h-48 overflow-y-auto">
               <div className="flex items-center gap-2 mb-2 text-xs font-medium text-muted-foreground">
@@ -719,7 +720,7 @@ export function SkillValidator({
             </div>
           </div>
         </div>
-        
+
         {/* Footer Controls */}
         <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/20">
           <div className="flex items-center gap-2">
@@ -742,14 +743,14 @@ export function SkillValidator({
                 )}
               </Button>
             )}
-            
+
             {!isExecuting && currentStepIndex >= 0 && !executionStats && (
               <Button variant="outline" size="sm" onClick={handleStart}>
                 <Play className="h-4 w-4 mr-2" />
                 Resume
               </Button>
             )}
-            
+
             {!isExecuting && executionStats && (
               <Button variant="outline" size="sm" onClick={handleReset}>
                 <RotateCcw className="h-4 w-4 mr-2" />
@@ -757,7 +758,7 @@ export function SkillValidator({
               </Button>
             )}
           </div>
-          
+
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>Mode:</span>
             <Badge variant="outline" className="text-xs capitalize">
@@ -777,7 +778,7 @@ export function SkillValidator({
             )}
           </div>
         </div>
-        
+
         {/* Feedback Dialog */}
         {currentError && (
           <FeedbackDialog
@@ -785,33 +786,58 @@ export function SkillValidator({
             onOpenChange={setShowFeedbackDialog}
             step={currentError.step}
             error={currentError.error}
-            onRetry={(feedback) => {
+            onRetry={(feedback: string) => {
               setShowFeedbackDialog(false);
               setIsPaused(false);
               if (session) session.resume();
             }}
-            onSkip={(feedback) => {
+            onSkip={(feedback: string) => {
               setStepStatuses((prev: Record<number, 'pending' | 'running' | 'success' | 'error' | 'skipped'>) => ({ ...prev, [currentStepIndex]: 'skipped' }));
               setShowFeedbackDialog(false);
               setIsPaused(false);
               if (session) session.resume();
             }}
-            onEdit={(feedback) => {
-              // TODO: Open step editor
+            onEdit={(feedback: string) => {
+              setEditingStepIndex(currentStepIndex);
               setShowFeedbackDialog(false);
             }}
-            onManual={(feedback) => {
+            onManual={(feedback: string) => {
               setStepStatuses((prev: Record<number, 'pending' | 'running' | 'success' | 'error' | 'skipped'>) => ({ ...prev, [currentStepIndex]: 'success' }));
               setShowFeedbackDialog(false);
               setIsPaused(false);
               if (session) session.resume();
             }}
-            onAbort={(feedback) => {
+            onAbort={(feedback: string) => {
               handleCancel();
             }}
           />
         )}
-        
+
+        {/* Edit Step Dialog */}
+        <Dialog open={editingStepIndex !== null} onOpenChange={(open) => !open && setEditingStepIndex(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Step</DialogTitle>
+              <DialogDescription>
+                Modify the step instruction and target settings.
+              </DialogDescription>
+            </DialogHeader>
+
+            {editingStepIndex !== null && parsedSkill && parsedSkill.steps[editingStepIndex] && (
+              <StepEditor
+                step={parsedSkill.steps[editingStepIndex]}
+                onSave={(updatedStep) => {
+                  handleStepFix(updatedStep);
+                  setEditingStepIndex(null);
+                }}
+                onCancel={() => setEditingStepIndex(null)}
+                showRerun={false}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+
+
         {/* Settings Dialog */}
         <Dialog open={showSettings} onOpenChange={setShowSettings}>
           <DialogContent>
@@ -821,7 +847,7 @@ export function SkillValidator({
                 Configure how the skill validation runs
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4 py-4">
               <div>
                 <label className="text-sm font-medium">Execution Mode</label>
@@ -835,7 +861,7 @@ export function SkillValidator({
                   <option value="image">Image Only</option>
                 </select>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -845,7 +871,7 @@ export function SkillValidator({
                 />
                 <label htmlFor="pauseOnError" className="text-sm">Pause on error</label>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -855,7 +881,7 @@ export function SkillValidator({
                 />
                 <label htmlFor="pauseOnConfirmation" className="text-sm">Pause at confirmation points</label>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -866,7 +892,7 @@ export function SkillValidator({
                 <label htmlFor="captureScreenshots" className="text-sm">Capture screenshots</label>
               </div>
             </div>
-            
+
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowSettings(false)}>
                 Close
