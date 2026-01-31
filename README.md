@@ -1,161 +1,109 @@
-# Skill-E 🧠
+# Skill-E 🧠 (Hackathon 2026 Edition)
 
-> **Turn screen demonstrations into AI agent skills.**
+> **The Bridge Between Human Action and Agent Understanding.**
 
-**Dynamous Kiro Hackathon 2026 Submission**
+<div align="center">
+  <img src="./src/assets/skille_bot.PNG" alt="Skill-E Mascot" width="150" />
+</div>
 
----
+## 🏆 Dynamous Kiro Hackathon 2026
 
-## 🏆 What is Skill-E?
+**Skill-E** is a local-first application that observes your workflow and automatically generates structured **Skill Definitions** for AI Agents. Instead of writing prompts or code, you simply *show* the agent what to do.
 
-Skill-E is a **local-first** Windows application that watches your screen and generates structured **Agent Skills** automatically. Instead of writing prompts or code, you simply *show* the agent what to do.
+### 🌟 Key Features
 
-### How It Works
-
-1. **Record** - Hit record and perform a task (e.g., "Download a report from Salesforce")
-2. **Explain** - Talk through what you're doing. Skill-E listens.
-3. **Process** - Local Whisper transcribes audio, OCR captures UI elements, AI correlates actions with intent
-4. **Generate** - Returns a clean `SKILL.md` ready for your AI Agent to execute
-
-### Demo Video
-📺 [Watch on YouTube](https://youtube.com/your-video-link) *(add your link)*
+- **👀 Observation Engine**: Captures screen clicks, keystrokes, and visual context.
+- **🗣️ Voice-to-Intent**: Uses **Local Whisper** (Privacy-First) to understand your spoken explanations.
+- **🧠 Local Intelligence**: Integrates with **Ollama** to synthesize observations into semantic skills without sending data to the cloud.
+- **⚡ Native Performance**: Built with **Tauri v2** (Rust + React) for a lightweight, blazer-fast footprint.
+- **🔋 Battery Included**: Comes with built-in OCR and Computer Vision (Tesseract).
 
 ---
 
-## ✨ Key Features
+## 🚀 How It Works
 
-- **👀 Observation Engine** - Captures screen, clicks, keystrokes, and visual context
-- **🗣️ Voice-to-Intent** - Uses **Local Whisper** (Privacy-First) to understand spoken explanations
-- **🧠 Local Intelligence** - Integrates with **Ollama** for skill synthesis without cloud data
-- **⚡ Native Performance** - Built with **Tauri v2** (Rust + React) for lightweight, fast operation
-- **🔌 Multi-Provider** - Supports Ollama, OpenAI, Anthropic, OpenRouter, and more
+1.  **Record**: Hit the record button and perform a task (e.g., "How to download a report from Salesforce").
+2.  **Explain**: Talk through what you are doing. Skill-E listens.
+3.  **Process**:
+    *   **Whisper** works locally to transcribe audio.
+    *   **Vision Engine** captures UI elements and text (OCR).
+    *   **Planner** correlates clicks with intent.
+4.  **Generate**: Returns a clean `SKILL.md` or JSON definition ready for your AI Agent to execute.
 
 ---
 
-## 🚀 Quick Start
+## 📦 Installation & Download
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (v20+)
+### Windows (Pre-built)
+Download the latest artifacts from the [Releases Page](./releases) or check the `dist/` folder if building locally.
+
+**Option 1: Installer** (Recommended)
+1.  Run `Skill-E_0.1.0_x64-setup.exe`.
+2.  Follow the setup wizard.
+
+**Option 2: Portable** (No Install)
+1.  Download `Skill-E-Portable.exe`.
+2.  Run directy.
+    *   *Note: This is a standalone executable (Single-File).*
+
+### Developer Setup (Build from Source)
+
+Prerequisites:
+- [Node.js](https://nodejs.org/en/) (v20+)
 - [Rust](https://www.rust-lang.org/tools/install) (latest stable)
-- [Ollama](https://ollama.com/) (for local LLM generation)
-
-### Development
+- [C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (Required for Rust on Windows - select "Desktop development with C++")
+- [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (Usually pre-installed on Windows 10/11)
+- [Ollama](https://ollama.com/) (running specifically for LLM generation)
 
 ```bash
-# Clone repository
+# 1. Clone the repository
 git clone https://github.com/veefoscax/Skill-E.git
 cd Skill-E/skill-e
 
-# Install dependencies
-pnpm install
+# 2. Install dependencies
+npm install
 
-# Development mode
-pnpm tauri dev
+# 3. Development Mode
+npm run tauri dev
 
-# Production build
-pnpm tauri build
+# 4. Production Build
+npm run tauri build
 ```
 
-### Windows Installer (Pre-built)
+---
 
-Download from [Releases](../../releases):
-1. Unzip `Skill-E-v1.0.0-Setup.zip`
-2. Run `Skill-E_1.0.0_x64-setup.exe`
-3. Follow onboarding wizard
+## 🗺️ Roadmap & Future Improvements
+
+We built Skill-E for the 2026 Hackathon timeframe, but our vision extends beyond.
+
+### ✅ Completed
+- [x] Multi-Window Architecture (Toolbar + Overlay).
+- [x] Local Whisper Integration (CPU Mode confirmed stable).
+- [x] Global Input Keylogging (Privacy-focused).
+- [x] Ollama / OpenRouter / Anthropic Support.
+
+### 🚧 Coming Soon (Post-Hackathon)
+- **Sidecar Architecture**: We plan to decouple the AI Engine into a Python Sidecar to enable full GPU acceleration (CUDA) without complex compilation steps on the client.
+- **Mac & Linux Support**: Currently Windows-only. Porting `rdev` and `GlobalHotkey` logic to MacOS is the next priority.
+- **Cloud Sync**: Optional syncing of generated skills to a team repository.
+- **Agent Sandbox**: A built-in "Player" to verify the generated skill immediately.
 
 ---
 
-## 📸 Screenshots
+## 🛠️ Tech Stack
 
-*[Add screenshots of: Toolbar, Recording Overlay, Processing Screen, Skill Preview]*
-
----
-
-## 🛠️ Architecture
-
-### Frontend (React + TypeScript)
-- `src/components/Toolbar/` - Recording controls
-- `src/components/ProcessingScreen/` - AI processing progress
-- `src/components/PreviewScreen/` - Skill preview & execution
-- `src/lib/processing.ts` - AI processing pipeline
-- `src/lib/cdp/` - Chrome DevTools Protocol integration
-
-### Backend (Rust + Tauri)
-- Screen capture commands
-- Audio file handling  
-- Whisper model management
-- Session storage
+- **Core**: Tauri v2 (Rust)
+- **Frontend**: React + TypeScript + Vite
+- **Styling**: TailwindCSS
+- **AI/Local**: Whisper-RS (Audio), Tesseract.js (OCR), Ollama (LLM)
+- **State**: Zustand + Persist
 
 ---
 
-## 📝 Documentation
+## ❤️ Acknowledgements
 
-| File | Purpose |
-|------|---------|
-| `SUBMISSION.md` | Delivery guide & installation |
-| `JUDGE_GUIDE.md` | Quick testing instructions |
-| `DEMO_SCRIPT.md` | Video script for YouTube |
-| `BUILD.md` | Build from source guide |
-| `ONBOARDING.md` | Developer setup guide |
-| `DEVLOG.md` | Development timeline & credits |
-| `STATUS_ENTREGA.md` | Project status overview |
+Special thanks to:
+- **Cole Medin** & **Dynamous Community** for the challenge and inspiration.
+- **Kiro CLI** for accelerating our development.
 
----
-
-## 🎯 Hackathon Context
-
-**Challenge:** Build real-world applications using Kiro CLI  
-**Theme:** Open - solve any genuine problem  
-**Prize Pool:** $17,000  
-
-### Our Solution
-Skill-E bridges the gap between human expertise and AI agent capabilities. Instead of requiring users to learn prompt engineering or write code, they simply demonstrate - making AI automation accessible to everyone.
-
----
-
-## 🔒 Privacy First
-
-- 100% local processing (screen, audio, AI)
-- No data sent to cloud unless you choose external LLM providers
-- Whisper runs locally on your machine
-- Optional: Use Ollama for completely offline operation
-
----
-
-## 🏅 Achievements
-
-- ✅ Screen recording with cursor tracking
-- ✅ Local Whisper transcription (offline)
-- ✅ OCR text extraction (Tesseract)
-- ✅ Multi-provider LLM support
-- ✅ CDP execution in Chrome
-- ✅ SKILL.md generation & export
-
----
-
-## 🗺️ Roadmap
-
-### Completed (Hackathon)
-- [x] Multi-Window Architecture
-- [x] Local Whisper Integration
-- [x] Global Input Tracking
-- [x] Multi-Provider LLM Support
-- [x] CDP Skill Execution
-
-### Future (Post-Hackathon)
-- [ ] Python Sidecar for GPU acceleration
-- [ ] macOS & Linux support
-- [ ] Cloud sync for team sharing
-- [ ] Built-in skill player/sandbox
-
----
-
-## 📄 License
-
-MIT - See [LICENSE](LICENSE)
-
----
-
-**Built with ❤️ using Kiro CLI for Dynamous Kiro Hackathon 2026**
-
-*Developed on the free plan - proving constraints breed creativity.*
+*Built with ❤️ by the Skill-E Team for the future of Agentic workflows.*
