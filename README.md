@@ -3,7 +3,7 @@
 > **The Bridge Between Human Action and Agent Understanding.**
 
 <div align="center">
-  <img src="./src/assets/skille_bot.PNG" alt="Skill-E Mascot" width="150" />
+  <img src="./assets/skille_bot.PNG" alt="Skill-E Mascot" width="150" />
 </div>
 
 ## 🏆 Dynamous Kiro Hackathon 2026
