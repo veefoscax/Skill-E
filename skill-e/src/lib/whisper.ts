@@ -46,7 +46,7 @@ export async function transcribeAudio(
   try {
     // Prepare the form data
     const formData = new FormData();
-    
+
     // Handle different input types
     if (typeof audioPath === 'string') {
       // If it's a path, we need to fetch the file
@@ -164,4 +164,31 @@ function formatTimestamp(seconds: number): string {
   const secs = Math.floor(seconds % 60);
   const ms = Math.floor((seconds % 1) * 1000);
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+}
+
+import { invoke, Channel } from '@tauri-apps/api/core';
+
+// --- Whisper Local Helpers (Rust Wrappers) ---
+
+export async function checkModelExists(model: string): Promise<boolean> {
+  return await invoke('check_model_exists', { model });
+}
+
+export async function downloadModel(model: string, onProgress?: (downloadedBytes: number) => void): Promise<void> {
+  const channel = new Channel<number>();
+
+  if (onProgress) {
+    channel.onmessage = (message) => {
+      onProgress(message);
+    };
+  }
+
+  return await invoke('download_model', {
+    model,
+    onProgress: channel
+  });
+}
+
+export async function getModelInfo(model: string): Promise<any> {
+  return await invoke('get_model_info', { model });
 }

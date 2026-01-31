@@ -47,19 +47,32 @@ let currentLanguage = 'eng';
  * Initialize the Tesseract worker (lazy singleton)
  */
 async function getWorker(language: string = 'eng'): Promise<Worker> {
-  if (worker && language === currentLanguage) return worker;
+  console.log('🔍 OCR Worker: Getting worker for language:', language);
+  
+  if (worker && language === currentLanguage) {
+    console.log('🔍 OCR Worker: Reusing existing worker');
+    return worker;
+  }
   
   // Terminate existing worker if language changed
   if (worker) {
+    console.log('🔍 OCR Worker: Terminating existing worker for language change');
     await worker.terminate();
     worker = null;
     workerPromise = null;
   }
   
-  workerPromise = createWorker(language);
-  worker = await workerPromise;
-  currentLanguage = language;
-  return worker;
+  console.log('🔍 OCR Worker: Creating new Tesseract worker...');
+  try {
+    workerPromise = createWorker(language);
+    worker = await workerPromise;
+    currentLanguage = language;
+    console.log('✅ OCR Worker: Tesseract worker created successfully');
+    return worker;
+  } catch (err) {
+    console.error('❌ OCR Worker: Failed to create worker:', err);
+    throw err;
+  }
 }
 
 /**
@@ -71,9 +84,12 @@ async function extractText(
   confidenceThreshold: number = 0.6
 ): Promise<OCRResultMessage['payload']> {
   try {
+    console.log('🔍 OCR Worker: Starting extraction for:', imagePath.substring(0, 100) + '...');
     const tesseractWorker = await getWorker(language);
+    console.log('🔍 OCR Worker: Tesseract worker ready');
     
     const result = await tesseractWorker.recognize(imagePath);
+    console.log('🔍 OCR Worker: Recognition complete, confidence:', result.data.confidence);
     
     // Filter regions by confidence
     const regions = result.data.words
@@ -84,12 +100,15 @@ async function extractText(
         confidence: word.confidence / 100,
       }));
     
+    console.log('🔍 OCR Worker: Found', regions.length, 'words');
+    
     return {
       text: result.data.text.trim(),
       confidence: result.data.confidence / 100,
       regions,
     };
   } catch (error) {
+    console.error('❌ OCR Worker: Extraction failed:', error);
     return {
       error: error instanceof Error ? error.message : 'OCR extraction failed',
     };
@@ -119,9 +138,13 @@ self.onmessage = async (event: MessageEvent<OCRMessage>) => {
       payload.confidenceThreshold
     );
     
+    // Check if result has error property to determine response type
+    const hasError = 'error' in result;
+    console.log('🔍 OCR Worker: Result has error?', hasError, result);
+    
     const response: OCRResultMessage = {
       id,
-      type: 'result' in result ? 'result' : 'error',
+      type: hasError ? 'error' : 'result',
       payload: result,
     };
     

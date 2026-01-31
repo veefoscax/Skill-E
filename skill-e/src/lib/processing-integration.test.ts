@@ -310,7 +310,7 @@ describe('Processing Pipeline Integration Tests', () => {
       timeline.push(...windowChanges);
       timeline.sort((a, b) => a.timestamp - b.timestamp);
 
-      const steps = detectSteps(timeline, sessionData);
+      const steps = detectSteps(timeline, { ...sessionData, allVariables: [], allConditionals: [] });
 
       // Should detect multiple steps based on pauses and window changes
       expect(steps.length).toBeGreaterThan(1);
@@ -360,7 +360,7 @@ describe('Processing Pipeline Integration Tests', () => {
       timeline.push(...pauses);
       timeline.sort((a, b) => a.timestamp - b.timestamp);
 
-      const steps = detectSteps(timeline, sessionData);
+      const steps = detectSteps(timeline, { ...sessionData, allVariables: [], allConditionals: [] });
 
       // Each step should have a screenshot
       for (const step of steps) {
@@ -385,7 +385,7 @@ describe('Processing Pipeline Integration Tests', () => {
       timeline.push(...pauses);
       timeline.sort((a, b) => a.timestamp - b.timestamp);
 
-      const steps = detectSteps(timeline, sessionData);
+      const steps = detectSteps(timeline, { ...sessionData, allVariables: [], allConditionals: [] });
 
       // Steps should have transcript content
       const stepsWithTranscript = steps.filter(s => s.transcript.length > 0);
@@ -405,7 +405,7 @@ describe('Processing Pipeline Integration Tests', () => {
       );
 
       const timeline = buildTimeline(sessionData);
-      const steps = detectSteps(timeline, sessionData);
+      const steps = detectSteps(timeline, { ...sessionData, allVariables: [], allConditionals: [] });
 
       // Verify structure exists for variables and conditionals
       for (const step of steps) {
@@ -425,7 +425,7 @@ describe('Processing Pipeline Integration Tests', () => {
       );
 
       const timeline = buildTimeline(sessionData);
-      const steps = detectSteps(timeline, sessionData);
+      const steps = detectSteps(timeline, { ...sessionData, allVariables: [], allConditionals: [] });
 
       // Verify the data structure supports variable detection
       expect(steps[0]).toHaveProperty('variables');
@@ -462,7 +462,7 @@ describe('Processing Pipeline Integration Tests', () => {
       const llmContext = await generateLLMContext(processedSession);
 
       expect(llmContext.steps.length).toBeGreaterThan(0);
-      
+
       for (const step of llmContext.steps) {
         expect(step.number).toBeDefined();
         expect(step.description).toBeDefined();
@@ -548,7 +548,7 @@ describe('Processing Pipeline Integration Tests', () => {
 
       // Should complete in under 30 seconds (30000ms)
       expect(processingTime).toBeLessThan(30000);
-      
+
       console.log(`Processing time: ${processingTime}ms`);
     });
 
@@ -590,7 +590,7 @@ describe('Processing Pipeline Integration Tests', () => {
       );
 
       // Verify processed session structure
-      expect(processedSession.sessionId).toBe('integration-test-session');
+      expect(processedSession.sessionId).toBe('test-session');
       expect(processedSession.steps.length).toBeGreaterThan(0);
       expect(processedSession.fullTranscript).toBe(mockTranscription.text);
       expect(processedSession.timeline.length).toBeGreaterThan(0);

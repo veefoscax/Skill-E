@@ -10,8 +10,6 @@ import {
   formatErrorForDisplay,
   getErrorIcon,
   getErrorColor,
-  type ErrorCategory,
-  type ErrorSeverity,
 } from './error-handler';
 import type { SkillStep } from './skill-parser';
 import type { HybridExecutionResult } from './hybrid-executor';

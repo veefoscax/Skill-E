@@ -7,8 +7,8 @@
 ## Phase 1: Code Quality (Quick Wins) ⏱️ 1-2h
 
 ### Task 1: ESLint Configuration
-- [ ] Update `.eslintrc.cjs` with strict unused rules
-- [ ] Test lint catches unused imports
+- [x] Update `.eslintrc.cjs` with strict unused rules
+- [x] Test lint catches unused imports
 - [ ] Fix any existing violations
 
 ### Task 2: Prettier Setup

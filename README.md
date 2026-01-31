@@ -1,373 +1,161 @@
-# Skill-E
+# Skill-E 🧠
 
-> **"Show Your Agent the Way"** — Create Agent Skills by demonstration, not by manual writing.
+> **Turn screen demonstrations into AI agent skills.**
 
-<p align="center">
-  <img src="./assets/skille_bot.PNG" alt="Skill-E Bot" width="400" />
-</p>
-
-<p align="center">
-  <strong>🏆 Project for the Kiro Hackathon 2025</strong>
-</p>
+**Dynamous Kiro Hackathon 2026 Submission**
 
 ---
 
-## 🌐 Language Support
+## 🏆 What is Skill-E?
 
-**Interface Language**: Choose your preferred language  
-**Voice Recording**: Speak in any language - Whisper transcribes it  
-**Skill Output**: Generated SKILL.md adapts to your language  
+Skill-E is a **local-first** Windows application that watches your screen and generates structured **Agent Skills** automatically. Instead of writing prompts or code, you simply *show* the agent what to do.
 
-| Supported | Languages |
-|-----------|-----------|
-| ✅ Full | English, Portuguese |
-| 🔜 Planned | Spanish, French, German, Japanese |
+### How It Works
 
----
+1. **Record** - Hit record and perform a task (e.g., "Download a report from Salesforce")
+2. **Explain** - Talk through what you're doing. Skill-E listens.
+3. **Process** - Local Whisper transcribes audio, OCR captures UI elements, AI correlates actions with intent
+4. **Generate** - Returns a clean `SKILL.md` ready for your AI Agent to execute
 
-## 🤔 Why Skill-E?
-
-### The Problem with General Agents
-
-General AI agents are powerful, but have critical limitations:
-
-| Problem | Consequence |
-|---------|-------------|
-| **Hallucination** | They invent steps that don't exist |
-| **Inconsistency** | They do things differently each time |
-| **Lack of context** | They don't know YOUR system |
-| **No guardrails** | They can do dangerous things |
-| **Hard to audit** | You don't know what they'll do |
-
-### The Solution: Specific Skills
-
-**Skills are teaching robots** — you show how to do something, and the AI learns EXACTLY that.
-
-```
-❌ General Agent: "Find customer John in the system"
-   → May click anywhere
-   → May access wrong data
-   → May perform destructive actions
-
-✅ Specific Skill: "Find customer {name} in the system"
-   → Exact steps defined
-   → Specific fields identified
-   → Security guardrails
-   → Human-in-the-loop when needed
-```
-
-### Why Demonstrate is Better than Describe?
-
-| Just Describe to LLM | Demonstrate with Skill-E |
-|---------------------|--------------------------|
-| ❌ You forget details | ✅ Captures everything automatically |
-| ❌ LLM interprets wrong | ✅ Sees exactly what you did |
-| ❌ No visual context | ✅ Reference screenshots |
-| ❌ Ambiguous variables | ✅ Detects variables from your speech |
-| ❌ No validation | ✅ Built-in success verification |
+### Demo Video
+📺 [Watch on YouTube](https://youtube.com/your-video-link) *(add your link)*
 
 ---
 
-## ✨ Key Features (11 Specs - All MVP)
+## ✨ Key Features
 
-### 🖥️ Cross-Platform Desktop App (S01)
-- **Floating toolbar** - Always on top, draggable
-- **System tray** - Near the clock (Windows + macOS)
-- **Global hotkeys** - Ctrl+Shift+R to record
-- **Platforms**: Windows, macOS, Linux
-
-### 📸 Screen Capture (S02)
-- **Screenshots** with cursor position tracking
-- **OCR** for text extraction
-- **Window detection** for context
-
-### 🎤 Audio Recording (S03)
-- **Whisper transcription** - Any language
-- **Voice level meter** - Visual feedback
-- **Noise filtering** - Clear transcriptions
-
-### ✏️ Overlay UI (S04)
-- **Click visualization** - Numbered circles (1, 2, 3...)
-- **Drawing tools** - Arrows, rectangles, dots
-- **3 fixed colors** - Red, Blue, Green (no color picker needed)
-- **Keyboard display** - Shows what you type
-- **Password redaction** - Auto-hides sensitive input (●●●●●●)
-- **Browser element selector** - Optional DOM element picker
-
-### 🔄 Processing (S05)
-- **OCR** on screenshots
-- **Step detection** from voice pauses and focus changes
-- **Timeline** visualization
-
-### 📝 Skill Export (S06)
-- **SKILL.md** in AgentSkills format
-- **Variables** automatically detected
-- **Conditionals** from "if...then" speech
-- **Guardrails** and safety constraints
-- **Human-in-the-loop** confirmation points
-
-### 🔍 Variable Detection (S07)
-- **Speech patterns** - "the customer name" → `{customer_name}`
-- **Action correlation** - Field input → variable
-- **Smart defaults** - Suggested variable names
-
-### 🤖 LLM Providers (S08)
-5 essential providers (simplified for MVP):
-
-| Provider | Type | Cost |
-|----------|------|------|
-| **OpenRouter** | Aggregator | 🆓 FREE tier |
-| **Anthropic** | Claude API | 💰 Paid |
-| **OpenAI** | GPT-4 | 💰 Paid |
-| **Google** | Gemini | 💰 Paid |
-| **Ollama** | Local | 🆓 FREE |
-
-> 💡 Use **OpenRouter free tier** for demo! No payment required.
-
-### 📚 Context Search (S09)
-- **Context7 MCP** - Documentation lookup
-- **Web fallback** - Search when docs not found
-- **Auto-reference** - Adds docs to SKILL.md
-
-### ✅ Skill Validation (S10)
-- **Interactive testing** - Execute skill step-by-step
-- **DOM + Image automation** - DOM first, image fallback
-- **Feedback loop** - Refine skill from test results
-- **Visual confirmation** - Screenshots of each step
-
-### 📦 Distribution (S11)
-- **Windows** - MSI installer
-- **macOS** - DMG (Universal binary)
-- **Linux** - AppImage, .deb
-- **GitHub Actions** - Automated builds
+- **👀 Observation Engine** - Captures screen, clicks, keystrokes, and visual context
+- **🗣️ Voice-to-Intent** - Uses **Local Whisper** (Privacy-First) to understand spoken explanations
+- **🧠 Local Intelligence** - Integrates with **Ollama** for skill synthesis without cloud data
+- **⚡ Native Performance** - Built with **Tauri v2** (Rust + React) for lightweight, fast operation
+- **🔌 Multi-Provider** - Supports Ollama, OpenAI, Anthropic, OpenRouter, and more
 
 ---
 
-## 🛡️ Security: Built-in Guardrails
-
-Skills created with Skill-E have **security safeguards by design**:
-
-### 1. Scope Restrictions
-
-```markdown
-## ⚠️ Limits of this Skill
-
-This skill MUST:
-- Operate only in the CRM system
-- Access only active customer data
-
-This skill MUST NOT:
-- Delete records permanently
-- Access financial data
-- Export more than 100 records at once
-```
-
-### 2. Human-in-the-Loop
-
-```markdown
-## 🔒 Confirmation Points
-
-### Before Saving
-> **PAUSE**: Confirm with user before saving changes.
-> Show what will be changed and wait for approval.
-
-### Before Exporting
-> **PAUSE**: Confirm destination and format with user.
-```
-
-### 3. Password Protection
-
-| Location | Behavior |
-|----------|----------|
-| **Keyboard Display** | Auto-detects password fields → shows `●●●●●●` |
-| **Skill Export** | Replaces with `${env:FIELD_PASSWORD}` variable |
-| **Recording** | Never stores actual password text |
-| **Transcription** | Marks as `[REDACTED]` if spoken |
-
----
-
-## 🔍 Automatic Documentation Search
-
-When you demonstrate something that uses a library or API, Skill-E can **automatically search documentation**:
-
-### Context7 Integration (MCP)
-
-```
-You demonstrate: "Here I use pandas to filter..."
-
-Skill-E detects: pandas
-       ↓
-Searches Context7: pandas documentation
-       ↓
-Adds to skill: Reference on how to use df.query()
-```
-
-### Result in SKILL.md
-
-```markdown
-## Technical References
-
-### Pandas DataFrame Filtering
-> To filter data, use `df.query()` or `df[df['column'] == value]`.
-> Documentation: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html
-
-This skill uses the following methods:
-- `df.query()` - For complex filters
-- `df.to_csv()` - For export
-```
-
----
-
-## 📁 Project Structure
-
-```
-Skill-E/
-├── .kiro/
-│   ├── specs/                  # 11 Kiro Specifications
-│   │   ├── S01-app-core/       # Tauri, toolbar, hotkeys, tray
-│   │   ├── S02-screen-capture/ # Screenshots, OCR, cursor
-│   │   ├── S03-audio-recording/# Whisper, transcription
-│   │   ├── S04-overlay-ui/     # Clicks, drawing, keyboard
-│   │   ├── S05-processing/     # OCR, step detection
-│   │   ├── S06-skill-export/   # SKILL.md generation
-│   │   ├── S07-variable-detection/ # Smart detection
-│   │   ├── S08-llm-providers/  # 5 essential providers
-│   │   ├── S09-context-search/ # Context7, docs lookup
-│   │   ├── S10-skill-validation/# Interactive testing
-│   │   └── S11-distribution/   # Win/Mac/Linux builds
-│   ├── hooks/                  # Automation hooks
-│   ├── prompts/                # Prompt templates
-│   └── steering/               # Project steering
-├── src/                        # React Frontend
-├── src-tauri/                  # Rust Backend
-├── icons/                      # App icons
-├── assets/
-│   └── skille_bot.PNG          # Skill-E Logo
-├── DEVLOG.md                   # Development log
-├── OVERVIEW.md                 # Project overview
-└── README.md                   # This file
-```
-
----
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-- Rust & Cargo
-- Node.js 18+
-- pnpm
+- [Node.js](https://nodejs.org/) (v20+)
+- [Rust](https://www.rust-lang.org/tools/install) (latest stable)
+- [Ollama](https://ollama.com/) (for local LLM generation)
 
-### Installation
+### Development
 
 ```bash
 # Clone repository
 git clone https://github.com/veefoscax/Skill-E.git
-cd Skill-E
+cd Skill-E/skill-e
 
 # Install dependencies
 pnpm install
 
-# Run in development
+# Development mode
 pnpm tauri dev
 
-# Build for production
+# Production build
 pnpm tauri build
 ```
 
-### API Keys Configuration
+### Windows Installer (Pre-built)
 
-```bash
-# OpenRouter (FREE for testing)
-OPENROUTER_API_KEY=sk-or-...
-
-# Whisper (for transcription)
-OPENAI_API_KEY=sk-...
-
-# Claude (for skill generation)
-ANTHROPIC_API_KEY=sk-ant-...
-```
+Download from [Releases](../../releases):
+1. Unzip `Skill-E-v1.0.0-Setup.zip`
+2. Run `Skill-E_1.0.0_x64-setup.exe`
+3. Follow onboarding wizard
 
 ---
 
-## 📊 Competitive Advantage
+## 📸 Screenshots
 
-| Feature | Skill-E | Just LLM | Simple Recorders |
-|---------|---------|----------|------------------|
-| Visual capture | ✅ | ❌ | ✅ |
-| Voice transcription | ✅ | ❌ | ⚠️ |
-| Variable detection | ✅ | ❌ | ❌ |
-| Automatic conditionals | ✅ | ❌ | ❌ |
-| Security guardrails | ✅ | ❌ | ❌ |
-| Human-in-the-loop | ✅ | ❌ | ❌ |
-| Documentation search | ✅ | ❌ | ❌ |
-| AgentSkills format | ✅ | ❌ | ❌ |
-| Preview and edit | ✅ | ❌ | ⚠️ |
-| Skill validation | ✅ | ❌ | ❌ |
-| Cross-platform | ✅ | ⚠️ | ⚠️ |
-| Multi-language | ✅ | ⚠️ | ❌ |
-| Password redaction | ✅ | ❌ | ❌ |
+*[Add screenshots of: Toolbar, Recording Overlay, Processing Screen, Skill Preview]*
 
 ---
 
-## 🎯 Use Cases
+## 🛠️ Architecture
 
-### 1. Repetitive Task Automation
-```
-Problem: Employee spends 2h/day filling reports
-Solution: Record demonstration → Skill → Agent executes
-```
+### Frontend (React + TypeScript)
+- `src/components/Toolbar/` - Recording controls
+- `src/components/ProcessingScreen/` - AI processing progress
+- `src/components/PreviewScreen/` - Skill preview & execution
+- `src/lib/processing.ts` - AI processing pipeline
+- `src/lib/cdp/` - Chrome DevTools Protocol integration
 
-### 2. System Onboarding
-```
-Problem: New employee doesn't know how to use internal system
-Solution: Skills that teach step-by-step with screenshots
-```
-
-### 3. Safe Computer Control
-```
-Problem: Agent needs to click things, but may make mistakes
-Solution: Skill with guardrails + human confirmations
-```
-
-### 4. Living Documentation
-```
-Problem: Outdated documentation
-Solution: Skills ARE the documentation + they're executable
-```
+### Backend (Rust + Tauri)
+- Screen capture commands
+- Audio file handling  
+- Whisper model management
+- Session storage
 
 ---
 
-## 📝 Development
+## 📝 Documentation
 
-This project is being developed for the **Kiro Hackathon** (deadline: Jan 31, 2025).
-
-See [DEVLOG.md](./DEVLOG.md) for timeline and decisions.
-See [OVERVIEW.md](./OVERVIEW.md) for complete project overview.
-
-### All 11 Specs (MVP)
-
-1. **S01** - App Core (Tauri, tray, hotkeys)
-2. **S02** - Screen Capture
-3. **S03** - Audio Recording
-4. **S04** - Overlay UI
-5. **S05** - Processing
-6. **S06** - Skill Export
-7. **S07** - Variable Detection
-8. **S08** - LLM Providers
-9. **S09** - Context Search
-10. **S10** - Skill Validation
-11. **S11** - Distribution
+| File | Purpose |
+|------|---------|
+| `SUBMISSION.md` | Delivery guide & installation |
+| `JUDGE_GUIDE.md` | Quick testing instructions |
+| `DEMO_SCRIPT.md` | Video script for YouTube |
+| `BUILD.md` | Build from source guide |
+| `ONBOARDING.md` | Developer setup guide |
+| `DEVLOG.md` | Development timeline & credits |
+| `STATUS_ENTREGA.md` | Project status overview |
 
 ---
 
-## 📜 License
+## 🎯 Hackathon Context
 
-MIT
+**Challenge:** Build real-world applications using Kiro CLI  
+**Theme:** Open - solve any genuine problem  
+**Prize Pool:** $17,000  
+
+### Our Solution
+Skill-E bridges the gap between human expertise and AI agent capabilities. Instead of requiring users to learn prompt engineering or write code, they simply demonstrate - making AI automation accessible to everyone.
 
 ---
 
-<p align="center">
-  <img src="./assets/skille_bot.PNG" alt="Skill-E" width="150" />
-  <br/>
-  <em>"The best way to teach an AI is to show it how."</em>
-</p>
+## 🔒 Privacy First
+
+- 100% local processing (screen, audio, AI)
+- No data sent to cloud unless you choose external LLM providers
+- Whisper runs locally on your machine
+- Optional: Use Ollama for completely offline operation
+
+---
+
+## 🏅 Achievements
+
+- ✅ Screen recording with cursor tracking
+- ✅ Local Whisper transcription (offline)
+- ✅ OCR text extraction (Tesseract)
+- ✅ Multi-provider LLM support
+- ✅ CDP execution in Chrome
+- ✅ SKILL.md generation & export
+
+---
+
+## 🗺️ Roadmap
+
+### Completed (Hackathon)
+- [x] Multi-Window Architecture
+- [x] Local Whisper Integration
+- [x] Global Input Tracking
+- [x] Multi-Provider LLM Support
+- [x] CDP Skill Execution
+
+### Future (Post-Hackathon)
+- [ ] Python Sidecar for GPU acceleration
+- [ ] macOS & Linux support
+- [ ] Cloud sync for team sharing
+- [ ] Built-in skill player/sandbox
+
+---
+
+## 📄 License
+
+MIT - See [LICENSE](LICENSE)
+
+---
+
+**Built with ❤️ using Kiro CLI for Dynamous Kiro Hackathon 2026**
+
+*Developed on the free plan - proving constraints breed creativity.*

@@ -4,7 +4,8 @@
   "description": "Capability for the main window",
   "windows": [
     "main",
-    "settings"
+    "settings",
+    "overlay"
   ],
   "permissions": [
     "core:default",
@@ -15,14 +16,54 @@
     "core:window:allow-show",
     "core:window:allow-minimize",
     "core:window:allow-maximize",
+    "core:window:allow-center",
     "core:window:allow-set-focus",
     "core:window:allow-set-position",
     "core:window:allow-set-size",
     "core:window:allow-toggle-maximize",
+    "core:window:allow-set-fullscreen",
     "dialog:default",
     "opener:default",
     "screenshots:default",
     "screenshots:allow-get-monitor-screenshot",
-    "screenshots:allow-get-screenshotable-monitors"
+    "screenshots:allow-get-screenshotable-monitors",
+    "core:window:allow-set-always-on-top",
+    "global-shortcut:allow-unregister-all",
+    "global-shortcut:allow-register",
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://**"
+        },
+        {
+          "url": "http://localhost:**"
+        },
+        {
+          "url": "http://127.0.0.1:**"
+        }
+      ],
+      "deny": []
+    },
+    "fs:default",
+    "fs:allow-read-text-file",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [
+        {
+          "path": "C:/Users/vinif/AppData/Local/Temp/skill-e-sessions/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [
+        {
+          "path": "C:/Users/vinif/AppData/Local/Temp/skill-e-sessions/**"
+        }
+      ]
+    }
   ]
 }

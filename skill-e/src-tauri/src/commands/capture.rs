@@ -15,6 +15,7 @@ pub struct CaptureResult {
 
 /// Information about a window
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct WindowInfo {
     /// Window title
     pub title: String,
@@ -26,6 +27,7 @@ pub struct WindowInfo {
 
 /// Window bounds
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct WindowBounds {
     pub x: i32,
     pub y: i32,
@@ -33,7 +35,86 @@ pub struct WindowBounds {
     pub height: i32,
 }
 
-/// Captures the entire screen and saves it as a WebP image
+// ... existing code ...
+
+#[cfg(target_os = "windows")]
+pub fn get_current_window_info() -> Result<WindowInfo, String> {
+    use windows::Win32::Foundation::{HWND, RECT};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetForegroundWindow, GetWindowTextW, GetWindowRect, GetWindowThreadProcessId,
+    };
+    use windows::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_NAME_FORMAT};
+    use windows::core::PWSTR;
+
+    unsafe {
+        // Get the foreground window handle
+        let hwnd: HWND = GetForegroundWindow();
+        if hwnd.0 == std::ptr::null_mut() {
+            return Err("No active window found".to_string());
+        }
+
+        // Get window title
+        let mut title_buffer = [0u16; 512];
+        let title_len = GetWindowTextW(hwnd, &mut title_buffer);
+        let title = if title_len > 0 {
+            String::from_utf16_lossy(&title_buffer[..title_len as usize])
+        } else {
+            String::from("(No Title)")
+        };
+
+        // Get window bounds
+        let mut rect = RECT::default();
+        GetWindowRect(hwnd, &mut rect)
+            .map_err(|e| format!("Failed to get window rect: {}", e))?;
+
+        let bounds = WindowBounds {
+            x: rect.left,
+            y: rect.top,
+            width: rect.right - rect.left,
+            height: rect.bottom - rect.top,
+        };
+
+        // Get process name
+        let mut process_id: u32 = 0;
+        GetWindowThreadProcessId(hwnd, Some(&mut process_id));
+
+        let process_name = if process_id != 0 {
+            match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process_id) {
+                Ok(process_handle) => {
+                    let mut path_buffer = [0u16; 1024];
+                    let mut size = path_buffer.len() as u32;
+                    
+                    match QueryFullProcessImageNameW(
+                        process_handle,
+                        PROCESS_NAME_FORMAT(0),
+                        PWSTR(path_buffer.as_mut_ptr()),
+                        &mut size,
+                    ) {
+                        Ok(_) => {
+                            let path = String::from_utf16_lossy(&path_buffer[..size as usize]);
+                            // Extract just the filename from the full path
+                            std::path::Path::new(&path)
+                                .file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("Unknown")
+                                .to_string()
+                        }
+                        Err(_) => String::from("Unknown"),
+                    }
+                }
+                Err(_) => String::from("Unknown"),
+            }
+        } else {
+            String::from("Unknown")
+        };
+
+        Ok(WindowInfo {
+            title,
+            process_name,
+            bounds,
+        })
+    }
+}
 /// 
 /// # Arguments
 /// * `output_path` - Full path where the screenshot should be saved (must end in .webp)
@@ -45,6 +126,19 @@ pub struct WindowBounds {
 /// # Requirements
 /// * FR-2.1: Capture entire screen
 /// * NFR-2.2: Storage format WebP (Quality 80)
+use crate::input_listener;
+
+#[tauri::command]
+pub fn start_capture(_app: tauri::AppHandle) {
+    input_listener::set_recording_state(true);
+    // ... existing capture start logic ...
+}
+
+#[tauri::command]
+pub fn stop_capture() {
+    input_listener::set_recording_state(false);
+}
+
 #[tauri::command]
 pub async fn capture_screen(
     output_path: String,
@@ -64,14 +158,20 @@ pub async fn capture_screen(
     let screens = Screen::all()
         .map_err(|e| format!("Failed to get screens: {}", e))?;
     
+    println!("Found {} screens", screens.len());
+
     // Capture the primary screen (first screen)
     let screen = screens
         .first()
         .ok_or_else(|| "No screens found".to_string())?;
     
+    println!("Capturing screen: {:?}", screen.display_info);
+
     let image_buffer = screen
         .capture()
         .map_err(|e| format!("Failed to capture screen: {}", e))?;
+    
+    println!("Captured buffer size: {}", image_buffer.len());
 
     // Convert to DynamicImage for processing
     let image = image::DynamicImage::ImageRgba8(
@@ -168,7 +268,7 @@ mod tests {
 pub async fn get_active_window() -> Result<WindowInfo, String> {
     #[cfg(target_os = "windows")]
     {
-        get_active_window_windows()
+        get_current_window_info()
     }
     
     #[cfg(not(target_os = "windows"))]
@@ -177,82 +277,16 @@ pub async fn get_active_window() -> Result<WindowInfo, String> {
     }
 }
 
-#[cfg(target_os = "windows")]
-fn get_active_window_windows() -> Result<WindowInfo, String> {
-    use windows::Win32::Foundation::{HWND, RECT};
-    use windows::Win32::UI::WindowsAndMessaging::{
-        GetForegroundWindow, GetWindowTextW, GetWindowRect, GetWindowThreadProcessId,
-    };
-    use windows::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_NAME_FORMAT};
-    use windows::core::PWSTR;
-
-    unsafe {
-        // Get the foreground window handle
-        let hwnd: HWND = GetForegroundWindow();
-        if hwnd.0 == std::ptr::null_mut() {
-            return Err("No active window found".to_string());
-        }
-
-        // Get window title
-        let mut title_buffer = [0u16; 512];
-        let title_len = GetWindowTextW(hwnd, &mut title_buffer);
-        let title = if title_len > 0 {
-            String::from_utf16_lossy(&title_buffer[..title_len as usize])
-        } else {
-            String::from("(No Title)")
-        };
-
-        // Get window bounds
-        let mut rect = RECT::default();
-        GetWindowRect(hwnd, &mut rect)
-            .map_err(|e| format!("Failed to get window rect: {}", e))?;
-
-        let bounds = WindowBounds {
-            x: rect.left,
-            y: rect.top,
-            width: rect.right - rect.left,
-            height: rect.bottom - rect.top,
-        };
-
-        // Get process name
-        let mut process_id: u32 = 0;
-        GetWindowThreadProcessId(hwnd, Some(&mut process_id));
-
-        let process_name = if process_id != 0 {
-            match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process_id) {
-                Ok(process_handle) => {
-                    let mut path_buffer = [0u16; 1024];
-                    let mut size = path_buffer.len() as u32;
-                    
-                    match QueryFullProcessImageNameW(
-                        process_handle,
-                        PROCESS_NAME_FORMAT(0),
-                        PWSTR(path_buffer.as_mut_ptr()),
-                        &mut size,
-                    ) {
-                        Ok(_) => {
-                            let path = String::from_utf16_lossy(&path_buffer[..size as usize]);
-                            // Extract just the filename from the full path
-                            std::path::Path::new(&path)
-                                .file_name()
-                                .and_then(|n| n.to_str())
-                                .unwrap_or("Unknown")
-                                .to_string()
-                        }
-                        Err(_) => String::from("Unknown"),
-                    }
-                }
-                Err(_) => String::from("Unknown"),
-            }
-        } else {
-            String::from("Unknown")
-        };
-
-        Ok(WindowInfo {
-            title,
-            process_name,
-            bounds,
-        })
+/// Get the current cursor position (Synchronous Implementation)
+pub fn get_cursor_position_impl() -> Result<(i32, i32), String> {
+    #[cfg(target_os = "windows")]
+    {
+        get_cursor_position_windows()
+    }
+    
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("Cursor position tracking is only supported on Windows".to_string())
     }
 }
 
@@ -266,15 +300,7 @@ fn get_active_window_windows() -> Result<WindowInfo, String> {
 /// * FR-2.4: Capture mouse cursor position for each frame
 #[tauri::command]
 pub async fn get_cursor_position() -> Result<(i32, i32), String> {
-    #[cfg(target_os = "windows")]
-    {
-        get_cursor_position_windows()
-    }
-    
-    #[cfg(not(target_os = "windows"))]
-    {
-        Err("Cursor position tracking is only supported on Windows".to_string())
-    }
+    get_cursor_position_impl()
 }
 
 #[cfg(target_os = "windows")]
@@ -348,6 +374,7 @@ mod cursor_tests {
 
 /// Metadata for a captured frame stored in manifest.json
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct FrameMetadata {
     /// Unique frame identifier
     pub id: String,
@@ -363,6 +390,7 @@ pub struct FrameMetadata {
 
 /// Cursor position
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct CursorPosition {
     pub x: i32,
     pub y: i32,
@@ -379,6 +407,7 @@ pub struct SaveAudioResult {
 
 /// Session manifest containing all frame metadata
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionManifest {
     /// Unique session identifier
     pub session_id: String,

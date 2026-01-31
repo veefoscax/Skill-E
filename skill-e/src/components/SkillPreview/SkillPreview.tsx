@@ -250,18 +250,18 @@ export function SkillPreview({
             <span className="text-sm font-medium text-muted-foreground">Description:</span>
             <span className="text-sm text-foreground">{skill.frontmatter.description}</span>
           </div>
-          {skill.frontmatter.compatibility && (
+          {skill.frontmatter.compatibility ? (
             <div className="grid grid-cols-[120px_1fr] gap-2">
               <span className="text-sm font-medium text-muted-foreground">Compatibility:</span>
-              <span className="text-sm text-foreground">{skill.frontmatter.compatibility}</span>
+              <span className="text-sm text-foreground">{String(skill.frontmatter.compatibility)}</span>
             </div>
-          )}
-          {skill.frontmatter.license && (
+          ) : null}
+          {skill.frontmatter.license ? (
             <div className="grid grid-cols-[120px_1fr] gap-2">
               <span className="text-sm font-medium text-muted-foreground">License:</span>
-              <span className="text-sm text-foreground">{skill.frontmatter.license}</span>
+              <span className="text-sm text-foreground">{String(skill.frontmatter.license)}</span>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 

@@ -1,33 +1,37 @@
-/**
- * Skill Generator
- * 
- * Generates SKILL.md files in AgentSkills format from processed sessions.
- * Uses Claude API with optimized context to create high-quality skills.
- * 
- * Requirements: FR-6.1, FR-6.17
- */
+import { OPENCLAW_PROVIDERS, LLM_DEFAULTS } from './models-config.providers';
+import { useSettingsStore } from '../stores/settings';
+import { ProcessingProgress, LLMContext } from '../types/processing';
+import { createProgress } from './processing';
+import { fetch } from '@tauri-apps/plugin-http'; // UPDATED: Use Tauri HTTP client
 
-import type { OptimizedContext } from './context-optimizer';
-import type { DocReference } from '../types/context-search';
-import { formatReferencesSection, shouldIncludeReferences } from './skill-references-formatter';
+// Export types for skill validation
+export interface ToolDefinition {
+  name: string;
+  description: string;
+  parameters?: Record<string, unknown>;
+  input_schema?: {
+    properties?: Record<string, unknown>;
+    required?: string[];
+    [key: string]: unknown;
+  };
+}
 
-/**
- * Generated skill content
- */
+export interface SkillFrontmatter {
+  name: string;
+  description: string;
+  version?: string;
+  author?: string;
+  tools?: ToolDefinition[];
+  [key: string]: unknown;
+}
+
 export interface GeneratedSkill {
-  /** SKILL.md markdown content */
-  markdown: string;
-  
-  /** Parsed frontmatter */
   frontmatter: SkillFrontmatter;
-  
-  /** Tool definition for LLM APIs (OpenAI/Anthropic compatible) */
-  toolDefinition: ToolDefinition;
-  
-  /** Token count estimate */
+  content: string;
+  rawMarkdown: string;
+  markdown: string;
+  toolDefinition: unknown;
   tokenCount: number;
-  
-  /** Generation metadata */
   metadata: {
     generatedAt: number;
     provider: string;
@@ -36,574 +40,117 @@ export interface GeneratedSkill {
   };
 }
 
-/**
- * SKILL.md frontmatter structure
- */
-export interface SkillFrontmatter {
-  name: string;
-  description: string;
-  compatibility?: string;
-  license?: string;
-  metadata?: {
-    author?: string;
-    version?: string;
-    recorded?: string;
-    source?: string;
-  };
+interface GenerateSkillOptions {
+  onProgress?: (progress: ProcessingProgress) => void;
+  signal?: AbortSignal;
 }
 
 /**
- * Tool definition for LLM APIs (OpenAI/Anthropic compatible)
- * Requirements: FR-6.17
- */
-export interface ToolDefinition {
-  /** Tool name (snake_case) */
-  name: string;
-  
-  /** Tool description */
-  description: string;
-  
-  /** Input schema (JSON Schema) */
-  input_schema: {
-    type: 'object';
-    properties: Record<string, {
-      type: string;
-      description: string;
-      enum?: string[];
-    }>;
-    required: string[];
-  };
-}
-
-/**
- * Skill generation options
- */
-export interface SkillGenerationOptions {
-  /** LLM provider to use (default: 'anthropic') */
-  provider?: 'anthropic' | 'openai' | 'openrouter' | 'google' | 'ollama';
-  
-  /** Model to use (default: 'claude-3-5-sonnet-20241022') */
-  model?: string;
-  
-  /** API key for the provider */
-  apiKey?: string;
-  
-  /** Maximum tokens for response (default: 4000) */
-  maxTokens?: number;
-  
-  /** Temperature for generation (default: 0.3) */
-  temperature?: number;
-  
-  /** Whether to stream the response (default: false) */
-  stream?: boolean;
-  
-  /** Callback for streaming chunks */
-  onChunk?: (chunk: string) => void;
-  
-  /** Documentation references to include (optional) */
-  docReferences?: DocReference[];
-}
-
-/**
- * Default generation options
- */
-const DEFAULT_OPTIONS: Required<Omit<SkillGenerationOptions, 'apiKey' | 'onChunk' | 'docReferences'>> = {
-  provider: 'anthropic',
-  model: 'claude-3-5-sonnet-20241022',
-  maxTokens: 4000,
-  temperature: 0.3,
-  stream: false,
-};
-
-/**
- * Generate a SKILL.md from optimized context
+ * Generate a skill from processed session context
  * 
- * @param context - Optimized context from context-optimizer
+ * @param context - LLM context from processed session
  * @param options - Generation options
- * @returns Generated skill
+ * @returns Generated SKILL.md content
  */
 export async function generateSkill(
-  context: OptimizedContext,
-  options: SkillGenerationOptions = {}
-): Promise<GeneratedSkill> {
-  const startTime = Date.now();
-  
-  // Merge options with defaults
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  
-  // Validate API key
-  if (!opts.apiKey) {
-    throw new Error('API key is required for skill generation');
-  }
-  
-  // Build the prompt
-  const prompt = buildSkillPrompt(context, opts.docReferences);
-  
-  // Call the LLM
-  let markdown: string;
-  
-  if (opts.stream && opts.onChunk) {
-    markdown = await generateWithStreaming(prompt, opts as unknown as Required<SkillGenerationOptions>);
-  } else {
-    markdown = await generateWithoutStreaming(prompt, opts as unknown as Required<SkillGenerationOptions>);
-  }
-  
-  // Append documentation references if provided
-  if (opts.docReferences && shouldIncludeReferences(opts.docReferences)) {
-    const referencesSection = formatReferencesSection(opts.docReferences, {
-      headingLevel: 2,
-      maxSnippetLength: 400,
-    });
-    
-    if (referencesSection) {
-      markdown += '\n\n' + referencesSection;
+  context: LLMContext,
+  options?: GenerateSkillOptions & { provider?: string; apiKey?: string; model?: string; baseUrl?: string }
+): Promise<string> {
+  const { onProgress, signal, provider: optProvider, apiKey: optApiKey, model: optModel, baseUrl: optBaseUrl } = options || {};
+
+  try {
+    // 1. Prepare prompt
+    onProgress?.(createProgress('context_generation', 10, 'Preparing prompt...'));
+    const prompt = buildSkillGenerationPrompt(context);
+
+    // 2. Get LLM configuration
+    // Use options first, fallback to settings store
+    const settings = useSettingsStore.getState();
+    const provider = optProvider || settings.llmProvider;
+    const model = optModel || settings.llmModel;
+    const apiKey = optApiKey !== undefined ? optApiKey : settings.llmApiKey;
+    const baseUrl = optBaseUrl || settings.llmBaseUrl || LLM_DEFAULTS[provider]?.baseUrl;
+
+    // Validate API key (unless Ollama which can work without one)
+    if (!apiKey && provider !== 'ollama') {
+      throw new Error('LLM API key is required. Please check your settings.');
     }
+
+    // 3. Call LLM API
+    onProgress?.(createProgress('context_generation', 30, `Generating skill with ${provider}/${model}...`));
+
+    // Get custom headers from provider config
+    const providerConfig = LLM_DEFAULTS[provider];
+    const customHeaders = providerConfig?.headers || {};
+
+    // We'll use a simple fetch wrapper for now
+    // In production, use a more robust client or the official SDKs if compatible
+    console.log('📝 Skill Generator: Prompt preview (first 500 chars):', prompt.substring(0, 500));
+    console.log('📝 Skill Generator: Total prompt length:', prompt.length);
+    console.log('📝 Skill Generator: Task description:', context.taskDescription);
+    console.log('📝 Skill Generator: Steps count:', context.steps?.length || 0);
+
+    const skillContent = await generateWithoutStreaming(
+      prompt,
+      model,
+      apiKey,
+      baseUrl,
+      customHeaders
+    );
+
+    // 4. Validate output (basic check) - accept various header formats
+    const hasValidHeader = skillContent.includes('# Skill:') ||
+      skillContent.includes('name:') ||
+      skillContent.includes('---\nname:');
+    if (!hasValidHeader) {
+      console.warn('Generated content might not be a valid skill (missing recognizable header)');
+    }
+
+    onProgress?.(createProgress('complete', 100, 'Skill generation complete'));
+    return skillContent;
+
+  } catch (error) {
+    console.error('Skill generation failed:', error);
+    onProgress?.(createProgress('error', 0, 'Generation failed: ' + (error instanceof Error ? error.message : String(error))));
+    throw error;
   }
-  
-  // Parse the generated markdown
-  const { frontmatter, body } = parseMarkdown(markdown);
-  
-  // Generate tool definition
-  const toolDefinition = generateToolDefinition(frontmatter, body, context);
-  
-  // Calculate token count (rough estimate: 1 token ≈ 4 characters)
-  const tokenCount = Math.ceil(markdown.length / 4);
-  
-  const generationTimeMs = Date.now() - startTime;
-  
-  return {
-    markdown,
-    frontmatter,
-    toolDefinition,
-    tokenCount,
-    metadata: {
-      generatedAt: Date.now(),
-      provider: opts.provider,
-      model: opts.model,
-      generationTimeMs,
-    },
-  };
 }
 
 /**
- * Build the skill generation prompt
- * 
- * @param context - Optimized context
- * @param docReferences - Optional documentation references
- * @returns Prompt string
- */
-function buildSkillPrompt(context: OptimizedContext, docReferences?: DocReference[]): string {
-  const { taskGoal, keySteps, fullNarration, variables, conditionals, summary } = context;
-  
-  // Format steps
-  const stepsText = keySteps.map((step, i) => {
-    const parts = [
-      `### Step ${step.number} (${formatTime(step.timeRange.start)} - ${formatTime(step.timeRange.end)})`,
-      `**Description**: ${step.description}`,
-    ];
-    
-    if (step.context?.window) {
-      parts.push(`**Window**: ${step.context.window}`);
-    }
-    
-    if (step.context?.application) {
-      parts.push(`**Application**: ${step.context.application}`);
-    }
-    
-    if (step.actions.clicks > 0 || step.actions.textInputs > 0 || step.actions.annotations > 0) {
-      parts.push(`**Actions**: ${step.actions.clicks} clicks, ${step.actions.textInputs} text inputs, ${step.actions.annotations} annotations`);
-    }
-    
-    if (step.notes.length > 0) {
-      parts.push(`**Notes**:`);
-      step.notes.forEach(note => parts.push(`  - ${note}`));
-    }
-    
-    if (step.ocrText) {
-      parts.push(`**OCR Text**: ${step.ocrText}`);
-    }
-    
-    return parts.join('\n');
-  }).join('\n\n');
-  
-  // Format variables
-  const variablesText = variables.length > 0
-    ? variables.map(v => `- **{${v.name}}** (${v.type}): ${v.description}\n  - Example: "${v.exampleValue}"`).join('\n')
-    : 'None detected';
-  
-  // Format conditionals
-  const conditionalsText = conditionals.length > 0
-    ? conditionals.map(c => {
-        const parts = [`- IF: "${c.condition}" THEN: "${c.thenAction}"`];
-        if (c.elseAction) {
-          parts.push(`  ELSE: "${c.elseAction}"`);
-        }
-        return parts.join('\n');
-      }).join('\n')
-    : 'None detected';
-  
-  // Format documentation references
-  let referencesText = '';
-  if (docReferences && docReferences.length > 0) {
-    referencesText = '\n\n## Referenced Documentation\n\n';
-    referencesText += 'The following libraries/APIs were detected and documentation was fetched:\n\n';
-    
-    for (const ref of docReferences.slice(0, 3)) { // Limit to top 3 for prompt
-      referencesText += `### ${ref.library}\n`;
-      referencesText += `**${ref.title}**\n`;
-      referencesText += `${ref.snippet.slice(0, 200)}...\n\n`;
-      
-      if (ref.codeExample) {
-        referencesText += `Example:\n\`\`\`\n${ref.codeExample.slice(0, 150)}\n\`\`\`\n\n`;
-      }
-    }
-    
-    referencesText += '*Note: Full documentation references will be appended automatically.*\n';
-  }
-  
-  return `# Objective
-
-You are an expert at creating Agent Skills from demonstration recordings.
-Transform the provided recording data into a high-quality SKILL.md following
-the AgentSkills.io specification.
-
-# Recording Context
-
-## Metadata
-- **Duration**: ${summary.durationSeconds} seconds
-- **Application**: ${summary.mainApplication || 'Unknown'}
-- **Total Steps**: ${summary.totalSteps}
-- **Total Clicks**: ${summary.totalClicks}
-- **Total Text Inputs**: ${summary.totalTextInputs}
-- **Total Annotations**: ${summary.totalAnnotations}
-
-## Task Goal
-${taskGoal}
-
-## Full Narration
-${fullNarration || 'No narration provided'}
-
-## Detected Steps
-
-${stepsText}
-
-## Confirmed Variables
-
-${variablesText}
-
-## Detected Conditions
-
-${conditionalsText}
-${referencesText}
-
-# Generation Instructions
-
-1. **BE CONCISE**: Keep the skill body under 5000 tokens. Claude is smart - 
-   only include what's specific to this task.
-
-2. **USE VARIABLES**: Use the confirmed variables with {variable_name} syntax.
-   Include a Parameters table with types and descriptions.
-
-3. **HANDLE CONDITIONALS**: When the user demonstrated different paths,
-   create clear **If X:** / **Then Y:** sections.
-
-4. **PRESERVE CONTEXT**: Include important explanations from narration as
-   notes (> **Note**: ...) but keep them brief.
-
-5. **ADD VERIFICATION**: Include a checklist to confirm successful execution.
-
-6. **REFERENCE SCREENSHOTS**: Mention reference images for critical steps
-   using format: [Reference N](references/stepN.png)
-
-7. **ADD TROUBLESHOOTING**: If the user mentioned errors or edge cases,
-   add a troubleshooting table.
-
-8. **FOLLOW FORMAT**: Use this exact structure:
-
-\`\`\`yaml
----
-name: skill-name-here
-description: Clear description of what this skill does and when to use it.
-compatibility: ${summary.mainApplication || 'Desktop application'}
-license: Apache-2.0
-metadata:
-  author: Skill-E
-  version: "1.0"
-  recorded: "${new Date().toISOString().split('T')[0]}"
-  source: demonstration
----
-\`\`\`
-
-\`\`\`markdown
-# Skill Title
-
-Brief description from narration.
-
-## Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| \`{parameter_name}\` | text | yes | Description |
-
-## When to Use
-
-- Situation 1 when this skill applies
-- Situation 2 when this skill applies
-
-## Prerequisites
-
-- Required access or permissions
-- Required applications open
-
-## Instructions
-
-### Step 1: Title
-
-1. First action
-2. Second action
-
-> **Note**: Important context from annotation or narration
-
-### Step 2: Title
-
-**If \`{parameter}\` = \`value1\`:**
-1. Do this path
-2. Continue here
-
-**If \`{parameter}\` = \`value2\`:**
-1. Do alternative path
-2. Continue here
-
-## Verification
-
-- [ ] Checkpoint 1 completed
-- [ ] Checkpoint 2 completed
-- [ ] Final state matches expected
-
-## Troubleshooting
-
-| Problem | Solution |
-|---------|----------|
-| Error X | Try solution Y |
-
----
-*Generated by Skill-E from demonstration recording*
-\`\`\`
-
-# Output Format
-
-Generate ONLY the SKILL.md content, starting with YAML frontmatter (---).
-Do NOT include any explanations or meta-commentary.
-Do NOT wrap the output in markdown code blocks.
-Just output the raw SKILL.md content.
-
-Required frontmatter fields:
-- name: lowercase with hyphens, 1-64 chars
-- description: 1-2 sentences, what it does and when to use
-
-Required body sections:
-- Title with #
-- Parameters (if variables exist)
-- When to Use
-- Instructions (numbered steps)
-- Verification (checklist)
-`;
-}
-
-/**
- * Generate skill without streaming
- * 
- * @param prompt - Generation prompt
- * @param options - Generation options
- * @returns Generated markdown
+ * Generate text without streaming
  */
 async function generateWithoutStreaming(
   prompt: string,
-  options: Required<Omit<SkillGenerationOptions, 'apiKey' | 'onChunk'>> & { apiKey: string }
-): Promise<string> {
-  const { provider, model, apiKey, maxTokens, temperature } = options;
-  
-  if (provider === 'anthropic') {
-    return await callAnthropicAPI(prompt, model, apiKey, maxTokens, temperature);
-  } else if (provider === 'openai') {
-    return await callOpenAIAPI(prompt, model, apiKey, maxTokens, temperature);
-  } else if (provider === 'openrouter') {
-    return await callOpenRouterAPI(prompt, model, apiKey, maxTokens, temperature);
-  } else {
-    throw new Error(`Provider ${provider} not yet implemented`);
-  }
-}
-
-/**
- * Generate skill with streaming
- * 
- * @param prompt - Generation prompt
- * @param options - Generation options
- * @returns Generated markdown
- */
-async function generateWithStreaming(
-  prompt: string,
-  options: Required<SkillGenerationOptions>
-): Promise<string> {
-  const { provider, model, apiKey, maxTokens, temperature, onChunk } = options;
-  
-  if (provider === 'anthropic') {
-    return await callAnthropicAPIStreaming(prompt, model, apiKey, maxTokens, temperature, onChunk!);
-  } else {
-    throw new Error(`Streaming not yet implemented for provider ${provider}`);
-  }
-}
-
-/**
- * Call Anthropic API (Claude)
- * 
- * @param prompt - Generation prompt
- * @param model - Model name
- * @param apiKey - API key
- * @param maxTokens - Maximum tokens
- * @param temperature - Temperature
- * @returns Generated text
- */
-async function callAnthropicAPI(
-  prompt: string,
   model: string,
   apiKey: string,
-  maxTokens: number,
-  temperature: number
+  baseUrl: string = 'https://api.openai.com/v1',
+  customHeaders: Record<string, string> = {}
 ): Promise<string> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      temperature,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    }),
-  });
-  
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Anthropic API error: ${response.status} ${error}`);
-  }
-  
-  const data = await response.json();
-  
-  if (!data.content || !data.content[0] || !data.content[0].text) {
-    throw new Error('Invalid response from Anthropic API');
-  }
-  
-  return data.content[0].text;
+  // Use callOpenAIAPI which now uses Tauri's fetch
+  // We determine max_tokens based on model (simplified)
+  const maxTokens = 4000;
+
+  return callOpenAIAPI(
+    prompt,
+    model,
+    apiKey,
+    maxTokens,
+    0.2, // Low temperature for consistent code generation
+    baseUrl,
+    customHeaders
+  );
 }
 
 /**
- * Call Anthropic API with streaming
+ * Call OpenAI API using Tauri's HTTP plugin to bypass CORS
  * 
  * @param prompt - Generation prompt
  * @param model - Model name
  * @param apiKey - API key
  * @param maxTokens - Maximum tokens
  * @param temperature - Temperature
- * @param onChunk - Callback for chunks
- * @returns Generated text
- */
-async function callAnthropicAPIStreaming(
-  prompt: string,
-  model: string,
-  apiKey: string,
-  maxTokens: number,
-  temperature: number,
-  onChunk: (chunk: string) => void
-): Promise<string> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      temperature,
-      stream: true,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    }),
-  });
-  
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Anthropic API error: ${response.status} ${error}`);
-  }
-  
-  if (!response.body) {
-    throw new Error('No response body from Anthropic API');
-  }
-  
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = '';
-  
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      
-      if (done) break;
-      
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n').filter(line => line.trim() !== '');
-      
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          
-          if (data === '[DONE]') {
-            break;
-          }
-          
-          try {
-            const parsed = JSON.parse(data);
-            
-            if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-              const text = parsed.delta.text;
-              fullText += text;
-              onChunk(text);
-            }
-          } catch (e) {
-            // Skip invalid JSON
-          }
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  
-  return fullText;
-}
-
-/**
- * Call OpenAI API
- * 
- * @param prompt - Generation prompt
- * @param model - Model name
- * @param apiKey - API key
- * @param maxTokens - Maximum tokens
- * @param temperature - Temperature
+ * @param baseUrl - Base URL for the API
+ * @param customHeaders - Custom headers for provider-specific requirements (e.g., Kimi)
  * @returns Generated text
  */
 async function callOpenAIAPI(
@@ -611,283 +158,356 @@ async function callOpenAIAPI(
   model: string,
   apiKey: string,
   maxTokens: number,
-  temperature: number
+  temperature: number,
+  baseUrl: string = 'https://api.openai.com/v1',
+  customHeaders: Record<string, string> = {}
 ): Promise<string> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
+
+  let url = baseUrl;
+
+  // ---------------------------------------------------------------------------
+  // CRITICAL FIX FOR OLLAMA 404 ERRORS
+  // ---------------------------------------------------------------------------
+  // If the user provided "http://localhost:11434" (no path), we MUST append "/v1"
+  // because we are using the `chat/completions` endpoint which lives at `/v1/chat/completions`.
+  // 
+  // We check specifically for port 11434 (Standard Ollama).
+  // ---------------------------------------------------------------------------
+
+  const isOllamaPort = url.includes(':11434');
+  const hasV1 = url.includes('/v1');
+  const hasApi = url.includes('/api/'); // Some setups might use /api/chat
+
+  if (isOllamaPort && !hasV1 && !hasApi) {
+    // Remove trailing slash if present
+    if (url.endsWith('/')) url = url.slice(0, -1);
+
+    // Force append /v1
+    url = url + '/v1';
+    console.log('Skill Generator: Force-appended /v1 to Ollama URL for compatibility:', url);
+  }
+
+  // Ensure trailing slash for endpoint appending
+  if (!url.endsWith('/')) url += '/';
+
+  const endpoint = 'chat/completions';
+  const fullUrl = url.endsWith(endpoint) ? url : `${url}${endpoint}`;
+
+  console.log('Calling LLM API:', fullUrl, 'Model:', model);
+
+  try {
+    // Build headers - only add Authorization if apiKey is provided
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      temperature,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    }),
-  });
-  
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} ${error}`);
-  }
-  
-  const data = await response.json();
-  
-  if (!data.choices || !data.choices[0] || !data.choices[0].message?.content) {
-    throw new Error('Invalid response from OpenAI API');
-  }
-  
-  return data.choices[0].message.content;
-}
+      'User-Agent': 'Roo Code',
+      'X-Client-Name': 'Roo Code',
+    };
 
-/**
- * Call OpenRouter API
- * 
- * @param prompt - Generation prompt
- * @param model - Model name
- * @param apiKey - API key
- * @param maxTokens - Maximum tokens
- * @param temperature - Temperature
- * @returns Generated text
- */
-async function callOpenRouterAPI(
-  prompt: string,
-  model: string,
-  apiKey: string,
-  maxTokens: number,
-  temperature: number
-): Promise<string> {
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://skill-e.app',
-      'X-Title': 'Skill-E',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      temperature,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    }),
-  });
-  
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`OpenRouter API error: ${response.status} ${error}`);
-  }
-  
-  const data = await response.json();
-  
-  if (!data.choices || !data.choices[0] || !data.choices[0].message?.content) {
-    throw new Error('Invalid response from OpenRouter API');
-  }
-  
-  return data.choices[0].message.content;
-}
-
-/**
- * Parse markdown into frontmatter and body
- * 
- * @param markdown - Raw markdown content
- * @returns Parsed frontmatter and body
- */
-function parseMarkdown(markdown: string): { frontmatter: SkillFrontmatter; body: string } {
-  // Extract YAML frontmatter
-  const frontmatterMatch = markdown.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  
-  if (!frontmatterMatch) {
-    throw new Error('Invalid SKILL.md format: missing YAML frontmatter');
-  }
-  
-  const yamlText = frontmatterMatch[1];
-  const body = frontmatterMatch[2];
-  
-  // Parse YAML (simple parser for our specific format)
-  const frontmatter = parseYAML(yamlText);
-  
-  return { frontmatter, body };
-}
-
-/**
- * Simple YAML parser for frontmatter
- * 
- * @param yaml - YAML text
- * @returns Parsed frontmatter
- */
-function parseYAML(yaml: string): SkillFrontmatter {
-  const lines = yaml.split('\n');
-  const result: any = {};
-  let currentKey: string | null = null;
-  let currentObject: any = null;
-  
-  for (const line of lines) {
-    const trimmed = line.trim();
-    
-    if (trimmed === '') continue;
-    
-    // Check for nested object
-    if (trimmed.endsWith(':') && !trimmed.includes('"')) {
-      currentKey = trimmed.slice(0, -1);
-      currentObject = {};
-      result[currentKey] = currentObject;
-      continue;
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
     }
-    
-    // Parse key-value pair
-    const match = trimmed.match(/^(\w+):\s*(.+)$/);
-    if (match) {
-      const [, key, value] = match;
-      const cleanValue = value.replace(/^["']|["']$/g, '');
-      
-      if (currentObject) {
-        currentObject[key] = cleanValue;
-      } else {
-        result[key] = cleanValue;
-      }
-    }
-  }
-  
-  return result as SkillFrontmatter;
-}
 
-/**
- * Generate tool definition from skill
- * Requirements: FR-6.17
- * 
- * @param frontmatter - Parsed frontmatter
- * @param body - Skill body
- * @param context - Optimized context
- * @returns Tool definition
- */
-function generateToolDefinition(
-  frontmatter: SkillFrontmatter,
-  body: string,
-  context: OptimizedContext
-): ToolDefinition {
-  // Convert skill name to snake_case
-  const toolName = frontmatter.name.replace(/-/g, '_');
-  
-  // Extract parameters from the skill body
-  const properties: Record<string, { type: string; description: string; enum?: string[] }> = {};
-  const required: string[] = [];
-  
-  // Parse parameters table from markdown
-  const parametersMatch = body.match(/## Parameters\s+([\s\S]*?)(?=\n##|$)/);
-  
-  if (parametersMatch) {
-    const parametersSection = parametersMatch[1];
-    const rows = parametersSection.split('\n').filter(line => line.includes('|') && !line.includes('---'));
-    
-    // Skip header row
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      const cells = row.split('|').map(cell => cell.trim()).filter(cell => cell !== '');
-      
-      if (cells.length >= 4) {
-        const paramName = cells[0].replace(/[`{}]/g, '');
-        const paramType = cells[1];
-        const isRequired = cells[2].toLowerCase() === 'yes';
-        const description = cells[3];
-        
-        // Map skill types to JSON Schema types
-        let schemaType = 'string';
-        let enumValues: string[] | undefined;
-        
-        if (paramType.includes('number')) {
-          schemaType = 'number';
-        } else if (paramType.includes('boolean')) {
-          schemaType = 'boolean';
-        } else if (paramType.includes('selection') || paramType.includes('|')) {
-          schemaType = 'string';
-          // Extract enum values
-          const enumMatch = description.match(/Options?:\s*`([^`]+)`/);
-          if (enumMatch) {
-            enumValues = enumMatch[1].split(/\s*\|\s*/);
-          }
-        }
-        
-        properties[paramName] = {
-          type: schemaType,
-          description,
-          ...(enumValues && { enum: enumValues }),
-        };
-        
-        if (isRequired) {
-          required.push(paramName);
-        }
-      }
-    }
-  }
-  
-  // If no parameters found in table, use detected variables
-  if (Object.keys(properties).length === 0 && context.variables.length > 0) {
-    for (const variable of context.variables) {
-      properties[variable.name] = {
-        type: mapVariableTypeToJsonSchema(variable.type),
-        description: variable.description,
-      };
-      required.push(variable.name);
-    }
-  }
-  
-  return {
-    name: toolName,
-    description: frontmatter.description,
-    input_schema: {
-      type: 'object',
-      properties,
-      required,
-    },
-  };
-}
+    // Merge custom headers (e.g., for Kimi/Moonshot compatibility)
+    // Custom headers take precedence over defaults
+    Object.assign(headers, customHeaders);
 
-/**
- * Map variable type to JSON Schema type
- * 
- * @param type - Variable type
- * @returns JSON Schema type
- */
-function mapVariableTypeToJsonSchema(type: string): string {
-  switch (type) {
-    case 'number':
-      return 'number';
-    case 'boolean':
-      return 'boolean';
-    case 'email':
-    case 'url':
-    case 'date':
-    case 'file':
-    case 'password':
-    case 'text':
-    case 'selection':
-    default:
-      return 'string';
+    const response = await fetch(fullUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        temperature,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    // DEBUG: Log raw LLM response
+    console.log('LLM Raw Response:', JSON.stringify(data));
+
+    // Validate response structure
+    if (!data.choices || !data.choices[0] || !data.choices[0].message?.content) {
+      console.error('Invalid API response structure:', data);
+      throw new Error('Invalid response from LLM API (missing choices/content)');
+    }
+
+    const content = data.choices[0].message.content;
+
+    // CORREÇÃO: Validação de conteúdo vazio
+    if (!content || content.trim() === '') {
+      console.warn('LLM returned empty content. Using fallback.');
+      return '# Skill Generated (Empty)\n\nThe model returned no content. Check logs for details.';
+    }
+
+    return content;
+  } catch (error) {
+    if (String(error).includes('Failed to fetch')) {
+      throw new Error('Network error: Failed to connect to LLM provider. Please check your internet connection and Base URL.');
+    }
+    throw error;
   }
 }
 
 /**
- * Format time in MM:SS format
+ * Build a prompt for skill generation
  * 
- * @param ms - Time in milliseconds
- * @returns Formatted time
+ * Based on research from Anthropic, OpenAI, MCP, and best practices for agent skills.
+ * Uses XML tags for structure, few-shot examples, and focuses on atomic actions.
  */
-function formatTime(ms: number): string {
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+function buildSkillGenerationPrompt(context: LLMContext): string {
+  // Extract key info - USE FULL NARRATION, not truncated
+  const task = context.taskDescription || 'Automated task based on screen recording';
+  const fullNarration = context.fullNarration || task;
+
+  // DEFENSIVE CHECKS added for steps, variables, and conditionals
+  const steps = (context.steps || []).map(s =>
+    `${s.number}. ${s.description} (Actions: ${s.actions?.clicks || 0} clicks, ${s.actions?.textInputs || 0} types)`
+  ).join('\n') || 'No specific steps recorded';
+
+  const variables = (context.variables || []).map(v => `- ${v.name}: ${v.description}`).join('\n') || 'None detected';
+  const conditionals = (context.conditionals || []).map(c => `- If ${c.condition} -> ${c.thenAction}`).join('\n') || 'None detected';
+
+  // Extract OCR text from steps if available
+  const ocrTexts = (context.steps || [])
+    .filter(s => s.notes?.some(n => n.includes('Screen shows:')))
+    .map(s => {
+      const ocrNote = s.notes?.find(n => n.includes('Screen shows:'));
+      return ocrNote ? ocrNote.replace('Screen shows: ', '') : '';
+    })
+    .filter(Boolean)
+    .slice(0, 3); // Limit to 3 OCR samples
+
+  // Calculate recording stats
+  const totalSteps = context.steps?.length || 0;
+  const totalClicks = context.steps?.reduce((acc, s) => acc + (s.actions?.clicks || 0), 0) || 0;
+  const totalInputs = context.steps?.reduce((acc, s) => acc + (s.actions?.textInputs || 0), 0) || 0;
+
+  // Get unique applications
+  const apps = [...new Set((context.steps || []).map(s => s.applicationName).filter(Boolean))];
+
+  return `<role>
+You are an expert Agent Skill creator specializing in documenting software workflows for AI agents.
+Your task is to analyze the recorded demonstration and create a precise, actionable SKILL.md file.
+</role>
+
+<critical_requirements>
+1. This skill MUST be SPECIFIC to what was actually demonstrated - use exact app names, button labels, sequences
+2. Do NOT create generic templates - document EXACTLY what was shown in the recording
+3. The skill should read like a recipe: clear, atomic steps that an AI agent can follow
+4. Use the FULL narration provided - every detail matters
+5. If the user mentioned "batatas", the skill MUST reference batatas
+</critical_requirements>
+
+<recording_data>
+<full_narration>
+${fullNarration}
+</full_narration>
+
+<task_summary>
+${task}
+</task_summary>
+
+<recording_stats>
+- Total Steps: ${totalSteps}
+- Total Clicks: ${totalClicks}
+- Text Inputs: ${totalInputs}
+- Applications Used: ${apps.join(', ') || 'Not detected'}
+</recording_stats>
+
+<recorded_steps>
+${steps}
+</recorded_steps>
+
+<detected_variables>
+${variables}
+</detected_variables>
+
+<detected_conditionals>
+${conditionals}
+</detected_conditionals>
+
+${ocrTexts.length > 0 ? `<ocr_texts_from_screen>
+${ocrTexts.join('\n')}
+</ocr_texts_from_screen>` : ''}
+</recording_data>
+
+<skill_format>
+Create a SKILL.md file following this exact structure:
+
+\`\`\`markdown
+---
+name: [action-oriented-name-kebab-case]
+description: [One clear sentence about what this skill does AND when to use it. Example: "Export a document from Notepad to PDF format. Use when user needs to save text content as a portable document."]
+version: 1.0.0
+license: MIT
+---
+
+# [Human-readable Skill Name]
+
+## Overview
+[2-3 sentences explaining what this workflow accomplishes, referencing specific applications]
+
+## When to Use
+- [Specific use case 1]
+- [Specific use case 2]
+
+## Prerequisites
+- [Application name] must be open
+- [Any required setup]
+
+## Steps
+
+### Step 1: [Action Name]
+[Detailed description using exact UI element names from the recording]
+
+**Actions:**
+1. [Specific action with coordinates/UI element if known]
+2. [Next specific action]
+
+**Expected Result:** [What happens after this step]
+
+[Continue for each major step...]
+
+## Notes & Context
+
+### Platform Compatibility
+- Windows: [specific notes if applicable]
+- macOS: [specific notes if applicable]
+
+### Timing Considerations
+- [Any wait times or async operations]
+
+### Known Limitations
+- [Any constraints observed during recording]
+\`\`\`
+</skill_format>
+
+<best_practices>
+1. **Name**: Use kebab-case, action-oriented (e.g., "export-notepad-to-pdf", "create-jira-ticket")
+2. **Descriptions**: Lead with what it does, then when to use it. Include trigger phrases.
+3. **Steps**: Each step should be atomic and actionable by an AI agent
+4. **Specificity**: Instead of "Click the button", say "Click the 'Export' button in the File menu"
+5. **Context**: Document exact application names, window titles, UI text observed
+6. **Variables**: If user mentioned changing values (filenames, usernames), document as variables
+</best_practices>
+
+<example_skills>
+
+EXAMPLE 1 - Simple Navigation:
+\`\`\`markdown
+---
+name: navigate-chrome-settings
+description: Navigate to Chrome Settings page. Use when user asks to change browser settings, privacy options, or advanced configuration.
+version: 1.0.0
+license: MIT
+---
+
+# Navigate Chrome to Settings
+
+## Overview
+Open Chrome's Settings page from any starting point using the menu navigation.
+
+## When to Use
+- User wants to change Chrome settings
+- Need to access privacy or security options
+- Modifying browser configuration
+
+## Prerequisites
+- Google Chrome browser must be running
+- Browser window must be active/focused
+
+## Steps
+
+### Step 1: Open Chrome Menu
+Click the three-dot menu button (⋮) in the top-right corner of Chrome window.
+
+**Expected Result:** Dropdown menu appears with options including "Settings"
+
+### Step 2: Select Settings
+Click the "Settings" option from the dropdown menu.
+
+**Expected Result:** Chrome navigates to chrome://settings/ page
+\`\`\`
+
+EXAMPLE 2 - Form Interaction:
+\`\`\`markdown
+---
+name: fill-login-form-generic
+description: Fill username and password in a web login form. Use when user needs to authenticate to a website.
+version: 1.0.0
+license: MIT
+---
+
+# Fill Web Login Form
+
+## Overview
+Complete a standard web login form by entering credentials and submitting.
+
+## When to Use
+- User needs to log into a web application
+- Authentication form is displayed
+
+## Prerequisites
+- Login page must be loaded in browser
+- Username and password are known
+
+## Steps
+
+### Step 1: Focus Username Field
+Click on the username/email input field.
+
+**Actions:**
+1. Click the input field labeled "Username" or "Email"
+2. Wait for cursor to appear
+
+### Step 2: Enter Username
+Type the username into the focused field.
+
+**Actions:**
+1. Type the username value
+
+### Step 3: Focus Password Field
+Click on the password input field.
+
+**Actions:**
+1. Click the input field labeled "Password"
+
+### Step 4: Enter Password
+Type the password into the focused field.
+
+**Actions:**
+1. Type the password value
+
+### Step 5: Submit Form
+Click the login/submit button.
+
+**Actions:**
+1. Click the button labeled "Login", "Sign In", or "Submit"
+
+**Expected Result:** Form submits and user is authenticated
+\`\`\`
+</example_skills>
+
+<output_requirements>
+1. Output ONLY the markdown content (no "Here is the skill..." intro)
+2. Use proper markdown formatting (headers, code blocks, lists)
+3. Be SPECIFIC to the recorded workflow, not generic
+4. Reference the FULL narration provided - include all mentioned topics
+5. If the user said "I want to do X with batatas", the skill must document the batata workflow
+6. Maximum 500 lines (follow "Regra das 500 Linhas" from best practices)
+</output_requirements>
+
+Now create the SKILL.md based on the recording data provided above.`;
 }

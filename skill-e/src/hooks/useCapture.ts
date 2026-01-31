@@ -64,6 +64,14 @@ export function useCapture() {
       // Add frame to session
       session.frames.push(frame);
 
+      // Update recording state in Rust (for processing)
+      await invoke('add_recording_frame', {
+        timestamp: frame.timestamp,
+        path: frame.imagePath,
+        cursorX: frame.cursorPosition?.x,
+        cursorY: frame.cursorPosition?.y
+      }).catch(e => console.warn('Failed to update recording state:', e));
+
       // Update manifest on disk
       const manifest: SessionManifest = {
         sessionId: session.id,
@@ -105,20 +113,26 @@ export function useCapture() {
    * @returns Session object for the current capture session
    */
   const startCapture = useCallback(async (intervalMs: number = 1000): Promise<CaptureSession> => {
+    console.log('📸 useCapture: startCapture called');
+    
     // Stop any existing capture
     if (intervalRef.current !== null) {
+      console.log('📸 useCapture: Stopping existing capture');
       await stopCapture();
     }
 
     // Generate unique session ID
     const sessionId = `session-${Date.now()}`;
     const startTime = Date.now();
+    console.log('📸 useCapture: Generated sessionId:', sessionId);
 
     // Create session directory
+    console.log('📸 useCapture: Creating session directory...');
     const sessionDirectory = await invoke<string>('create_session_directory', {
       sessionId,
       customOutputDir: outputDir || null,
     });
+    console.log('📸 useCapture: Session directory created:', sessionDirectory);
 
     // Create session object
     const session: CaptureSession = {
@@ -131,8 +145,9 @@ export function useCapture() {
 
     sessionRef.current = session;
 
-    console.log(`Starting capture session ${sessionId} with interval ${intervalMs}ms`);
-    console.log(`Session directory: ${sessionDirectory}`);
+    console.log(`✅ useCapture: Starting capture session ${sessionId} with interval ${intervalMs}ms`);
+    console.log(`✅ useCapture: Session object:`, session);
+    console.log(`✅ useCapture: Session directory: ${sessionDirectory}`);
 
     // Create initial manifest
     const manifest: SessionManifest = {
@@ -147,6 +162,9 @@ export function useCapture() {
       manifest,
     });
 
+    // Notify Backend to start Input Listener (S09)
+    await invoke('start_capture');
+
     // Capture first frame immediately
     await captureFrame(session);
 
@@ -157,6 +175,7 @@ export function useCapture() {
       }
     }, intervalMs);
 
+    console.log('✅ useCapture: Returning session:', session);
     return session;
   }, [captureFrame]);
 
@@ -196,6 +215,9 @@ export function useCapture() {
         manifest,
       });
 
+      // Notify Backend to stop Input Listener
+      await invoke('stop_capture');
+
       sessionRef.current = null;
     }
   }, []);
@@ -221,6 +243,29 @@ export function useCapture() {
   }, []);
 
   /**
+   * Updates the manifest with the audio path
+   */
+  const updateManifestAudio = useCallback(async (sessionDir: string, audioPath: string): Promise<void> => {
+    try {
+      const manifest = await invoke<SessionManifest>('load_session_manifest', { sessionDir });
+      // Ensure audio path is relative if inside session dir
+      const relativePath = audioPath.startsWith(sessionDir)
+        ? audioPath.replace(`${sessionDir}\\`, '').replace(`${sessionDir}/`, '')
+        : audioPath;
+
+      manifest.audioPath = relativePath;
+
+      await invoke('save_session_manifest', {
+        sessionDir,
+        manifest
+      });
+      console.log('Updated manifest with audio path:', relativePath);
+    } catch (e) {
+      console.error('Failed to update manifest with audio:', e);
+    }
+  }, []);
+
+  /**
    * Lists all available session directories
    * 
    * @returns Array of session directory paths
@@ -243,5 +288,6 @@ export function useCapture() {
     loadSessionManifest,
     listSessions,
     getCurrentSession,
+    updateManifestAudio,
   };
 }

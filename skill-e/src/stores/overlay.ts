@@ -111,6 +111,10 @@ export interface CursorHighlightConfig {
  * Overlay store state
  */
 export interface OverlayState {
+  // Overlay visibility for inline overlay
+  isVisible: boolean;
+  mode: 'select' | 'draw' | 'annotate';
+  
   // Overlay status
   isActive: boolean;
   
@@ -146,7 +150,12 @@ export interface OverlayState {
  * Overlay store actions
  */
 export interface OverlayActions {
-  // Overlay control
+  // Overlay control (inline)
+  showOverlay: () => void;
+  hideOverlay: () => void;
+  setMode: (mode: 'select' | 'draw' | 'annotate') => void;
+  
+  // Overlay control (legacy)
   activate: () => void;
   deactivate: () => void;
   reset: () => void;
@@ -216,6 +225,8 @@ const initialKeyboardState: KeyboardState = {
  * Initial overlay state
  */
 const initialState: OverlayState = {
+  isVisible: false,
+  mode: 'select',
   isActive: false,
   recordingStatus: 'stopped',
   statusIndicatorVisible: true,
@@ -254,7 +265,23 @@ function getColorForClick(clickNumber: number): ColorKey {
 export const useOverlayStore = create<OverlayStore>((set, get) => ({
   ...initialState,
 
-  // Overlay control
+  // Inline overlay control
+  showOverlay: () =>
+    set({
+      isVisible: true,
+    }),
+
+  hideOverlay: () =>
+    set({
+      isVisible: false,
+    }),
+
+  setMode: (mode) =>
+    set({
+      mode,
+    }),
+
+  // Legacy overlay control
   activate: () =>
     set({
       isActive: true,

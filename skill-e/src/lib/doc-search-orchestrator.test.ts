@@ -4,7 +4,7 @@
  * @module lib/doc-search-orchestrator.test
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { DocSearchOrchestrator, createDocSearchOrchestrator } from './doc-search-orchestrator';
 import type { DetectedLibrary } from '../types/context-search';
 

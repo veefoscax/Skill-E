@@ -2,12 +2,19 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useSettingsStore, WHISPER_MODEL_INFO, type WhisperModel } from '@/stores/settings';
+import {
+  useSettingsStore,
+  WHISPER_MODEL_INFO,
+  type WhisperModel,
+  type LLMProvider,
+  type TranscriptionMode,
+  LLM_DEFAULTS
+} from '@/stores/settings';
 import { validateWhisperApiKey } from '@/lib/whisper';
 import { validateClaudeApiKey } from '@/lib/claude-api';
 import { checkComputeCapability } from '@/lib/whisper-local';
 import { AudioLevelMeter } from '@/components/AudioLevelMeter';
-import { Loader2, Check, X, Eye, EyeOff, Cloud, HardDrive, Cpu, Zap, ChevronDown, Mic, MicOff, FolderOpen, Settings2, Sparkles } from 'lucide-react';
+import { Loader2, Check, X, Eye, EyeOff, Cloud, HardDrive, Cpu, Zap, ChevronDown, Mic, MicOff, FolderOpen, Settings2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +23,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/plugin-dialog';
+import { LLMConfiguration } from './LLMConfiguration';
+import { DebugPanel } from './DebugPanel';
 
 /**
  * Settings Component (Compact)
@@ -39,6 +48,15 @@ export function Settings() {
     setSelectedMicId,
     outputDir,
     setOutputDir,
+    // LLM state is managed by LLMConfiguration via store
+    llmProvider,
+    llmApiKey,
+    setLlmProvider,
+    setLlmApiKey,
+    llmBaseUrl,
+    setLlmBaseUrl,
+    llmModel,
+    setLlmModel,
   } = useSettingsStore();
 
   const [devices, setDevices] = useState<{ deviceId: string, label: string }[]>([]);
@@ -185,11 +203,10 @@ export function Settings() {
 
   // Ensure valid transcription mode on mount
   useEffect(() => {
-    if (transcriptionMode !== 'api' && transcriptionMode !== 'local') {
-      console.warn('Invalid transcription mode detected, resetting to local');
-      setTranscriptionMode('local');
-    }
+    // No-op validation for now as types are enforced
   }, [transcriptionMode, setTranscriptionMode]);
+
+  const uiTranscriptionMode = transcriptionMode === 'cloud_openai' ? 'api' : 'local';
 
   return (
     <div className="h-full w-full flex flex-col bg-background text-foreground select-none border rounded-lg shadow-xl overflow-hidden">
@@ -203,8 +220,6 @@ export function Settings() {
           <X className="h-4 w-4" />
         </Button>
       </div>
-
-
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
 
@@ -268,8 +283,8 @@ export function Settings() {
           <Label className="text-xs font-medium text-muted-foreground uppercase">Transcription Mode</Label>
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => setTranscriptionMode('api')}
-              className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${transcriptionMode === 'api'
+              onClick={() => setTranscriptionMode('cloud_openai')}
+              className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${uiTranscriptionMode === 'api'
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'bg-card hover:bg-muted border-input'
                 }`}
@@ -278,8 +293,8 @@ export function Settings() {
               <span className="font-medium text-xs">Cloud API</span>
             </button>
             <button
-              onClick={() => setTranscriptionMode('local')}
-              className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${transcriptionMode === 'local'
+              onClick={() => setTranscriptionMode('local_whisper')}
+              className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${uiTranscriptionMode === 'local'
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'bg-card hover:bg-muted border-input'
                 }`}
@@ -291,7 +306,7 @@ export function Settings() {
         </div>
 
         {/* Local Settings */}
-        {transcriptionMode === 'local' && (
+        {uiTranscriptionMode === 'local' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
             {/* GPU Toggle */}
             <div className={`flex items-center justify-between p-3 rounded-md border ${gpuType === 'cpu' && !checkingGpu ? 'bg-muted/30 border-dashed' : 'bg-card'
@@ -356,7 +371,7 @@ export function Settings() {
         )}
 
         {/* API Settings */}
-        {transcriptionMode === 'api' && (
+        {uiTranscriptionMode === 'api' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
             <div className="space-y-2">
               <Label className="text-xs">OpenAI Whisper API Key</Label>
@@ -408,58 +423,11 @@ export function Settings() {
           </div>
         )}
 
-        {/* Claude API Key Settings */}
+        {/* LLM Configuration Component */}
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-muted-foreground uppercase">Skill Generation</Label>
-          <div className="p-3 rounded-md border bg-card space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-xs font-medium">Claude API Key</span>
-            </div>
-            <div className="relative">
-              <Input
-                type={showClaudeApiKey ? 'text' : 'password'}
-                placeholder="sk-ant-..."
-                className="pr-20 text-xs h-8"
-                value={claudeApiKeyInput}
-                onChange={(e) => {
-                  setClaudeApiKeyInput(e.target.value);
-                  if (claudeValidationStatus !== 'idle') setClaudeValidationStatus('idle');
-                }}
-              />
-              <div className="absolute right-1 top-1 flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setShowClaudeApiKey(!showClaudeApiKey)}
-                >
-                  {showClaudeApiKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                </Button>
-                <Button
-                  size="sm"
-                  className="h-6 text-[10px] px-2"
-                  disabled={isValidatingClaude || !claudeApiKeyInput}
-                  onClick={handleSaveClaudeApiKey}
-                >
-                  {isValidatingClaude ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
-                </Button>
-              </div>
-            </div>
-            {claudeValidationStatus === 'valid' && (
-              <p className="text-[10px] text-green-600 flex items-center gap-1">
-                <Check className="h-3 w-3" /> API Key valid
-              </p>
-            )}
-            {claudeValidationStatus === 'invalid' && (
-              <p className="text-[10px] text-destructive flex items-center gap-1">
-                <X className="h-3 w-3" /> Invalid API Key
-              </p>
-            )}
-            <p className="text-[10px] text-muted-foreground">
-              Required for generating SKILL.md files. Your key is stored locally and securely.
-            </p>
+          <Label className="text-xs font-medium text-muted-foreground uppercase">Skill Generation (LLM)</Label>
+          <div className="p-3 rounded-md border bg-card text-left">
+            <LLMConfiguration />
           </div>
         </div>
 
@@ -494,7 +462,10 @@ export function Settings() {
           </div>
         </div>
 
-
+        {/* System Diagnostics */}
+        <div className="space-y-2">
+          <DebugPanel />
+        </div>
 
       </div>
     </div>

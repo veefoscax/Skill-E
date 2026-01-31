@@ -308,6 +308,10 @@ export interface LLMStep {
     textInputs: number;
     annotations: number;
   };
+  /** Application name where the step was performed */
+  applicationName?: string;
+  /** Window title during the step */
+  windowTitle?: string;
 }
 
 /**

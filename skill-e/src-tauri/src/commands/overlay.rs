@@ -1,5 +1,4 @@
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
-use tauri::window::{WindowLevel};
 
 /// Create the overlay window
 /// 
@@ -15,20 +14,28 @@ use tauri::window::{WindowLevel};
 pub fn create_overlay_window(app: AppHandle) -> Result<(), String> {
     // Check if overlay window already exists
     if app.get_webview_window("overlay").is_some() {
+        println!("Overlay window already exists");
         return Ok(());
     }
 
     // Get primary monitor dimensions for fullscreen
-    let monitor = app
-        .primary_monitor()
-        .map_err(|e| format!("Failed to get primary monitor: {}", e))?
-        .ok_or_else(|| "No primary monitor found".to_string())?;
+    let monitor = match app.primary_monitor() {
+        Ok(Some(m)) => m,
+        Ok(None) => {
+            println!("Warning: No primary monitor found, skipping overlay creation");
+            return Ok(());
+        }
+        Err(e) => {
+            println!("Warning: Failed to get primary monitor: {}, skipping overlay", e);
+            return Ok(());
+        }
+    };
     
     let size = monitor.size();
     let position = monitor.position();
 
     // Create overlay window
-    let window = WebviewWindowBuilder::new(
+    let window = match WebviewWindowBuilder::new(
         &app,
         "overlay",
         WebviewUrl::App("index.html#/overlay".into())
@@ -42,17 +49,15 @@ pub fn create_overlay_window(app: AppHandle) -> Result<(), String> {
     .always_on_top(true)
     .skip_taskbar(true)
     .visible(false) // Start hidden, show when recording starts
-    .build()
-    .map_err(|e| format!("Failed to create overlay window: {}", e))?;
+    .build() {
+        Ok(w) => w,
+        Err(e) => {
+            println!("Warning: Failed to create overlay window: {}, continuing without overlay", e);
+            return Ok(());
+        }
+    };
 
-    // Set window level to stay above other windows
-    window
-        .set_window_level(WindowLevel::AlwaysOnTop)
-        .map_err(|e| format!("Failed to set window level: {}", e))?;
-
-    // Set click-through behavior
-    // Note: Interactive elements in the overlay will need to handle their own click events
-    // The window itself will be click-through by default
+    // Set click-through behavior (Windows only)
     #[cfg(target_os = "windows")]
     {
         use windows::Win32::Foundation::HWND;
@@ -60,23 +65,17 @@ pub fn create_overlay_window(app: AppHandle) -> Result<(), String> {
             GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_LAYERED, WS_EX_TRANSPARENT,
         };
 
-        let hwnd = window.hwnd().map_err(|e| format!("Failed to get HWND: {}", e))?;
-        let hwnd = HWND(hwnd.0 as isize);
-
-        unsafe {
-            let ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-            SetWindowLongPtrW(
-                hwnd,
-                GWL_EXSTYLE,
-                ex_style | WS_EX_LAYERED.0 as isize | WS_EX_TRANSPARENT.0 as isize,
-            );
+        if let Ok(hwnd) = window.hwnd() {
+            let hwnd = HWND(hwnd.0);
+            unsafe {
+                let ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+                let _ = SetWindowLongPtrW(
+                    hwnd,
+                    GWL_EXSTYLE,
+                    ex_style | WS_EX_LAYERED.0 as isize | WS_EX_TRANSPARENT.0 as isize,
+                );
+            }
         }
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        // On macOS, we'll handle click-through via CSS pointer-events
-        // The window itself will accept events, but the transparent areas won't
     }
 
     println!("Overlay window created successfully");
@@ -87,12 +86,26 @@ pub fn create_overlay_window(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn show_overlay(app: AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("overlay") {
-        window.show().map_err(|e| format!("Failed to show overlay: {}", e))?;
-        window.set_focus().map_err(|e| format!("Failed to focus overlay: {}", e))?;
-        println!("Overlay window shown");
+        // Try to show window, but don't fail if it errors
+        match window.show() {
+            Ok(_) => println!("Overlay window shown"),
+            Err(e) => {
+                println!("Warning: Failed to show overlay: {}", e);
+                // Continue anyway
+            }
+        }
+        
+        // Try to set focus, but don't fail if it errors
+        match window.set_focus() {
+            Ok(_) => {},
+            Err(e) => println!("Warning: Failed to focus overlay: {}", e),
+        }
+        
         Ok(())
     } else {
-        Err("Overlay window not found. Call create_overlay_window first.".to_string())
+        println!("Warning: Overlay window not found");
+        // Return Ok anyway - app should continue working
+        Ok(())
     }
 }
 
@@ -100,11 +113,14 @@ pub fn show_overlay(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn hide_overlay(app: AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("overlay") {
-        window.hide().map_err(|e| format!("Failed to hide overlay: {}", e))?;
-        println!("Overlay window hidden");
+        match window.hide() {
+            Ok(_) => println!("Overlay window hidden"),
+            Err(e) => println!("Warning: Failed to hide overlay: {}", e),
+        }
         Ok(())
     } else {
-        Err("Overlay window not found".to_string())
+        println!("Warning: Overlay window not found for hiding");
+        Ok(())
     }
 }
 

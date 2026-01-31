@@ -14,6 +14,7 @@
  */
 
 import type { ProcessedSession, ProcessedStep, LLMContext } from '../types/processing';
+import { readFile } from '@tauri-apps/plugin-fs'; // UPDATED: Use Tauri FS plugin
 
 /**
  * Optimized context for skill generation
@@ -22,13 +23,13 @@ import type { ProcessedSession, ProcessedStep, LLMContext } from '../types/proce
 export interface OptimizedContext {
   /** High-level task description (Level 1) */
   taskGoal: string;
-  
+
   /** Key steps only (max ~10) with summaries (Level 2) */
   keySteps: OptimizedStep[];
-  
+
   /** Complete narration for context */
   fullNarration: string;
-  
+
   /** Detected variables */
   variables: Array<{
     name: string;
@@ -36,14 +37,14 @@ export interface OptimizedContext {
     description: string;
     exampleValue: string;
   }>;
-  
+
   /** Detected conditionals */
   conditionals: Array<{
     condition: string;
     thenAction: string;
     elseAction?: string;
   }>;
-  
+
   /** Compressed summary statistics */
   summary: {
     totalSteps: number;
@@ -53,7 +54,7 @@ export interface OptimizedContext {
     durationSeconds: number;
     mainApplication?: string;
   };
-  
+
   /** Compressed console/network logs (Level 3 - summary only) */
   logs?: {
     consoleErrors: number;
@@ -62,7 +63,7 @@ export interface OptimizedContext {
     networkRequests: number;
     apiCallPatterns?: string[]; // e.g., ["POST /login", "GET /user"]
   };
-  
+
   /** Reference to full data (not embedded in prompt) */
   references: {
     screenshotArchive: string;
@@ -76,35 +77,35 @@ export interface OptimizedContext {
 export interface OptimizedStep {
   /** Step number */
   number: number;
-  
+
   /** Brief description (from transcript or inferred) */
   description: string;
-  
+
   /** Base64 screenshot (key frame only) */
   screenshot?: string;
-  
+
   /** Time range */
   timeRange: {
     start: number;
     end: number;
   };
-  
+
   /** Action summary (not detailed logs) */
   actions: {
     clicks: number;
     textInputs: number;
     annotations: number;
   };
-  
+
   /** Important notes only (filtered) */
   notes: string[];
-  
+
   /** Window/app context */
   context?: {
     window?: string;
     application?: string;
   };
-  
+
   /** OCR text (truncated if too long) */
   ocrText?: string;
 }
@@ -115,16 +116,16 @@ export interface OptimizedStep {
 export interface OptimizationConfig {
   /** Maximum number of key steps to include (default: 10) */
   maxKeySteps: number;
-  
+
   /** Maximum OCR text length per step (default: 500 chars) */
   maxOcrLength: number;
-  
+
   /** Maximum note length (default: 200 chars) */
   maxNoteLength: number;
-  
+
   /** Whether to include screenshots (default: true) */
   includeScreenshots: boolean;
-  
+
   /** Whether to include OCR text (default: true) */
   includeOcr: boolean;
 }
@@ -155,15 +156,15 @@ export async function optimizeContext(
 ): Promise<OptimizedContext> {
   // Level 1: High-level goal
   const taskGoal = extractTaskGoal(processedSession);
-  
+
   // Smart Context Selection: Select key steps only (FR-6.19)
   const keySteps = selectKeySteps(processedSession.steps, config.maxKeySteps);
-  
+
   // Level 2: Step summaries
   const optimizedSteps = await Promise.all(
     keySteps.map(step => optimizeStep(step, config))
   );
-  
+
   // Compress variables
   const variables = processedSession.allVariables.map(v => ({
     name: v.name,
@@ -171,29 +172,29 @@ export async function optimizeContext(
     description: truncateText(v.description, 200),
     exampleValue: extractExampleValue(v.transcriptSegment),
   }));
-  
+
   // Compress conditionals
   const conditionals = processedSession.allConditionals.map(c => ({
     condition: truncateText(c.condition, 150),
     thenAction: truncateText(c.thenAction, 150),
     elseAction: c.elseAction ? truncateText(c.elseAction, 150) : undefined,
   }));
-  
+
   // Calculate summary statistics
   const summary = {
     totalSteps: processedSession.steps.length,
     totalClicks: processedSession.allAnnotations.clicks.length,
     totalTextInputs: processedSession.allAnnotations.keyboardInputs.length,
-    totalAnnotations: 
+    totalAnnotations:
       processedSession.allAnnotations.drawings.length +
       processedSession.allAnnotations.selectedElements.length,
     durationSeconds: Math.round(processedSession.duration / 1000),
     mainApplication: extractMainApplication(processedSession.steps),
   };
-  
+
   // Hierarchical Summarization: Compress logs (FR-6.20, Level 3)
   const logs = compressLogs(processedSession);
-  
+
   return {
     taskGoal,
     keySteps: optimizedSteps,
@@ -216,31 +217,53 @@ export async function optimizeContext(
  * @returns Task goal description
  */
 function extractTaskGoal(session: ProcessedSession): string {
-  // Try to extract from first sentence of transcript
-  if (session.fullTranscript) {
+  // Try to extract from first sentence of transcript (highest priority)
+  if (session.fullTranscript && session.fullTranscript.trim()) {
     const firstSentence = session.fullTranscript.split(/[.!?]/)[0].trim();
     if (firstSentence.length > 10 && firstSentence.length < 200) {
       return firstSentence;
     }
   }
-  
-  // Fallback: Infer from application and actions
+
+  // Second priority: Analyze steps for application context
   const mainApp = extractMainApplication(session.steps);
-  const hasClicks = session.allAnnotations.clicks.length > 0;
-  const hasTextInput = session.allAnnotations.keyboardInputs.length > 0;
+  const appContexts: string[] = [];
   
-  if (mainApp) {
-    if (hasClicks && hasTextInput) {
-      return `Demonstrate workflow in ${mainApp}`;
-    } else if (hasClicks) {
-      return `Navigate through ${mainApp}`;
-    } else if (hasTextInput) {
-      return `Enter data in ${mainApp}`;
+  // Extract window titles from steps if available
+  for (const step of session.steps.slice(0, 5)) {
+    if (step.windowTitle) {
+      appContexts.push(step.windowTitle);
     }
-    return `Use ${mainApp}`;
   }
   
-  return 'Demonstrate task';
+  const uniqueApps = [...new Set(appContexts)].slice(0, 2).join(' → ');
+  
+  // Count action types
+  const hasClicks = session.allAnnotations.clicks.length > 0;
+  const hasTextInput = session.allAnnotations.keyboardInputs.length > 0;
+  const hasDrawings = session.allAnnotations.drawings.length > 0;
+  const stepCount = session.steps.length;
+
+  // Build specific description
+  let actionDescription = '';
+  if (hasClicks && hasTextInput) {
+    actionDescription = 'interactive workflow with navigation and data entry';
+  } else if (hasClicks && hasDrawings) {
+    actionDescription = 'annotated demonstration with visual highlights';
+  } else if (hasClicks) {
+    actionDescription = 'navigation and interaction sequence';
+  } else if (hasTextInput) {
+    actionDescription = 'data entry and text input workflow';
+  } else {
+    actionDescription = 'automated demonstration';
+  }
+
+  if (mainApp || uniqueApps) {
+    const app = uniqueApps || mainApp;
+    return `${actionDescription} in ${app} (${stepCount} steps recorded)`;
+  }
+
+  return `${actionDescription} (${stepCount} steps recorded)`;
 }
 
 /**
@@ -323,10 +346,10 @@ async function optimizeStep(
       console.warn(`Failed to read screenshot for step ${step.stepNumber}:`, error);
     }
   }
-  
+
   // Build notes (filter and truncate)
   const notes: string[] = [];
-  
+
   // Add important drawing annotations
   for (const drawing of step.annotations.drawings) {
     if (drawing.isPinned) {
@@ -334,16 +357,16 @@ async function optimizeStep(
       notes.push(truncateText(note, config.maxNoteLength));
     }
   }
-  
+
   // Add element selections (very important)
   for (const element of step.annotations.selectedElements) {
     const note = `Selected: ${element.tagName} - "${element.textContent}"`;
     notes.push(truncateText(note, config.maxNoteLength));
   }
-  
+
   // Limit total notes to avoid bloat
   const limitedNotes = notes.slice(0, 5);
-  
+
   // Build context
   const context: OptimizedStep['context'] = {};
   if (step.windowTitle) {
@@ -352,13 +375,13 @@ async function optimizeStep(
   if (step.applicationName) {
     context.application = truncateText(step.applicationName, 50);
   }
-  
+
   // Truncate OCR text if needed
   let ocrText: string | undefined;
   if (config.includeOcr && step.ocrText) {
     ocrText = truncateText(step.ocrText, config.maxOcrLength);
   }
-  
+
   return {
     number: step.stepNumber,
     description: step.transcript || `Step ${step.stepNumber}`,
@@ -383,13 +406,13 @@ async function optimizeStep(
  * @param session - Processed session
  * @returns Compressed log summary
  */
-function compressLogs(session: ProcessedSession): OptimizedContext['logs'] {
+function compressLogs(_session: ProcessedSession): OptimizedContext['logs'] {
   // TODO: When console/network capture is implemented in future tasks,
   // extract and compress that data here
-  
+
   // For now, return undefined (no log data available yet)
   // This will be populated when S02 adds console/network capture
-  
+
   return undefined;
 }
 
@@ -401,29 +424,29 @@ function compressLogs(session: ProcessedSession): OptimizedContext['logs'] {
  */
 function extractMainApplication(steps: ProcessedStep[]): string | undefined {
   const appCounts = new Map<string, number>();
-  
+
   for (const step of steps) {
     if (step.applicationName) {
       const count = appCounts.get(step.applicationName) || 0;
       appCounts.set(step.applicationName, count + 1);
     }
   }
-  
+
   if (appCounts.size === 0) {
     return undefined;
   }
-  
+
   // Find most common application
   let maxCount = 0;
   let mainApp: string | undefined;
-  
+
   for (const [app, count] of appCounts.entries()) {
     if (count > maxCount) {
       maxCount = count;
       mainApp = app;
     }
   }
-  
+
   return mainApp;
 }
 
@@ -435,7 +458,7 @@ function extractMainApplication(steps: ProcessedStep[]): string | undefined {
  */
 function inferVariableType(description: string): string {
   const lower = description.toLowerCase();
-  
+
   if (lower.includes('email')) return 'email';
   if (lower.includes('password')) return 'password';
   if (lower.includes('url') || lower.includes('link')) return 'url';
@@ -443,7 +466,7 @@ function inferVariableType(description: string): string {
   if (lower.includes('date')) return 'date';
   if (lower.includes('file') || lower.includes('path')) return 'file';
   if (lower.includes('select') || lower.includes('choose') || lower.includes('option')) return 'selection';
-  
+
   return 'text';
 }
 
@@ -459,19 +482,19 @@ function extractExampleValue(segment: string): string {
   if (quotedMatch) {
     return quotedMatch[1];
   }
-  
+
   // Try to extract email-like patterns
   const emailMatch = segment.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/);
   if (emailMatch) {
     return emailMatch[0];
   }
-  
+
   // Try to extract URL-like patterns
   const urlMatch = segment.match(/https?:\/\/[^\s]+/);
   if (urlMatch) {
     return urlMatch[0];
   }
-  
+
   // Fallback: use first few words
   const words = segment.split(/\s+/).slice(0, 3);
   return words.join(' ');
@@ -488,7 +511,7 @@ function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
     return text;
   }
-  
+
   return text.substring(0, maxLength - 3) + '...';
 }
 
@@ -500,23 +523,28 @@ function truncateText(text: string, maxLength: number): string {
  */
 async function readImageAsBase64(imagePath: string): Promise<string> {
   try {
-    // Universal approach: use fetch which works in both Tauri and web
-    const response = await fetch(imagePath);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.status}`);
+    // UPDATED: Use Tauri FS plugin to read file directly
+    const bytes = await readFile(imagePath);
+
+    // Convert Uint8Array to base64
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
     }
-    
-    const blob = await response.blob();
-    
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Failed to read image'));
-      reader.readAsDataURL(blob);
-    });
+    // Use browser's btoa for base64 encoding
+    const base64 = btoa(binary);
+
+    // Determine mime type (simple extension check)
+    const ext = imagePath.split('.').pop()?.toLowerCase();
+    let mimeType = 'image/png';
+    if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+    else if (ext === 'webp') mimeType = 'image/webp';
+
+    return `data:${mimeType};base64,${base64}`;
   } catch (error) {
-    console.warn('Failed to read image as base64:', error);
+    console.warn('Failed to read image as base64 using FS:', imagePath, error);
+    // Fallback? No, fetch will fail so we assume failure
     throw error;
   }
 }
