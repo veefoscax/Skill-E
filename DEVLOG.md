@@ -34,6 +34,13 @@ This was our biggest battle.
 *Pivot:* We prioritized **Reliability**. We switched the build to **CPU Mode** for the submission. It's slightly slower, but it works on *every* machine out of the box.
 *Future Fix:* The roadmap includes moving the heavy AI compute to a Python Sidecar, which is much easier to manage than embedded C++.
 
+### Day 5: The Portable Whisper Problem (Post-Testing)
+During final testing, we discovered the portable executable wasn't transcribing voice. Investigation revealed:
+- **Root Cause:** Whisper model (~75MB) wasn't included in the portable build
+- **Symptom:** Users saw "No transcription available" in generated skills
+- **Solution:** Implemented auto-download of Whisper model on first use + enhanced logging
+- **File Logger:** Added `file-logger.ts` to save logs to `%TEMP%` for debugging portable mode
+
 ### Day 4: Local Intelligence (Ollama)
 We didn't want users to pay for API keys just to test the app.
 We integrated **Ollama** support directly. The app detects if Ollama is running (`localhost:11434`) and auto-configures itself.
@@ -64,3 +71,26 @@ We moved from "writing code" to "demonstrating intent".
 We hope the judges see the potential of this paradigm shift.
 
 **- The Skill-E Team**
+
+---
+
+## 💰 Kiro Resource Ledger (For Judges)
+
+**Total Credits Available:** 2,500  
+**Total Credits Used:** ~2,150 (86%)  
+**Remaining:** 350 credits
+
+| Feature | Credits | Notes |
+|---------|---------|-------|
+| S07 Variable Detection | -380 | Speech patterns, action classification |
+| S06 Skill Export | -320 | Provider Factory, XML prompts |
+| S04 Overlay UI | -420 | Cursor highlight, step bubbles (later disabled) |
+| S05 Processing Pipeline | -350 | OCR, timeline merging |
+| S09 Audio Fix | -180 | Session directory persistence |
+| S03 Ollama Integration | -120 | Local LLM support |
+| OpenRouter Support | -80 | Free tier models |
+| S10 Prompt Engineering | -150 | XML tags, few-shot examples |
+| S11 Build Optimization | -100 | Windows build scripts |
+| S12 Whisper Debug | -50 | Auto-download, enhanced logging |
+
+**Note:** Developed on Kiro's free plan without Opus 4.5. Used Haiku 3.5 requiring more iterations. Constraints breed creativity!

@@ -15,6 +15,7 @@ import type { CaptureSession } from '../types/capture';
 import type { TranscriptionResult } from './whisper';
 import { transcribeAudio } from './whisper';
 import { readFile, writeFile } from '@tauri-apps/plugin-fs';
+import { downloadModel as downloadWhisperModel } from './whisper-real';
 
 export interface ProcessingResult {
   success: boolean;
@@ -117,31 +118,44 @@ async function convertWebMToWav(webmBlob: Blob): Promise<Blob> {
  * 3. Generic transcript from filename (last resort - not mock)
  */
 async function transcribeWithFallback(audioPath: string): Promise<TranscriptionResult> {
-  console.log('🎤 Transcription: Starting fallback chain for:', audioPath);
+  console.log('🎤 =========================================');
+  console.log('🎤 TRANSCRIPTION FALLBACK CHAIN STARTED');
+  console.log('🎤 Audio path:', audioPath);
+  console.log('🎤 =========================================');
 
   // Try 1: Whisper API (OpenAI) if API key available
   const settings = useSettingsStore.getState();
+  console.log('🎤 Checking Whisper API availability...');
+  console.log('🎤   - API Key exists:', !!settings.llmApiKey);
+  console.log('🎤   - Provider:', settings.llmProvider);
+
   if (settings.llmApiKey && settings.llmProvider !== 'ollama') {
     try {
-      console.log('🎤 Trying Whisper API...');
+      console.log('🎤 [Fallback 1/3] Trying Whisper API...');
 
       // Read audio file using Tauri FS
       const audioBytes = await readFile(audioPath);
+      console.log('🎤   - Audio file read:', audioBytes.length, 'bytes');
       const audioBlob = new Blob([audioBytes], { type: 'audio/webm' });
 
       const result = await transcribeAudio(audioBlob, settings.llmApiKey);
-      console.log('🎤 Whisper API success:', result.text.substring(0, 100));
+      console.log('🎤 ✅ Whisper API SUCCESS:', result.text.substring(0, 100));
       return result;
     } catch (e) {
-      console.warn('🎤 Whisper API failed:', e);
+      console.warn('🎤 ❌ Whisper API failed:', e);
     }
+  } else {
+    console.log('🎤 [Fallback 1/3] SKIPPED - No API key or using Ollama');
   }
 
   // Try 2: Web Speech API (browser native)
+  console.log('🎤 [Fallback 2/3] Checking Web Speech API...');
   const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  console.log('🎤   - Web Speech API available:', !!SpeechRecognition);
+
   if (SpeechRecognition) {
     try {
-      console.log('🎤 Trying Web Speech API...');
+      console.log('🎤 [Fallback 2/3] Trying Web Speech API...');
       return await new Promise((resolve, reject) => {
         const recognition = new SpeechRecognition();
         recognition.lang = 'pt-BR';
@@ -189,14 +203,18 @@ async function transcribeWithFallback(audioPath: string): Promise<TranscriptionR
 
   // Last resort: Create transcript from session info (NOT generic mock)
   // This extracts any info we have rather than making up "Navigate to page..."
-  console.log('🎤 Using session-derived transcript (no STT available)');
+  console.log('🎤 [Fallback 3/3] Using session-derived transcript (no STT available)');
+  console.log('🎤 ⚠️  WARNING: No transcription service available!');
+  console.log('🎤   - Local Whisper: Failed or model not downloaded');
+  console.log('🎤   - Whisper API: No API key configured');
+  console.log('🎤   - Web Speech API: Not available in this environment');
 
   // Extract timestamp from session dir for context
   const sessionMatch = audioPath.match(/session-(\d+)/);
   const timestamp = sessionMatch ? parseInt(sessionMatch[1]) : Date.now();
   const date = new Date(timestamp);
 
-  return {
+  const fallbackResult = {
     text: `Recording from ${date.toLocaleString()}. No transcription available - please review screenshots to understand the workflow.`,
     segments: [
       {
@@ -215,6 +233,13 @@ async function transcribeWithFallback(audioPath: string): Promise<TranscriptionR
     language: 'unknown',
     duration: 10
   };
+
+  console.log('🎤 Fallback result:', fallbackResult.text);
+  console.log('🎤 =========================================');
+  console.log('🎤 TRANSCRIPTION FALLBACK CHAIN COMPLETE');
+  console.log('🎤 =========================================');
+
+  return fallbackResult;
 }
 
 // Dummy function removed. Real generation now handled via skill-generator.ts
@@ -324,8 +349,36 @@ export async function processRecordingAndGenerateSkill(
         console.log(`🎤 Step 1: Checking if Whisper model '${targetModel}' exists... (GPU: ${useGpu})`);
 
         // Check if model exists
-        const whisperAvailable = await invoke<boolean>('check_model_exists', { model: targetModel });
+        let whisperAvailable = await invoke<boolean>('check_model_exists', { model: targetModel });
         console.log('🎤 Model available:', whisperAvailable);
+
+        // AUTO-DOWNLOAD: If model not available, try to download it
+        if (!whisperAvailable) {
+          console.log(`🎤 Model '${targetModel}' not found. Attempting auto-download...`);
+          onProgress({
+            stage: 'loading',
+            percentage: 20,
+            currentStep: `Downloading Whisper model (${targetModel}, ~75MB)...`
+          });
+
+          try {
+            await downloadWhisperModel(targetModel, (downloaded, total) => {
+              const percent = Math.round((downloaded / total) * 100);
+              console.log(`🎤 Download progress: ${percent}% (${Math.round(downloaded/1024/1024)}MB / ${Math.round(total/1024/1024)}MB)`);
+            });
+
+            // Check again if model is now available
+            whisperAvailable = await invoke<boolean>('check_model_exists', { model: targetModel });
+            console.log('🎤 Model available after download:', whisperAvailable);
+
+            if (!whisperAvailable) {
+              throw new Error(`Model download completed but model still not found`);
+            }
+          } catch (downloadError) {
+            console.error('🎤 Model download failed:', downloadError);
+            throw new Error(`Failed to download Whisper model '${targetModel}'. Please check your internet connection.`);
+          }
+        }
 
         if (whisperAvailable) {
           // Read WebM file
