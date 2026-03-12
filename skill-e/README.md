@@ -100,6 +100,4 @@ Skill-E is actively developed — here's what's done and what's next.
 
 ## ❤️ Acknowledgements
 
-- **[Kiro CLI](https://kiro.dev)** for accelerating development with spec-driven workflows.
-
 *Built with ❤️ for the future of Agentic workflows.*

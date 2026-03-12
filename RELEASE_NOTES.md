@@ -21,7 +21,6 @@ We provide two ways to run Skill-E:
     *   Single-file standalone executable. No installation required.
 
 ### 🛠️ Built With
-- **Kiro CLI** (Accelerated Development)
 - **Tauri v2** (Rust)
 - **React + Tailwind**
 - **Whisper & Ollama**
