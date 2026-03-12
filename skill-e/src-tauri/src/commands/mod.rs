@@ -9,3 +9,6 @@ pub mod overlay;
 
 /// Skill export commands
 pub mod export;
+
+/// Native playback commands
+pub mod playback;

@@ -45,6 +45,7 @@ futures-util = "0.3" # Stream utilities
 whisper-rs = { version = "0.15", optional = true }
 tauri-plugin-dialog = "2.6.0"
 rdev = "0.5" # Global input hook for S09 Step Recording
+enigo = "0.2" # Native OS mouse and keyboard automation for E03 Playback
 tauri-plugin-http = "2.0.0-beta.0"
 tauri-plugin-fs = "2.0.0-beta.0"
 

@@ -42,6 +42,9 @@ use commands::export::{
     validate_export_path,
     save_skill_md,
 };
+use commands::playback::{
+    execute_native_playback,
+};
 
 // Recording state for get_recording_data
 use std::sync::Mutex;

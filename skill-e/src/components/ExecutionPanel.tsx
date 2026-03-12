@@ -1,11 +1,13 @@
 /**
- * ExecutionPanel - Execute generated skill in Chrome
+ * ExecutionPanel - Execute generated skill in Chrome or Natively
  *
  * Integrates CDP executor for real browser automation
+ * Integrates Native executor for OS-level mouse/keyboard automation
  */
 
 import { useState, useCallback } from 'react'
-import { Play, Square, Chrome, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
+import { Play, Square, Chrome, AlertCircle, CheckCircle, Loader2, MonitorSmartphone } from 'lucide-react'
+import { invoke } from '@tauri-apps/api/core'
 import { Button } from './ui/button'
 import { CDPExecutor } from '@/lib/cdp/executor'
 import { isChromeAvailable } from '@/lib/cdp/client'
@@ -29,9 +31,63 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
   const [results, setResults] = useState<StepResult[]>([])
   const [currentStep, setCurrentStep] = useState(0)
   const [totalSteps, setTotalSteps] = useState(0)
+  const [executionMode, setExecutionMode] = useState<'cdp' | 'native' | null>(null)
 
-  const handleExecute = useCallback(async () => {
+  const handleExecuteNative = useCallback(async () => {
+    setStatus('running')
+    setExecutionMode('native')
+    setError(null)
+    setResults([])
+
+    try {
+      const skill = parseSkill(skillMarkdown)
+      setTotalSteps(skill.steps.length)
+
+      const playbackSteps = skill.steps.map(s => {
+        let x = undefined;
+        let y = undefined;
+        let text = undefined;
+
+        if (s.action === 'click' && s.target?.includes('{"x":')) {
+          try {
+            const parsed = JSON.parse(s.target);
+            x = parsed.x;
+            y = parsed.y;
+          } catch (e) {
+            // Ignore parse errors, fallback to undefined
+          }
+        }
+
+        if (s.action === 'type') {
+          text = s.value;
+        } else if (s.action === 'key') {
+          text = s.value;
+        }
+
+        return {
+          action_type: s.action,
+          x,
+          y,
+          text
+        }
+      })
+
+      // We don't have step-by-step progress from the native backend yet, 
+      // so we send it all at once and wait.
+      await invoke('execute_native_playback', { steps: playbackSteps })
+      
+      setStatus('completed')
+      setResults([{ stepIndex: 1, success: true, message: '✓ Native playback completed successfully' }])
+    } catch (err) {
+      console.error('Native execution failed:', err)
+      setError(err instanceof Error ? err.message : String(err))
+      setStatus('error')
+    }
+  }, [skillMarkdown])
+
+  const handleExecuteCDP = useCallback(async () => {
     setStatus('connecting')
+    setExecutionMode('cdp')
     setError(null)
     setResults([])
 
@@ -100,6 +156,7 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
 
   const handleStop = useCallback(async () => {
     setStatus('idle')
+    setExecutionMode(null)
   }, [])
 
   const getStatusIcon = () => {
@@ -112,7 +169,7 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
       case 'error':
         return <AlertCircle className="w-5 h-5 text-red-500" />
       default:
-        return <Chrome className="w-5 h-5" />
+        return <MonitorSmartphone className="w-5 h-5" />
     }
   }
 
@@ -121,7 +178,7 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
       case 'connecting':
         return 'Connecting to Chrome...'
       case 'running':
-        return `Executing step ${currentStep} of ${totalSteps}...`
+        return executionMode === 'native' ? 'Executing Native Playback...' : `Executing step ${currentStep} of ${totalSteps}...`
       case 'completed':
         return 'Execution completed!'
       case 'error':
@@ -145,10 +202,16 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
             Stop
           </Button>
         ) : (
-          <Button onClick={handleExecute} size="sm">
-            <Play className="w-4 h-4 mr-1" />
-            Execute in Chrome
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleExecuteNative} size="sm" variant="outline" className="bg-white">
+              <MonitorSmartphone className="w-4 h-4 mr-1" />
+              Native Playback
+            </Button>
+            <Button onClick={handleExecuteCDP} size="sm">
+              <Chrome className="w-4 h-4 mr-1" />
+              Execute in Chrome
+            </Button>
+          </div>
         )}
       </div>
 
@@ -175,15 +238,15 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
 
       {status === 'idle' && results.length === 0 && (
         <div className="text-sm text-gray-500">
-          <p className="mb-2">Execute this skill in Chrome:</p>
-          <ol className="list-decimal list-inside space-y-1 ml-2">
-            <li>Start Chrome with remote debugging:</li>
-            <code className="block bg-gray-100 p-2 rounded mt-1 font-mono text-xs">
-              chrome --remote-debugging-port=9222
-            </code>
-            <li>Click "Execute in Chrome"</li>
-            <li>Watch the automation run!</li>
-          </ol>
+          <p className="mb-2">Choose how to execute this skill:</p>
+          <ul className="list-disc list-inside space-y-2 ml-2">
+            <li>
+              <strong>Native Playback:</strong> Takes control of your actual mouse and keyboard to replicate the recorded actions exactly as they happened across the entire OS.
+            </li>
+            <li>
+              <strong>Execute in Chrome:</strong> Uses Chrome DevTools Protocol (CDP) to run the skill silently or visibly inside a browser window. Requires <code className="bg-gray-200 px-1 rounded">chrome --remote-debugging-port=9222</code>.
+            </li>
+          </ul>
         </div>
       )}
     </div>
