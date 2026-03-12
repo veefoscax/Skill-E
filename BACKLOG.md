@@ -26,7 +26,7 @@ This document serves as the central organization for improvements, refactorings,
 |----|----------|------|----------|--------|
 | E01 | Refactor | **Decouple App.tsx** - Split the 16KB God Component into hooks/smaller components. | High | ✅ Done |
 | E02 | Architecture | **Python Sidecar** - Move heavy AI (Whisper/GPU) to a standalone Python process. | High | ✅ Done |
-| E03 | Feature | **Agent Playback Mode** - Implement "Play" button to verify skill execution. | Medium | ⏳ Todo |
+| E03 | Feature | **Agent Playback Mode** - Implement "Play" button to verify skill execution. | Medium | ✅ Done |
 | E04 | UI/UX | **Desktop Overlay Enhancements** - Pulsing recording frame and feedback. | Medium | ✅ Done |
 | E05 | Core | **Cross-Platform Input Hooks** - Implement Mac and Linux support for input recording. | High | ✅ Done |
 | E06 | Core | **Whisper Model Management** - Better auto-download UI and local path management. | Medium | ⏳ Todo |
