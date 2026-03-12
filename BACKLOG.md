@@ -29,7 +29,7 @@ This document serves as the central organization for improvements, refactorings,
 | E03 | Feature | **Agent Playback Mode** - Implement "Play" button to verify skill execution. | Medium | ✅ Done |
 | E04 | UI/UX | **Desktop Overlay Enhancements** - Pulsing recording frame and feedback. | Medium | ✅ Done |
 | E05 | Core | **Cross-Platform Input Hooks** - Implement Mac and Linux support for input recording. | High | ✅ Done |
-| E06 | Core | **Whisper Model Management** - Better auto-download UI and local path management. | Medium | ⏳ Todo |
+| E06 | Core | **Whisper Model Management** - Better auto-download UI and local path management. | Medium | ✅ Done |
 | E07 | Refactor | **Typed Event Bus** - Implement a strictly typed event system between windows. | Low | ⏳ Todo |
 | E08 | Refactor | **Code Quality & Linting** - Enforce strict ESLint, Prettier, and Husky. | Medium | ✅ Done |
 | E09 | Test | **Frontend Unit Testing** - Setup Vitest and RTL with component coverage. | Medium | ✅ Done |
