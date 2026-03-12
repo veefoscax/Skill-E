@@ -528,3 +528,81 @@ pub fn check_compute_capability() -> Result<String, String> {
     }
 }
 
+/// Start the Python AI Sidecar process
+#[tauri::command]
+pub async fn start_ai_sidecar(
+    state: tauri::State<'_, crate::SidecarState>,
+    app_handle: tauri::AppHandle,
+    port: u16,
+    model: String,
+) -> Result<String, String> {
+    let mut child_lock = state.child.lock().map_err(|e| e.to_string())?;
+    
+    // If already running, return
+    if child_lock.is_some() {
+        return Ok("Sidecar already running".to_string());
+    }
+
+    let resource_path = app_handle.path().resource_dir()
+        .map_err(|e| e.to_string())?
+        .join("sidecar")
+        .join("main.py");
+
+    println!("Starting AI sidecar at: {:?}", resource_path);
+
+    // Note: In a real bundled app, we would use the sidecar binary or a bundled python
+    // For development, we assume 'python' is in the PATH and venv is setup
+    let child = std::process::Command::new("python")
+        .args(&[
+            resource_path.to_str().unwrap(),
+            "--port", &port.to_string(),
+            "--model", &model,
+        ])
+        .spawn()
+        .map_err(|e| format!("Failed to spawn sidecar: {}", e))?;
+
+    *child_lock = Some(child);
+    
+    Ok(format!("Sidecar started on port {}", port))
+}
+
+/// Stop the Python AI Sidecar process
+#[tauri::command]
+pub async fn stop_ai_sidecar(
+    state: tauri::State<'_, crate::SidecarState>,
+) -> Result<String, String> {
+    let mut child_lock = state.child.lock().map_err(|e| e.to_string())?;
+    
+    if let Some(mut child) = child_lock.take() {
+        child.kill().map_err(|e| e.to_string())?;
+        return Ok("Sidecar stopped".to_string());
+    }
+
+    Ok("Sidecar was not running".to_string())
+}
+
+/// Transcribe audio using the Python AI Sidecar API
+#[tauri::command]
+pub async fn transcribe_sidecar(
+    audio_path: String,
+    port: u16,
+) -> Result<serde_json::Value, String> {
+    let client = reqwest::Client::new();
+    let url = format!("http://127.0.0.1:{}/transcribe?audio_path={}", port, audio_path);
+
+    let response = client.post(&url)
+        .send()
+        .await
+        .map_err(|e| format!("Request to sidecar failed: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Sidecar returned error: {}", response.status()));
+    }
+
+    let result = response.json::<serde_json::Value>()
+        .await
+        .map_err(|e| format!("Failed to parse sidecar response: {}", e))?;
+
+    Ok(result)
+}
+

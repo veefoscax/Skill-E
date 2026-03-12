@@ -23,6 +23,8 @@ import type {
  * - FR-2.5: Store captures with timestamps for timeline sync
  * - NFR-2.3: Memory-efficient streaming (don't load all to RAM)
  */
+const MAX_MEMORY_FRAMES = 100 // Keep only last 100 frames in RAM (NFR-2.3)
+
 export function useCapture() {
   const intervalRef = useRef<number | null>(null)
   const sessionRef = useRef<CaptureSession | null>(null)
@@ -31,29 +33,29 @@ export function useCapture() {
 
   /**
    * Captures a single frame with screenshot, window info, and cursor position
-   *
-   * @param session - Current capture session
-   * @returns Promise that resolves when the frame is captured and stored
    */
   const captureFrame = useCallback(
     async (session: CaptureSession): Promise<void> => {
       try {
         const timestamp = Date.now()
-        const frameNumber = session.frames.length + 1
+        // Total frames captured (for ID generation)
+        const frameCounter = (session as any)._totalFrames || 0
+        const frameNumber = frameCounter + 1
+        ;(session as any)._totalFrames = frameNumber
+        
         const frameId = `${session.id}-frame-${frameNumber}`
 
-        // Generate output path for this frame (relative to session directory)
+        // Generate output path for this frame
         const fileName = `frame-${frameNumber}.webp`
         const outputPath = `${session.directory}/${fileName}`
 
-        // Capture screen, window info, and cursor position in parallel
+        // Parallel capture
         const [captureResult, windowInfo, cursorPos] = await Promise.all([
           invoke<CaptureResult>('capture_screen', { outputPath }),
           invoke<WindowInfo>('get_active_window').catch(() => undefined),
           invoke<[number, number]>('get_cursor_position').catch(() => undefined),
         ])
 
-        // Create frame object
         const frame: CaptureFrame = {
           id: frameId,
           timestamp: captureResult.timestamp,
@@ -62,48 +64,30 @@ export function useCapture() {
           cursorPosition: cursorPos ? { x: cursorPos[0], y: cursorPos[1] } : undefined,
         }
 
-        // Add frame to session
+        // 1. Memory Optimization: Sliding Window
         session.frames.push(frame)
+        if (session.frames.length > MAX_MEMORY_FRAMES) {
+          session.frames.shift() // Remove oldest frame from RAM
+        }
 
-        // Update recording state in Rust (for processing)
+        // 2. Disk Persistence: ALWAYS save all frames to Rust/Disk
         await invoke('add_recording_frame', {
           timestamp: frame.timestamp,
           path: frame.imagePath,
           cursorX: frame.cursorPosition?.x,
           cursorY: frame.cursorPosition?.y,
-        }).catch(e => console.warn('Failed to update recording state:', e))
+        }).catch(e => console.warn('Failed to persist frame to disk:', e))
 
-        // Update manifest on disk
-        const manifest: SessionManifest = {
-          sessionId: session.id,
-          startTime: session.startTime,
-          endTime: session.endTime,
-          intervalMs: session.intervalMs,
-          frames: session.frames.map(f => ({
-            id: f.id,
-            timestamp: f.timestamp,
-            imagePath: f.imagePath.replace(`${session.directory}/`, ''), // Store relative path
-            activeWindow: f.activeWindow,
-            cursorPosition: f.cursorPosition,
-          })),
-        }
-
-        await invoke('save_session_manifest', {
-          sessionDir: session.directory,
-          manifest,
-        })
-
-        // Also store in recording store for UI updates
+        // 3. UI Update: Fast state update for live preview
         addFrame({
           timestamp: frame.timestamp,
           imageData: frame.imagePath,
           cursorPosition: frame.cursorPosition,
         })
 
-        console.log(`Captured frame ${frameId} at ${new Date(timestamp).toISOString()}`)
+        console.log(`Captured frame ${frameId}. RAM buffer: ${session.frames.length}/${MAX_MEMORY_FRAMES}`)
       } catch (error) {
         console.error('Failed to capture frame:', error)
-        // Don't throw - we want to continue capturing even if one frame fails
       }
     },
     [addFrame]

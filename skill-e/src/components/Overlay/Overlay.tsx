@@ -32,6 +32,7 @@ import { KeyboardDisplay } from './KeyboardDisplay'
 import { ElementSelector } from './ElementSelector'
 import { StatusIndicator } from './StatusIndicator'
 import { CursorHighlight } from './CursorHighlight'
+import { RecordingFrame } from './RecordingFrame'
 import { clickTracker, ClickIndicator as ClickIndicatorType } from '../../lib/overlay/click-tracker'
 import { useOverlayStore } from '../../stores/overlay'
 import { useOverlayHotkeys } from '../../hooks/useOverlayHotkeys'
@@ -216,6 +217,9 @@ export function Overlay() {
           thickness={cursorHighlight.thickness}
         />
       </div>
+
+      {/* Layer 7: Recording Frame (z-100) */}
+      <RecordingFrame />
 
       {/* 
         Debug Indicator (z-60)

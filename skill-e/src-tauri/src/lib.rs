@@ -26,6 +26,9 @@ use commands::whisper::{
     check_compute_capability,
     download_model,
     ensure_model,
+    start_ai_sidecar,
+    stop_ai_sidecar,
+    transcribe_sidecar,
 };
 use commands::overlay::{
     create_overlay_window,
@@ -43,6 +46,11 @@ use commands::export::{
 // Recording state for get_recording_data
 use std::sync::Mutex;
 use std::collections::HashMap;
+use std::process::Child;
+
+pub struct SidecarState {
+    pub child: Mutex<Option<Child>>,
+}
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -228,6 +236,7 @@ fn set_recording_audio(path: String) -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .manage(Mutex::new(HashMap::<String, String>::new()))
+        .manage(SidecarState { child: Mutex::new(None) })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -267,6 +276,9 @@ pub fn run() {
             check_compute_capability,
             download_model,
             ensure_model,
+            start_ai_sidecar,
+            stop_ai_sidecar,
+            transcribe_sidecar,
             // Overlay window commands
             create_overlay_window,
             show_overlay,

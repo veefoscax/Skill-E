@@ -250,6 +250,7 @@ export function Toolbar({ onStart, onStop }: ToolbarProps) {
             onClick={handleStartRecording}
             disabled={isStarting}
             className="text-red-500 hover:text-red-600 hover:bg-red-50"
+            aria-label="Start Recording"
           >
             {isStarting ? (
               <Loader2 className="w-6 h-6 animate-spin" />
@@ -261,7 +262,13 @@ export function Toolbar({ onStart, onStop }: ToolbarProps) {
           // Recording controls
           <>
             {/* Pause/Resume */}
-            <Button variant="ghost" size="icon" onClick={handlePauseResume} disabled={isStopping}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handlePauseResume} 
+              disabled={isStopping}
+              aria-label={isPaused ? "Resume Recording" : "Pause Recording"}
+            >
               {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
             </Button>
 
@@ -273,6 +280,7 @@ export function Toolbar({ onStart, onStop }: ToolbarProps) {
               disabled={isStopping}
               className="text-red-500 hover:text-red-600 hover:bg-red-50"
               title="Parar e Processar"
+              aria-label="Stop Recording"
             >
               {isStopping ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
