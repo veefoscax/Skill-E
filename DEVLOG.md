@@ -1,50 +1,46 @@
-# DEVLOG - The Building of Skill-E
+# Skill-E Development Log
 
-**Hackathon Year:** 2026
-**Team:** Skill-E Devs
+> The Bridge Between Human Action and Agent Understanding - Development Timeline
 
 ---
 
-## 📅 The Journey
+## Phase 0: The Vision & The OpenCloud Pivot
+**Context**: "Agents are smart, but they are blind."
+Initially, we were building an **OpenClaw** implementation for the browser. However, we realized that restricting agents to the browser was a limitation. The missing piece was a *Desktop* layer that could orchestrate local apps, not just web pages. Thus, **Skill-E** was born.
 
-### Day 1: The Vision & The OpenCloud Pivot
-"Agents are smart, but they are blind."
-Initialy, we were building an **OpenClaw** implementation for the browser. However, we realized that restricting agents to the browser was a limitation. The missing piece was a *Desktop* layer that could orchestrate local apps, not just web pages.
-Thus, **Skill-E** was born: An OpenClaw-inspired desktop layer that bridges the gap between local OS actions and Agent understanding.
+## Phase 1: The Multi-Window Challenge
+**Challenge**: We quickly realized a single window wasn't enough. We needed a non-intrusive Toolbar, a transparent Overlay, and a Settings window.
+**Solution**: We implemented a `Tauri Event` bus. When the Toolbar says "Record", the Overlay wakes up instantly. It feels like one app, but it's three distinct processes orchestrated by Rust.
 
-**Special Thanks:**
-This project was driven by the energy of the **Dynamous Community** and the vision of **Cole Medin**.
-And of course, **Kiro CLI** was our "Player 2" throughout the hackathon. From generating boilerplate to refactoring complex React components, Kiro allowed us to ship a production-grade Tauri app in record time.
-*Efficiency Note: Kiro was used for practically everything - architecture generation, code scaffolding, and documentation.*
+## Phase 2: The Whisper Saga (GPU vs CPU)
+**Challenge**: Compiling `whisper.cpp` directly into the binary with CUDA support caused chaos on CI/CD due to NVIDIA driver versions.
+**Solution**: We prioritized **Reliability**. We switched the build to **CPU Mode** for the initial submission.
 
-### Day 2: The Multi-Window Challenge
-We quickly realized a single window wasn't enough. We needed:
-1.  A non-intrusive **Toolbar** (always visible).
-2.  A transparent **Overlay** for drawing on the screen.
-3.  A **Settings/Processing** window for heavy lifting.
+## Phase 3: Local Intelligence (Ollama)
+**Context**: We didn't want users to pay for API keys just to test the app.
+**Solution**: We integrated **Ollama** support directly. The app detects if Ollama is running (`localhost:11434`) and auto-configures itself.
 
-*Technical Hurdle:* Syncing state between these isolated windows.
-*Solution:* We implemented a `Tauri Event` bus. When the Toolbar says "Record", the Overlay wakes up instantly. It feels like one app, but it's three distinct processes orchestrated by Rust.
+## Phase 4: Post-Hackathon Elite Refinements
+**Date**: March 2026
+**Focus**: Architecture, Code Quality, and Performance
 
-### Day 3: The Whisper Saga (GPU vs CPU)
-This was our biggest battle.
-*Attempt 1:* Compile `whisper.cpp` directly into the binary with CUDA support.
-*Result:* Success on dev machines, chaos on CI/CD. The dependency on specific NVIDIA driver versions and Visual Studio build tools (v143 vs v145) caused hours of debugging.
+### Completed
+- ✅ **Python Sidecar Architecture [E02]**: Offloaded heavy AI inference (Whisper/GPU) to a standalone Python FastAPI process.
+- ✅ **Native OS Playback [E03]**: Implemented `enigo` in Rust to physically move the mouse and type keys on the desktop.
+- ✅ **Memory Optimization [E10]**: Added a sliding window frame buffer (max 100 frames) to prevent RAM bloating during long sessions.
+- ✅ **Testing Infrastructure [E09]**: Configured Vitest, React Testing Library, and Tauri global mocks.
+- ✅ **Code Quality [E08]**: Enforced strict ESLint rules (unused imports), Prettier formatting, and Husky hooks.
+- ✅ **Cross-Platform Hooks [E05]**: Added native window context hooks for macOS (`osascript`) and Linux (`xdotool`).
+- ✅ **Whisper Model Management [E06]**: Added interactive UI for downloading multi-gigabyte models via Tauri IPC channels.
 
-*Pivot:* We prioritized **Reliability**. We switched the build to **CPU Mode** for the submission. It's slightly slower, but it works on *every* machine out of the box.
-*Future Fix:* The roadmap includes moving the heavy AI compute to a Python Sidecar, which is much easier to manage than embedded C++.
+---
 
-### Day 5: The Portable Whisper Problem (Post-Testing)
-During final testing, we discovered the portable executable wasn't transcribing voice. Investigation revealed:
-- **Root Cause:** Whisper model (~75MB) wasn't included in the portable build
-- **Symptom:** Users saw "No transcription available" in generated skills
-- **Solution:** Implemented auto-download of Whisper model on first use + enhanced logging
-- **File Logger:** Added `file-logger.ts` to save logs to `%TEMP%` for debugging portable mode
+## 🛠️ Key Decisions
+- **Stack**: Tauri (Rust) + React 18 + Vite + Tailwind CSS
+- **AI Processing**: Python Sidecar (Faster Whisper) + Local/Cloud LLMs
+- **Desktop Automation**: `rdev` (global input hooks) + `enigo` (native playback)
 
-### Day 4: Local Intelligence (Ollama)
-We didn't want users to pay for API keys just to test the app.
-We integrated **Ollama** support directly. The app detects if Ollama is running (`localhost:11434`) and auto-configures itself.
-The "Granite" and "Llama3" models proved surprisingly capable of understanding the structured JSON context we generate.
+*Maintained by veefoscax - Skill-E Founder*
 
 ---
 
