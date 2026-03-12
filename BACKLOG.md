@@ -41,7 +41,7 @@ This document serves as the central organization for improvements, refactorings,
 
 - [x] **Setup E2E testing templates** for both projects using Playwright.
 - [x] **Sanitize GitHub Issue Mentions** - Fixed accidental mentions of real users.
-- [ ] **Standardize DEVLOG format** across both projects.
+- [x] **Standardize DEVLOG format** across both projects.
 
 ---
 *Created by Gemini CLI - March 2026*
