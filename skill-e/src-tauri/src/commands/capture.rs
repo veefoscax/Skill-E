@@ -115,6 +115,64 @@ pub fn get_current_window_info() -> Result<WindowInfo, String> {
         })
     }
 }
+
+#[cfg(target_os = "macos")]
+pub fn get_current_window_info() -> Result<WindowInfo, String> {
+    use std::process::Command;
+    
+    // AppleScript to get the name of the frontmost application and its active window
+    let script = r#"
+    tell application "System Events"
+        set frontApp to first application process whose frontmost is true
+        set appName to name of frontApp
+        try
+            set windowTitle to name of front window of frontApp
+        on error
+            set windowTitle to ""
+        end try
+        return appName & "|||" & windowTitle
+    end tell
+    "#;
+
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .output()
+        .map_err(|e| format!("Failed to execute osascript: {}", e))?;
+
+    let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let parts: Vec<&str> = result.split("|||").collect();
+
+    let process_name = parts.get(0).unwrap_or(&"Unknown").to_string();
+    let title = parts.get(1).unwrap_or(&"(No Title)").to_string();
+
+    Ok(WindowInfo {
+        title,
+        process_name,
+        bounds: WindowBounds { x: 0, y: 0, width: 0, height: 0 }, // Bounds via AppleScript is complex, omitting for now
+    })
+}
+
+#[cfg(target_os = "linux")]
+pub fn get_current_window_info() -> Result<WindowInfo, String> {
+    use std::process::Command;
+
+    // A simple xdotool approach for Linux (requires xdotool installed)
+    let output = Command::new("xdotool")
+        .arg("getactivewindow")
+        .arg("getwindowname")
+        .output()
+        .map_err(|e| format!("Failed to execute xdotool: {}", e))?;
+
+    let title = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    
+    // Process name is harder on pure X11 without parsing PIDs, returning generic for now
+    Ok(WindowInfo {
+        title: if title.is_empty() { "(No Title)".to_string() } else { title },
+        process_name: "Linux_App".to_string(),
+        bounds: WindowBounds { x: 0, y: 0, width: 0, height: 0 },
+    })
+}
 /// 
 /// # Arguments
 /// * `output_path` - Full path where the screenshot should be saved (must end in .webp)
