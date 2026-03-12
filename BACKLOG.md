@@ -15,7 +15,7 @@ This document serves as the central organization for improvements, refactorings,
 | S24 | Tooling | **Enhanced Network Analysis** - Improve how the agent receives and parses network/console errors. | High | ✅ Done |
 | S25 | Core | **Persistent Element Refs** - Keep refs valid across page navigation via DOM fingerprinting. | Medium | ✅ Done |
 | S26 | Provider | **Local Provider Tools** - Enable tool/function calling support for Ollama and LM Studio. | High | ✅ Done |
-| S27 | Feature | **Element Highlighting Persistence** - Restore visual highlights after hydration. | Low | ⏳ Todo |
+| S27 | Feature | **Element Highlighting Persistence** - Restore visual highlights after hydration. | Low | ✅ Done |
 | S28 | Core | **Smart Retry Mechanism** - Agent automatically retries with console context on failure. | High | ✅ Done |
 
 ---
