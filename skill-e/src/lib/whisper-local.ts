@@ -9,7 +9,7 @@
  * - NFR-3.4: Local transcription should work offline
  */
 
-import { invoke } from '@tauri-apps/api/core'
+import { invoke, Channel } from '@tauri-apps/api/core'
 
 /**
  * Transcription segment with timestamps
@@ -126,10 +126,7 @@ export async function getModelsDirectory(): Promise<string> {
 }
 
 /**
- * Download a Whisper model (using browser fetch)
- *
- * Downloads the model file from Hugging Face and saves it to the models directory.
- * Progress callback is called with download progress.
+ * Download a Whisper model natively via Rust Backend
  *
  * @param model - Model name to download
  * @param onProgress - Callback for download progress (0-100)
@@ -143,66 +140,31 @@ export async function downloadModel(
 
   if (modelInfo.exists) {
     console.log(`Model ${model} already exists at ${modelInfo.path}`)
+    if (onProgress) onProgress(100)
     return modelInfo.path
   }
 
   const modelsDir = await getModelsDirectory()
+  console.log(`Requesting Rust backend to download model ${model} to ${modelsDir}`)
 
-  console.log(`Downloading model ${model} from ${modelInfo.downloadUrl}`)
-  console.log(`Target path: ${modelInfo.path}`)
+  const channel = new Channel<number>()
+  channel.onmessage = (downloadedBytes) => {
+    if (onProgress && modelInfo.sizeBytes > 0) {
+      const percentage = Math.min(100, Math.round((downloadedBytes / modelInfo.sizeBytes) * 100))
+      onProgress(percentage)
+    }
+  }
 
   try {
-    const response = await fetch(modelInfo.downloadUrl)
-
-    if (!response.ok) {
-      throw new Error(`Failed to download model: ${response.status} ${response.statusText}`)
-    }
-
-    const contentLength = response.headers.get('content-length')
-    const total = contentLength ? parseInt(contentLength, 10) : modelInfo.sizeBytes
-
-    const reader = response.body?.getReader()
-    if (!reader) {
-      throw new Error('Failed to get response body reader')
-    }
-
-    const chunks: Uint8Array[] = []
-    let received = 0
-
-    while (true) {
-      const { done, value } = await reader.read()
-
-      if (done) break
-
-      chunks.push(value)
-      received += value.length
-
-      if (onProgress) {
-        const percentage = Math.round((received / total) * 100)
-        onProgress(percentage)
-      }
-    }
-
-    // Combine chunks into a single array
-    const allChunks = new Uint8Array(received)
-    let position = 0
-    for (const chunk of chunks) {
-      allChunks.set(chunk, position)
-      position += chunk.length
-    }
-
-    // Save the model file using Tauri FS
-    // For now, we'll need to implement a save_model_file command
-    // This is a placeholder - the actual download should be done in Rust
-    console.log(`Downloaded ${received} bytes, need to save to ${modelsDir}`)
-
-    // TODO: Implement save_model_file Tauri command
-    throw new Error(
-      'Model download saving not yet implemented. Please download manually from: ' +
-        modelInfo.downloadUrl
-    )
+    const resultMsg = await invoke<string>('download_model', {
+      model,
+      onProgress: channel,
+    })
+    console.log(resultMsg)
+    if (onProgress) onProgress(100)
+    return modelInfo.path
   } catch (error) {
-    throw new Error(`Failed to download model: ${error}`)
+    throw new Error(`Rust download failed: ${error}`)
   }
 }
 

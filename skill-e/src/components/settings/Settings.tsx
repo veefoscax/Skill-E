@@ -9,7 +9,7 @@ import {
 } from '@/stores/settings'
 import { validateWhisperApiKey } from '@/lib/whisper'
 import { validateClaudeApiKey } from '@/lib/claude-api'
-import { checkComputeCapability } from '@/lib/whisper-local'
+import { checkComputeCapability, checkModelExists, downloadModel } from '@/lib/whisper-local'
 import { AudioLevelMeter } from '@/components/AudioLevelMeter'
 import {
   Loader2,
@@ -27,6 +27,7 @@ import {
   FolderOpen,
   Settings2,
   Activity,
+  DownloadCloud,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -77,6 +78,11 @@ export function Settings() {
   } = useSettingsStore()
 
   const [devices, setDevices] = useState<{ deviceId: string; label: string }[]>([])
+  
+  // Whisper Model Management State
+  const [modelExists, setModelExists] = useState(true)
+  const [isDownloadingModel, setIsDownloadingModel] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState(0)
 
   // Enumerate audio devices
   useEffect(() => {
@@ -95,6 +101,34 @@ export function Settings() {
     navigator.mediaDevices.addEventListener('devicechange', updateDevices)
     return () => navigator.mediaDevices.removeEventListener('devicechange', updateDevices)
   }, [])
+
+  // Check if selected model exists
+  useEffect(() => {
+    if (transcriptionMode === 'local_whisper') {
+      checkModelExists(whisperModel)
+        .then(exists => setModelExists(exists))
+        .catch(err => console.warn('Failed to check model existence:', err))
+    }
+  }, [whisperModel, transcriptionMode])
+
+  const handleDownloadModel = async () => {
+    if (isDownloadingModel) return
+    
+    setIsDownloadingModel(true)
+    setDownloadProgress(0)
+    
+    try {
+      await downloadModel(whisperModel, (percentage) => {
+        setDownloadProgress(percentage)
+      })
+      setModelExists(true)
+    } catch (error) {
+      console.error('Failed to download model:', error)
+      alert(`Download failed: ${error}`)
+    } finally {
+      setIsDownloadingModel(false)
+    }
+  }
 
   const [apiKeyInput, setApiKeyInput] = useState(whisperApiKey)
   const [isValidating, setIsValidating] = useState(false)
@@ -397,7 +431,14 @@ export function Settings() {
 
             {/* Model Dropdown */}
             <div className="space-y-1">
-              <Label className="text-xs">Whisper Model</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Whisper Model</Label>
+                {modelExists ? (
+                  <span className="text-[10px] text-green-600 flex items-center gap-1"><Check className="w-3 h-3"/> Downloaded</span>
+                ) : (
+                  <span className="text-[10px] text-amber-600 flex items-center gap-1"><Cloud className="w-3 h-3"/> Not locally available</span>
+                )}
+              </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-between h-8 text-xs">
@@ -430,6 +471,39 @@ export function Settings() {
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Download UI */}
+              {!modelExists && (
+                <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                  {isDownloadingModel ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-medium text-amber-800">
+                        <span>Downloading model...</span>
+                        <span>{downloadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-amber-200 rounded-full h-1.5">
+                        <div 
+                          className="bg-amber-600 h-1.5 rounded-full transition-all duration-300" 
+                          style={{ width: `${downloadProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-amber-800">Model required for offline use</span>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-6 text-[10px] border-amber-300 text-amber-700 hover:bg-amber-100"
+                        onClick={handleDownloadModel}
+                      >
+                        <DownloadCloud className="w-3 h-3 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
