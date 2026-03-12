@@ -24,6 +24,10 @@ export interface SettingsState {
   useGpu: boolean
   whisperApiKey: string
 
+  // Sidecar
+  sidecarEnabled: boolean
+  sidecarPort: number
+
   // LLM
   llmProvider: LLMProvider
   llmApiKey: string
@@ -46,6 +50,8 @@ export interface SettingsState {
   setWhisperModel: (model: WhisperModel) => void
   setUseGpu: (useGpu: boolean) => void
   setWhisperApiKey: (key: string) => void
+  setSidecarEnabled: (enabled: boolean) => void
+  setSidecarPort: (port: number) => void
   setLlmProvider: (provider: LLMProvider) => void
   setLlmApiKey: (key: string) => void
   setClaudeApiKey: (key: string) => void
@@ -134,6 +140,8 @@ export const useSettingsStore = create<SettingsState>()(
       whisperModel: 'tiny',
       useGpu: false,
       whisperApiKey: '',
+      sidecarEnabled: false,
+      sidecarPort: 8000,
       llmProvider: 'demo',
       llmApiKey: '',
       claudeApiKey: '',
@@ -150,6 +158,8 @@ export const useSettingsStore = create<SettingsState>()(
       setWhisperModel: model => set({ whisperModel: model }),
       setUseGpu: useGpu => set({ useGpu }),
       setWhisperApiKey: key => set({ whisperApiKey: key }),
+      setSidecarEnabled: enabled => set({ sidecarEnabled: enabled }),
+      setSidecarPort: port => set({ sidecarPort: port }),
       setLlmProvider: provider => set({ llmProvider: provider }),
       setLlmApiKey: key => set({ llmApiKey: key }),
       setClaudeApiKey: key => set({ claudeApiKey: key }),
@@ -167,6 +177,8 @@ export const useSettingsStore = create<SettingsState>()(
           whisperModel: 'tiny',
           useGpu: false,
           whisperApiKey: '',
+          sidecarEnabled: false,
+          sidecarPort: 8000,
           llmProvider: 'demo',
           llmApiKey: '',
           claudeApiKey: '',
@@ -187,10 +199,9 @@ export const useSettingsStore = create<SettingsState>()(
         transcriptionMode: state.transcriptionMode,
         whisperModel: state.whisperModel,
         useGpu: state.useGpu,
-        // whisperApiKey: NÃO persistir
+        sidecarEnabled: state.sidecarEnabled,
+        sidecarPort: state.sidecarPort,
         llmProvider: state.llmProvider,
-        // llmApiKey: NÃO persistir
-        // claudeApiKey: NÃO persistir
         llmModel: state.llmModel,
         llmBaseUrl: state.llmBaseUrl,
         microphoneId: state.microphoneId,

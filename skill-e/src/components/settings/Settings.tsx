@@ -26,6 +26,7 @@ import {
   MicOff,
   FolderOpen,
   Settings2,
+  Activity,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -56,6 +57,10 @@ export function Settings() {
     setWhisperModel,
     useGpu,
     setUseGpu,
+    sidecarEnabled,
+    setSidecarEnabled,
+    sidecarPort,
+    setSidecarPort,
     selectedMicId,
     setSelectedMicId,
     outputDir,
@@ -520,6 +525,46 @@ export function Settings() {
             >
               <FolderOpen className="h-3 w-3" />
             </Button>
+          </div>
+        </div>
+
+        {/* Python Sidecar Section */}
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground uppercase">AI Sidecar (Python)</Label>
+          <div className="p-3 rounded-md border bg-card space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className={`h-4 w-4 ${sidecarEnabled ? 'text-green-500' : 'text-muted-foreground'}`} />
+                <div className="flex flex-col">
+                  <span className="font-medium text-xs">Enable Sidecar</span>
+                  <span className="text-[10px] text-muted-foreground">Faster GPU-accelerated AI</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSidecarEnabled(!sidecarEnabled)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  sidecarEnabled ? 'bg-primary' : 'bg-muted'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    sidecarEnabled ? 'translate-x-5' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {sidecarEnabled && (
+              <div className="flex items-center justify-between gap-4 pt-1 animate-in fade-in slide-in-from-top-1">
+                <span className="text-[11px] font-medium">Local Port</span>
+                <Input
+                  type="number"
+                  value={sidecarPort}
+                  onChange={(e) => setSidecarPort(parseInt(e.target.value) || 8000)}
+                  className="h-6 w-20 text-[11px] text-right"
+                />
+              </div>
+            )}
           </div>
         </div>
 
