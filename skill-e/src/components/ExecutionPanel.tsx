@@ -1,53 +1,53 @@
 /**
  * ExecutionPanel - Execute generated skill in Chrome
- * 
+ *
  * Integrates CDP executor for real browser automation
  */
 
-import { useState, useCallback } from 'react';
-import { Play, Square, Chrome, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import { Button } from './ui/button';
-import { CDPExecutor } from '@/lib/cdp/executor';
-import { isChromeAvailable } from '@/lib/cdp/client';
-import { parseSkill } from '@/lib/skill-parser';
+import { useState, useCallback } from 'react'
+import { Play, Square, Chrome, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
+import { Button } from './ui/button'
+import { CDPExecutor } from '@/lib/cdp/executor'
+import { isChromeAvailable } from '@/lib/cdp/client'
+import { parseSkill } from '@/lib/skill-parser'
 
 interface ExecutionPanelProps {
-  skillMarkdown: string;
+  skillMarkdown: string
 }
 
-type ExecutionStatus = 'idle' | 'connecting' | 'running' | 'completed' | 'error';
+type ExecutionStatus = 'idle' | 'connecting' | 'running' | 'completed' | 'error'
 
 interface StepResult {
-  stepIndex: number;
-  success: boolean;
-  message: string;
+  stepIndex: number
+  success: boolean
+  message: string
 }
 
 export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
-  const [status, setStatus] = useState<ExecutionStatus>('idle');
-  const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<StepResult[]>([]);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [totalSteps, setTotalSteps] = useState(0);
+  const [status, setStatus] = useState<ExecutionStatus>('idle')
+  const [error, setError] = useState<string | null>(null)
+  const [results, setResults] = useState<StepResult[]>([])
+  const [currentStep, setCurrentStep] = useState(0)
+  const [totalSteps, setTotalSteps] = useState(0)
 
   const handleExecute = useCallback(async () => {
-    setStatus('connecting');
-    setError(null);
-    setResults([]);
+    setStatus('connecting')
+    setError(null)
+    setResults([])
 
     try {
       // Check if Chrome is available
-      const chromeAvailable = await isChromeAvailable();
+      const chromeAvailable = await isChromeAvailable()
       if (!chromeAvailable) {
         throw new Error(
           'Chrome is not available. Please start Chrome with remote debugging:\n' +
-          'chrome --remote-debugging-port=9222'
-        );
+            'chrome --remote-debugging-port=9222'
+        )
       }
 
       // Parse skill
-      const skill = parseSkill(skillMarkdown);
-      setTotalSteps(skill.steps.length);
+      const skill = parseSkill(skillMarkdown)
+      setTotalSteps(skill.steps.length)
 
       // Create executor
       const executor = new CDPExecutor({
@@ -55,82 +55,81 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
         captureScreenshots: true,
         stepTimeout: 30000,
         maxRetries: 2,
-      });
+      })
 
-      setStatus('running');
+      setStatus('running')
 
       // Execute each step
-      const stepResults: StepResult[] = [];
-      
+      const stepResults: StepResult[] = []
+
       for (let i = 0; i < skill.steps.length; i++) {
-        setCurrentStep(i + 1);
-        const step = skill.steps[i];
-        
-        console.log(`Executing step ${i + 1}: ${step.instruction}`);
-        
-        const result = await executor.executeStep(step);
-        
+        setCurrentStep(i + 1)
+        const step = skill.steps[i]
+
+        console.log(`Executing step ${i + 1}: ${step.instruction}`)
+
+        const result = await executor.executeStep(step)
+
         stepResults.push({
           stepIndex: i + 1,
           success: result.success,
-          message: result.success 
-            ? `✓ ${step.instruction}` 
+          message: result.success
+            ? `✓ ${step.instruction}`
             : `✗ ${step.instruction}: ${result.error || 'Failed'}`,
-        });
-        
-        setResults([...stepResults]);
-        
+        })
+
+        setResults([...stepResults])
+
         if (!result.success) {
-          console.error(`Step ${i + 1} failed:`, result.error);
+          console.error(`Step ${i + 1} failed:`, result.error)
           // Continue with next step but log the error
         }
       }
 
       // Close executor
-      await executor.close();
+      await executor.close()
 
-      const allSuccess = stepResults.every(r => r.success);
-      setStatus(allSuccess ? 'completed' : 'error');
-      
+      const allSuccess = stepResults.every(r => r.success)
+      setStatus(allSuccess ? 'completed' : 'error')
     } catch (err) {
-      console.error('Execution failed:', err);
-      setError(err instanceof Error ? err.message : 'Execution failed');
-      setStatus('error');
+      console.error('Execution failed:', err)
+      setError(err instanceof Error ? err.message : 'Execution failed')
+      setStatus('error')
     }
-  }, [skillMarkdown]);
+  }, [skillMarkdown])
 
   const handleStop = useCallback(async () => {
-    setStatus('idle');
-  }, []);
+    setStatus('idle')
+  }, [])
 
   const getStatusIcon = () => {
     switch (status) {
       case 'connecting':
       case 'running':
-        return <Loader2 className="w-5 h-5 animate-spin" />;
+        return <Loader2 className="w-5 h-5 animate-spin" />
       case 'completed':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return <CheckCircle className="w-5 h-5 text-green-500" />
       case 'error':
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
+        return <AlertCircle className="w-5 h-5 text-red-500" />
       default:
-        return <Chrome className="w-5 h-5" />;
+        return <Chrome className="w-5 h-5" />
     }
-  };
+  }
 
   const getStatusText = () => {
     switch (status) {
       case 'connecting':
-        return 'Connecting to Chrome...';
+        return 'Connecting to Chrome...'
       case 'running':
-        return `Executing step ${currentStep} of ${totalSteps}...`;
+        return `Executing step ${currentStep} of ${totalSteps}...`
       case 'completed':
-        return 'Execution completed!';
+        return 'Execution completed!'
       case 'error':
-        return 'Execution failed';
+        return 'Execution failed'
       default:
-        return 'Ready to execute';
+        return 'Ready to execute'
     }
-  };
+  }
 
   return (
     <div className="bg-gray-50 rounded-lg p-4">
@@ -139,21 +138,14 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
           {getStatusIcon()}
           <span className="font-medium">{getStatusText()}</span>
         </div>
-        
+
         {status === 'connecting' || status === 'running' ? (
-          <Button 
-            onClick={handleStop}
-            variant="destructive"
-            size="sm"
-          >
+          <Button onClick={handleStop} variant="destructive" size="sm">
             <Square className="w-4 h-4 mr-1" />
             Stop
           </Button>
         ) : (
-          <Button 
-            onClick={handleExecute}
-            size="sm"
-          >
+          <Button onClick={handleExecute} size="sm">
             <Play className="w-4 h-4 mr-1" />
             Execute in Chrome
           </Button>
@@ -171,7 +163,7 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
         <div className="space-y-1">
           <div className="text-sm font-medium mb-2">Execution Log:</div>
           {results.map((result, index) => (
-            <div 
+            <div
               key={index}
               className={`text-sm ${result.success ? 'text-green-700' : 'text-red-700'}`}
             >
@@ -195,5 +187,5 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
         </div>
       )}
     </div>
-  );
+  )
 }

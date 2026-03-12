@@ -1,6 +1,6 @@
 /**
  * Overlay Hotkeys Hook
- * 
+ *
  * Centralized hotkey management for overlay UI.
  * Handles all keyboard shortcuts for overlay features:
  * - 1, 2, 3: Select drawing colors
@@ -8,34 +8,34 @@
  * - C: Clear all drawings
  * - E: Toggle element picker (when implemented)
  * - K: Toggle keyboard display
- * 
+ *
  * Requirements: FR-4.10, FR-4.13, FR-4.14, FR-4.20
  */
 
-import { useEffect } from 'react';
-import { useOverlayStore } from '../stores/overlay';
+import { useEffect } from 'react'
+import { useOverlayStore } from '../stores/overlay'
 
 /**
  * Hotkey configuration
  */
 export interface OverlayHotkeyConfig {
   /** Enable color selection hotkeys (1, 2, 3) */
-  enableColorSelection?: boolean;
-  
+  enableColorSelection?: boolean
+
   /** Enable pin mode toggle (P) */
-  enablePinToggle?: boolean;
-  
+  enablePinToggle?: boolean
+
   /** Enable clear drawings (C) */
-  enableClear?: boolean;
-  
+  enableClear?: boolean
+
   /** Enable element picker toggle (E) */
-  enableElementPicker?: boolean;
-  
+  enableElementPicker?: boolean
+
   /** Enable keyboard display toggle (K) */
-  enableKeyboardToggle?: boolean;
-  
+  enableKeyboardToggle?: boolean
+
   /** Custom callback when a hotkey is pressed */
-  onHotkeyPress?: (key: string, action: string) => void;
+  onHotkeyPress?: (key: string, action: string) => void
 }
 
 /**
@@ -48,11 +48,11 @@ const DEFAULT_CONFIG: Required<OverlayHotkeyConfig> = {
   enableElementPicker: true,
   enableKeyboardToggle: true,
   onHotkeyPress: () => {},
-};
+}
 
 /**
  * Hook to manage overlay hotkeys
- * 
+ *
  * Usage:
  * ```tsx
  * useOverlayHotkeys({
@@ -70,16 +70,11 @@ export function useOverlayHotkeys(config: OverlayHotkeyConfig = {}) {
     enableElementPicker,
     enableKeyboardToggle,
     onHotkeyPress,
-  } = { ...DEFAULT_CONFIG, ...config };
+  } = { ...DEFAULT_CONFIG, ...config }
 
   // Get store actions
-  const {
-    setColor,
-    togglePinMode,
-    clearDrawings,
-    toggleElementPicker,
-    toggleKeyboardDisplay,
-  } = useOverlayStore();
+  const { setColor, togglePinMode, clearDrawings, toggleElementPicker, toggleKeyboardDisplay } =
+    useOverlayStore()
 
   useEffect(() => {
     /**
@@ -87,84 +82,80 @@ export function useOverlayHotkeys(config: OverlayHotkeyConfig = {}) {
      */
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ignore if user is typing in an input field
-      const target = event.target as HTMLElement;
-      if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
-      ) {
-        return;
+      const target = event.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return
       }
 
       // Ignore if modifier keys are pressed (except for the key itself)
       if (event.ctrlKey || event.altKey || event.metaKey) {
-        return;
+        return
       }
 
-      const key = event.key.toLowerCase();
+      const key = event.key.toLowerCase()
 
       // Color selection: 1, 2, 3
       if (enableColorSelection) {
         if (key === '1') {
-          event.preventDefault();
-          setColor('COLOR_1');
-          onHotkeyPress('1', 'Select Color 1 (Red)');
-          return;
+          event.preventDefault()
+          setColor('COLOR_1')
+          onHotkeyPress('1', 'Select Color 1 (Red)')
+          return
         }
         if (key === '2') {
-          event.preventDefault();
-          setColor('COLOR_2');
-          onHotkeyPress('2', 'Select Color 2 (Blue)');
-          return;
+          event.preventDefault()
+          setColor('COLOR_2')
+          onHotkeyPress('2', 'Select Color 2 (Blue)')
+          return
         }
         if (key === '3') {
-          event.preventDefault();
-          setColor('COLOR_3');
-          onHotkeyPress('3', 'Select Color 3 (Green)');
-          return;
+          event.preventDefault()
+          setColor('COLOR_3')
+          onHotkeyPress('3', 'Select Color 3 (Green)')
+          return
         }
       }
 
       // Pin mode toggle: P
       if (enablePinToggle && key === 'p') {
-        event.preventDefault();
-        togglePinMode();
-        onHotkeyPress('P', 'Toggle Pin Mode');
-        return;
+        event.preventDefault()
+        togglePinMode()
+        onHotkeyPress('P', 'Toggle Pin Mode')
+        return
       }
 
       // Clear drawings: C
       if (enableClear && key === 'c') {
-        event.preventDefault();
-        clearDrawings();
-        onHotkeyPress('C', 'Clear Drawings');
-        return;
+        event.preventDefault()
+        clearDrawings()
+        onHotkeyPress('C', 'Clear Drawings')
+        return
       }
 
       // Element picker toggle: E
       if (enableElementPicker && key === 'e') {
-        event.preventDefault();
-        toggleElementPicker();
-        onHotkeyPress('E', 'Toggle Element Picker');
-        return;
+        event.preventDefault()
+        toggleElementPicker()
+        onHotkeyPress('E', 'Toggle Element Picker')
+        return
       }
 
       // Keyboard display toggle: K
       if (enableKeyboardToggle && key === 'k') {
-        event.preventDefault();
-        toggleKeyboardDisplay();
-        onHotkeyPress('K', 'Toggle Keyboard Display');
-        return;
+        event.preventDefault()
+        toggleKeyboardDisplay()
+        onHotkeyPress('K', 'Toggle Keyboard Display')
+        return
       }
-    };
+    }
 
     // Add event listener
-    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keydown', handleKeyDown, true)
 
     // Cleanup
     return () => {
-      window.removeEventListener('keydown', handleKeyDown, true);
-    };
+      window.removeEventListener('keydown', handleKeyDown, true)
+    }
   }, [
     enableColorSelection,
     enablePinToggle,
@@ -177,7 +168,7 @@ export function useOverlayHotkeys(config: OverlayHotkeyConfig = {}) {
     clearDrawings,
     toggleElementPicker,
     toggleKeyboardDisplay,
-  ]);
+  ])
 }
 
 /**
@@ -191,11 +182,11 @@ export const OVERLAY_HOTKEYS = {
   CLEAR: { key: 'C', description: 'Clear All Drawings' },
   ELEMENT_PICKER: { key: 'E', description: 'Toggle Element Picker' },
   KEYBOARD_DISPLAY: { key: 'K', description: 'Toggle Keyboard Display' },
-} as const;
+} as const
 
 /**
  * Get formatted hotkey list for display
  */
 export function getHotkeyList(): Array<{ key: string; description: string }> {
-  return Object.values(OVERLAY_HOTKEYS);
+  return Object.values(OVERLAY_HOTKEYS)
 }

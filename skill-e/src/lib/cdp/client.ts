@@ -1,60 +1,60 @@
 /**
  * Chrome DevTools Protocol (CDP) Client
- * 
+ *
  * Provides direct communication with Chrome/Chromium browsers via CDP
  * for reliable automation that bypasses anti-bot detection.
- * 
+ *
  * Based on Claude extension architecture analysis.
  */
 
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/core'
 
 /**
  * CDP Session configuration
  */
 export interface CDPSessionConfig {
   /** WebSocket URL for CDP connection (e.g., ws://localhost:9222/devtools/browser/...) */
-  wsUrl?: string;
-  
+  wsUrl?: string
+
   /** Chrome debugging port (default: 9222) */
-  port?: number;
-  
+  port?: number
+
   /** Host (default: localhost) */
-  host?: string;
-  
+  host?: string
+
   /** Target ID to attach to */
-  targetId?: string;
-  
+  targetId?: string
+
   /** Timeout for commands in ms (default: 30000) */
-  timeout?: number;
+  timeout?: number
 }
 
 /**
  * CDP Connection state
  */
-export type CDPConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
+export type CDPConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error'
 
 /**
  * CDP Mouse button types
  */
-export type CDPMouseButton = 'none' | 'left' | 'middle' | 'right' | 'back' | 'forward';
+export type CDPMouseButton = 'none' | 'left' | 'middle' | 'right' | 'back' | 'forward'
 
 /**
  * CDP Key event types
  */
-export type CDPKeyEventType = 'keyDown' | 'keyUp' | 'char';
+export type CDPKeyEventType = 'keyDown' | 'keyUp' | 'char'
 
 /**
  * CDP Mouse event types
  */
-export type CDPMouseEventType = 'mousePressed' | 'mouseReleased' | 'mouseMoved' | 'mouseWheel';
+export type CDPMouseEventType = 'mousePressed' | 'mouseReleased' | 'mouseMoved' | 'mouseWheel'
 
 /**
  * CDP Point (coordinates)
  */
 export interface CDPPoint {
-  x: number;
-  y: number;
+  x: number
+  y: number
 }
 
 /**
@@ -62,31 +62,31 @@ export interface CDPPoint {
  */
 export interface CDPScreenshotOptions {
   /** Screenshot format (jpeg, png, webp) */
-  format?: 'jpeg' | 'png' | 'webp';
-  
+  format?: 'jpeg' | 'png' | 'webp'
+
   /** Compression quality (0-100) for jpeg/webp */
-  quality?: number;
-  
+  quality?: number
+
   /** Target width for scaling */
-  targetWidth?: number;
-  
+  targetWidth?: number
+
   /** Target height for scaling */
-  targetHeight?: number;
-  
+  targetHeight?: number
+
   /** Clip region */
   clip?: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    scale?: number;
-  };
-  
+    x: number
+    y: number
+    width: number
+    height: number
+    scale?: number
+  }
+
   /** Capture from surface (true) or viewport (false) */
-  fromSurface?: boolean;
-  
+  fromSurface?: boolean
+
   /** Capture specific node ID */
-  nodeId?: number;
+  nodeId?: number
 }
 
 /**
@@ -94,45 +94,45 @@ export interface CDPScreenshotOptions {
  */
 export interface CDPAccessibilityNode {
   /** Node ID */
-  nodeId: number;
-  
+  nodeId: number
+
   /** Backend node ID */
-  backendNodeId?: number;
-  
+  backendNodeId?: number
+
   /** Parent node ID */
-  parentId?: number;
-  
+  parentId?: number
+
   /** Node role (button, link, input, etc.) */
-  role?: string;
-  
+  role?: string
+
   /** Accessible name */
-  name?: string;
-  
+  name?: string
+
   /** Accessible description */
-  description?: string;
-  
+  description?: string
+
   /** Node value */
-  value?: string;
-  
+  value?: string
+
   /** Whether node is ignored */
-  ignored?: boolean;
-  
+  ignored?: boolean
+
   /** Whether node is disabled */
-  disabled?: boolean;
-  
+  disabled?: boolean
+
   /** Bounding box coordinates */
   bounds?: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+
   /** Child nodes */
-  children?: CDPAccessibilityNode[];
-  
+  children?: CDPAccessibilityNode[]
+
   /** Properties */
-  properties?: Array<{ name: string; value: any }>;
+  properties?: Array<{ name: string; value: any }>
 }
 
 /**
@@ -140,44 +140,45 @@ export interface CDPAccessibilityNode {
  */
 export interface CDPTarget {
   /** Target ID */
-  targetId: string;
-  
+  targetId: string
+
   /** Target type (page, background_page, service_worker, etc.) */
-  type: string;
-  
+  type: string
+
   /** Page title */
-  title: string;
-  
+  title: string
+
   /** URL */
-  url: string;
-  
+  url: string
+
   /** Favicon URL */
-  faviconUrl?: string;
-  
+  faviconUrl?: string
+
   /** Whether target is attached */
-  attached: boolean;
-  
+  attached: boolean
+
   /** Opener target ID */
-  openerId?: string;
-  
+  openerId?: string
+
   /** Browser context ID */
-  browserContextId?: string;
+  browserContextId?: string
 }
 
 /**
  * Chrome DevTools Protocol Client
- * 
+ *
  * Provides high-level methods for browser automation via CDP
  */
 export class CDPClient {
-  private state: CDPConnectionState = 'disconnected';
-  private config: CDPSessionConfig;
-  private eventListeners: Map<string, Set<Function>> = new Map();
-  private commandId = 0;
-  private pendingCommands: Map<number, { resolve: Function; reject: Function; timer: number }> = new Map();
-  private ws: WebSocket | null = null;
-  private sessionId: string | null = null;
-  private targetId: string | null = null;
+  private state: CDPConnectionState = 'disconnected'
+  private config: CDPSessionConfig
+  private eventListeners: Map<string, Set<Function>> = new Map()
+  private commandId = 0
+  private pendingCommands: Map<number, { resolve: Function; reject: Function; timer: number }> =
+    new Map()
+  private ws: WebSocket | null = null
+  private sessionId: string | null = null
+  private targetId: string | null = null
 
   constructor(config: CDPSessionConfig = {}) {
     this.config = {
@@ -185,21 +186,21 @@ export class CDPClient {
       host: 'localhost',
       timeout: 30000,
       ...config,
-    };
+    }
   }
 
   /**
    * Get current connection state
    */
   getState(): CDPConnectionState {
-    return this.state;
+    return this.state
   }
 
   /**
    * Check if connected
    */
   isConnected(): boolean {
-    return this.state === 'connected';
+    return this.state === 'connected'
   }
 
   /**
@@ -207,44 +208,44 @@ export class CDPClient {
    */
   async connect(): Promise<void> {
     if (this.state === 'connected') {
-      return;
+      return
     }
 
-    this.state = 'connecting';
+    this.state = 'connecting'
 
     try {
       // If wsUrl provided, use it directly
       if (this.config.wsUrl) {
-        await this.connectToWebSocket(this.config.wsUrl);
-        return;
+        await this.connectToWebSocket(this.config.wsUrl)
+        return
       }
 
       // Otherwise, discover targets via HTTP
-      const targets = await this.discoverTargets();
-      
+      const targets = await this.discoverTargets()
+
       if (targets.length === 0) {
-        throw new Error('No Chrome targets found. Is Chrome running with --remote-debugging-port?');
+        throw new Error('No Chrome targets found. Is Chrome running with --remote-debugging-port?')
       }
 
       // Find a page target or use the specified target
-      let target = targets.find(t => t.type === 'page' && !t.attached);
-      
+      let target = targets.find(t => t.type === 'page' && !t.attached)
+
       if (this.config.targetId) {
-        target = targets.find(t => t.targetId === this.config.targetId);
+        target = targets.find(t => t.targetId === this.config.targetId)
       }
 
       if (!target) {
-        target = targets[0];
+        target = targets[0]
       }
 
       // Get WebSocket URL for target
-      const wsUrl = await this.getWebSocketUrl(target.targetId);
-      await this.connectToWebSocket(wsUrl);
-      
-      this.targetId = target.targetId;
+      const wsUrl = await this.getWebSocketUrl(target.targetId)
+      await this.connectToWebSocket(wsUrl)
+
+      this.targetId = target.targetId
     } catch (error) {
-      this.state = 'error';
-      throw error;
+      this.state = 'error'
+      throw error
     }
   }
 
@@ -252,15 +253,13 @@ export class CDPClient {
    * Discover available Chrome targets
    */
   private async discoverTargets(): Promise<CDPTarget[]> {
-    const response = await fetch(
-      `http://${this.config.host}:${this.config.port}/json/list`
-    );
-    
+    const response = await fetch(`http://${this.config.host}:${this.config.port}/json/list`)
+
     if (!response.ok) {
-      throw new Error(`Failed to discover targets: ${response.statusText}`);
+      throw new Error(`Failed to discover targets: ${response.statusText}`)
     }
 
-    return await response.json();
+    return await response.json()
   }
 
   /**
@@ -270,21 +269,21 @@ export class CDPClient {
     const response = await fetch(
       `http://${this.config.host}:${this.config.port}/json/activate/${targetId}`,
       { method: 'PUT' }
-    );
+    )
 
     if (!response.ok) {
-      throw new Error(`Failed to activate target: ${response.statusText}`);
+      throw new Error(`Failed to activate target: ${response.statusText}`)
     }
 
     // Get updated list with WebSocket URL
-    const targets = await this.discoverTargets();
-    const target = targets.find(t => t.targetId === targetId);
-    
+    const targets = await this.discoverTargets()
+    const target = targets.find(t => t.targetId === targetId)
+
     if (!target || !(target as any).webSocketDebuggerUrl) {
-      throw new Error('Target does not have WebSocket debugger URL');
+      throw new Error('Target does not have WebSocket debugger URL')
     }
 
-    return (target as any).webSocketDebuggerUrl;
+    return (target as any).webSocketDebuggerUrl
   }
 
   /**
@@ -292,33 +291,33 @@ export class CDPClient {
    */
   private async connectToWebSocket(wsUrl: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(wsUrl);
+      this.ws = new WebSocket(wsUrl)
 
       const timeout = setTimeout(() => {
-        reject(new Error('WebSocket connection timeout'));
-      }, this.config.timeout);
+        reject(new Error('WebSocket connection timeout'))
+      }, this.config.timeout)
 
       this.ws.onopen = () => {
-        clearTimeout(timeout);
-        this.state = 'connected';
-        resolve();
-      };
+        clearTimeout(timeout)
+        this.state = 'connected'
+        resolve()
+      }
 
-      this.ws.onerror = (error) => {
-        clearTimeout(timeout);
-        this.state = 'error';
-        reject(new Error(`WebSocket error: ${error}`));
-      };
+      this.ws.onerror = error => {
+        clearTimeout(timeout)
+        this.state = 'error'
+        reject(new Error(`WebSocket error: ${error}`))
+      }
 
       this.ws.onclose = () => {
-        this.state = 'disconnected';
-        this.cleanup();
-      };
+        this.state = 'disconnected'
+        this.cleanup()
+      }
 
-      this.ws.onmessage = (event) => {
-        this.handleMessage(event.data);
-      };
-    });
+      this.ws.onmessage = event => {
+        this.handleMessage(event.data)
+      }
+    })
   }
 
   /**
@@ -326,30 +325,30 @@ export class CDPClient {
    */
   private handleMessage(data: string): void {
     try {
-      const message = JSON.parse(data);
+      const message = JSON.parse(data)
 
       // Handle command responses
       if (message.id !== undefined) {
-        const pending = this.pendingCommands.get(message.id);
+        const pending = this.pendingCommands.get(message.id)
         if (pending) {
-          clearTimeout(pending.timer);
-          this.pendingCommands.delete(message.id);
+          clearTimeout(pending.timer)
+          this.pendingCommands.delete(message.id)
 
           if (message.error) {
-            pending.reject(new Error(message.error.message));
+            pending.reject(new Error(message.error.message))
           } else {
-            pending.resolve(message.result);
+            pending.resolve(message.result)
           }
         }
-        return;
+        return
       }
 
       // Handle events
       if (message.method) {
-        this.emit(message.method, message.params);
+        this.emit(message.method, message.params)
       }
     } catch (error) {
-      console.error('Failed to handle CDP message:', error);
+      console.error('Failed to handle CDP message:', error)
     }
   }
 
@@ -358,39 +357,39 @@ export class CDPClient {
    */
   async sendCommand<T = any>(method: string, params?: Record<string, any>): Promise<T> {
     if (!this.isConnected()) {
-      throw new Error('CDP client not connected');
+      throw new Error('CDP client not connected')
     }
 
-    const id = ++this.commandId;
-    const command = { id, method, params };
+    const id = ++this.commandId
+    const command = { id, method, params }
 
     return new Promise((resolve, reject) => {
       // Set timeout
       const timer = window.setTimeout(() => {
-        this.pendingCommands.delete(id);
-        reject(new Error(`Command ${method} timed out`));
-      }, this.config.timeout);
+        this.pendingCommands.delete(id)
+        reject(new Error(`Command ${method} timed out`))
+      }, this.config.timeout)
 
-      this.pendingCommands.set(id, { resolve, reject, timer });
+      this.pendingCommands.set(id, { resolve, reject, timer })
 
       // Send command
-      this.ws?.send(JSON.stringify(command));
-    });
+      this.ws?.send(JSON.stringify(command))
+    })
   }
 
   /**
    * Emit event to listeners
    */
   private emit(event: string, data: any): void {
-    const listeners = this.eventListeners.get(event);
+    const listeners = this.eventListeners.get(event)
     if (listeners) {
       listeners.forEach(listener => {
         try {
-          listener(data);
+          listener(data)
         } catch (error) {
-          console.error('Event listener error:', error);
+          console.error('Event listener error:', error)
         }
-      });
+      })
     }
   }
 
@@ -399,18 +398,18 @@ export class CDPClient {
    */
   on(event: string, listener: Function): void {
     if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, new Set());
+      this.eventListeners.set(event, new Set())
     }
-    this.eventListeners.get(event)!.add(listener);
+    this.eventListeners.get(event)!.add(listener)
   }
 
   /**
    * Remove event listener
    */
   off(event: string, listener: Function): void {
-    const listeners = this.eventListeners.get(event);
+    const listeners = this.eventListeners.get(event)
     if (listeners) {
-      listeners.delete(listener);
+      listeners.delete(listener)
     }
   }
 
@@ -419,10 +418,10 @@ export class CDPClient {
    */
   async disconnect(): Promise<void> {
     if (this.ws) {
-      this.ws.close();
+      this.ws.close()
     }
-    this.cleanup();
-    this.state = 'disconnected';
+    this.cleanup()
+    this.state = 'disconnected'
   }
 
   /**
@@ -431,17 +430,17 @@ export class CDPClient {
   private cleanup(): void {
     // Clear pending commands
     this.pendingCommands.forEach(pending => {
-      clearTimeout(pending.timer);
-      pending.reject(new Error('Connection closed'));
-    });
-    this.pendingCommands.clear();
+      clearTimeout(pending.timer)
+      pending.reject(new Error('Connection closed'))
+    })
+    this.pendingCommands.clear()
 
     // Clear event listeners
-    this.eventListeners.clear();
+    this.eventListeners.clear()
 
-    this.ws = null;
-    this.sessionId = null;
-    this.targetId = null;
+    this.ws = null
+    this.sessionId = null
+    this.targetId = null
   }
 
   // ==================== CDP Commands ====================
@@ -449,12 +448,15 @@ export class CDPClient {
   /**
    * Navigate to URL
    */
-  async navigate(url: string, waitUntil: 'load' | 'domcontentloaded' | 'networkidle' = 'load'): Promise<void> {
-    await this.sendCommand('Page.navigate', { url });
-    
+  async navigate(
+    url: string,
+    waitUntil: 'load' | 'domcontentloaded' | 'networkidle' = 'load'
+  ): Promise<void> {
+    await this.sendCommand('Page.navigate', { url })
+
     // Wait for navigation to complete
     if (waitUntil === 'load') {
-      await this.sendCommand('Page.loadEventFired');
+      await this.sendCommand('Page.loadEventFired')
     }
   }
 
@@ -466,10 +468,10 @@ export class CDPClient {
     x: number,
     y: number,
     options: {
-      button?: CDPMouseButton;
-      clickCount?: number;
-      deltaX?: number;
-      deltaY?: number;
+      button?: CDPMouseButton
+      clickCount?: number
+      deltaX?: number
+      deltaY?: number
     } = {}
   ): Promise<void> {
     await this.sendCommand('Input.dispatchMouseEvent', {
@@ -480,15 +482,19 @@ export class CDPClient {
       clickCount: options.clickCount || 1,
       deltaX: options.deltaX || 0,
       deltaY: options.deltaY || 0,
-    });
+    })
   }
 
   /**
    * Click at coordinates using CDP
    */
-  async click(x: number, y: number, options?: { button?: CDPMouseButton; clickCount?: number }): Promise<void> {
-    await this.dispatchMouseEvent('mousePressed', x, y, options);
-    await this.dispatchMouseEvent('mouseReleased', x, y, options);
+  async click(
+    x: number,
+    y: number,
+    options?: { button?: CDPMouseButton; clickCount?: number }
+  ): Promise<void> {
+    await this.dispatchMouseEvent('mousePressed', x, y, options)
+    await this.dispatchMouseEvent('mouseReleased', x, y, options)
   }
 
   /**
@@ -497,17 +503,17 @@ export class CDPClient {
   async dispatchKeyEvent(
     type: CDPKeyEventType,
     options: {
-      key?: string;
-      code?: string;
-      text?: string;
-      unmodifiedText?: string;
-      nativeVirtualKeyCode?: number;
-      windowsVirtualKeyCode?: number;
-      autoRepeat?: boolean;
-      isKeypad?: boolean;
-      isSystemKey?: boolean;
-      location?: number;
-      commands?: string[];
+      key?: string
+      code?: string
+      text?: string
+      unmodifiedText?: string
+      nativeVirtualKeyCode?: number
+      windowsVirtualKeyCode?: number
+      autoRepeat?: boolean
+      isKeypad?: boolean
+      isSystemKey?: boolean
+      location?: number
+      commands?: string[]
     } = {}
   ): Promise<void> {
     await this.sendCommand('Input.dispatchKeyEvent', {
@@ -523,7 +529,7 @@ export class CDPClient {
       isSystemKey: options.isSystemKey,
       location: options.location,
       commands: options.commands,
-    });
+    })
   }
 
   /**
@@ -531,7 +537,7 @@ export class CDPClient {
    */
   async type(text: string): Promise<void> {
     for (const char of text) {
-      await this.dispatchKeyEvent('char', { text: char });
+      await this.dispatchKeyEvent('char', { text: char })
     }
   }
 
@@ -540,13 +546,13 @@ export class CDPClient {
    */
   async pressKey(key: string, modifiers: string[] = []): Promise<void> {
     const modifierCodes: Record<string, number> = {
-      'Alt': 1,
-      'Control': 2,
-      'Meta': 4,
-      'Shift': 8,
-    };
+      Alt: 1,
+      Control: 2,
+      Meta: 4,
+      Shift: 8,
+    }
 
-    const modifiersValue = modifiers.reduce((acc, mod) => acc | (modifierCodes[mod] || 0), 0);
+    const modifiersValue = modifiers.reduce((acc, mod) => acc | (modifierCodes[mod] || 0), 0)
 
     // Send keyDown with modifiers
     await this.sendCommand('Input.dispatchKeyEvent', {
@@ -554,15 +560,15 @@ export class CDPClient {
       key,
       code: `Key${key.toUpperCase()}`,
       modifiers: modifiersValue,
-    });
-    
+    })
+
     // Send keyUp with modifiers
     await this.sendCommand('Input.dispatchKeyEvent', {
       type: 'keyUp',
       key,
       code: `Key${key.toUpperCase()}`,
       modifiers: modifiersValue,
-    });
+    })
   }
 
   /**
@@ -574,79 +580,81 @@ export class CDPClient {
       quality: options.quality,
       clip: options.clip,
       fromSurface: options.fromSurface !== false,
-    });
+    })
 
-    return result.data;
+    return result.data
   }
 
   /**
    * Get full accessibility tree
    */
   async getAccessibilityTree(): Promise<CDPAccessibilityNode | null> {
-    const result = await this.sendCommand<{ nodes: CDPAccessibilityNode[] }>('Accessibility.getFullAXTree');
-    
+    const result = await this.sendCommand<{ nodes: CDPAccessibilityNode[] }>(
+      'Accessibility.getFullAXTree'
+    )
+
     if (!result.nodes || result.nodes.length === 0) {
-      return null;
+      return null
     }
 
     // Build tree from flat list
-    const nodeMap = new Map<number, CDPAccessibilityNode>();
-    let rootNode: CDPAccessibilityNode | null = null;
+    const nodeMap = new Map<number, CDPAccessibilityNode>()
+    let rootNode: CDPAccessibilityNode | null = null
 
     result.nodes.forEach(node => {
-      nodeMap.set(node.nodeId, node);
+      nodeMap.set(node.nodeId, node)
       if (!node.parentId) {
-        rootNode = node;
+        rootNode = node
       }
-    });
+    })
 
     // Link children
     result.nodes.forEach(node => {
       if (node.parentId) {
-        const parent = nodeMap.get(node.parentId);
+        const parent = nodeMap.get(node.parentId)
         if (parent) {
           if (!parent.children) {
-            parent.children = [];
+            parent.children = []
           }
-          parent.children.push(node);
+          parent.children.push(node)
         }
       }
-    });
+    })
 
-    return rootNode;
+    return rootNode
   }
 
   /**
    * Query accessibility node by selector
    */
   async queryAccessibilityNode(selector: string): Promise<CDPAccessibilityNode | null> {
-    const tree = await this.getAccessibilityTree();
-    if (!tree) return null;
+    const tree = await this.getAccessibilityTree()
+    if (!tree) return null
 
     // Search recursively
     const search = (node: CDPAccessibilityNode): CDPAccessibilityNode | null => {
       // Match by name
       if (node.name?.toLowerCase().includes(selector.toLowerCase())) {
-        return node;
+        return node
       }
 
       // Match by role
       if (node.role?.toLowerCase() === selector.toLowerCase()) {
-        return node;
+        return node
       }
 
       // Search children
       if (node.children) {
         for (const child of node.children) {
-          const found = search(child);
-          if (found) return found;
+          const found = search(child)
+          if (found) return found
         }
       }
 
-      return null;
-    };
+      return null
+    }
 
-    return search(tree);
+    return search(tree)
   }
 
   /**
@@ -657,19 +665,19 @@ export class CDPClient {
       const result = await this.sendCommand<{ model: { contentQuad: number[] } }>(
         'DOM.getBoxModel',
         { backendNodeId }
-      );
+      )
 
       if (result.model && result.model.contentQuad) {
-        const quad = result.model.contentQuad;
+        const quad = result.model.contentQuad
         // Calculate center from quad (8 values: x1,y1, x2,y2, x3,y3, x4,y4)
-        const centerX = (quad[0] + quad[2] + quad[4] + quad[6]) / 4;
-        const centerY = (quad[1] + quad[3] + quad[5] + quad[7]) / 4;
-        return { x: centerX, y: centerY };
+        const centerX = (quad[0] + quad[2] + quad[4] + quad[6]) / 4
+        const centerY = (quad[1] + quad[3] + quad[5] + quad[7]) / 4
+        return { x: centerX, y: centerY }
       }
 
-      return null;
+      return null
     } catch {
-      return null;
+      return null
     }
   }
 
@@ -677,7 +685,7 @@ export class CDPClient {
    * Wait for specific time
    */
   async wait(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 
   /**
@@ -687,19 +695,19 @@ export class CDPClient {
     selector: string,
     options: { timeout?: number; interval?: number } = {}
   ): Promise<CDPAccessibilityNode | null> {
-    const timeout = options.timeout || 10000;
-    const interval = options.interval || 500;
-    const startTime = Date.now();
+    const timeout = options.timeout || 10000
+    const interval = options.interval || 500
+    const startTime = Date.now()
 
     while (Date.now() - startTime < timeout) {
-      const element = await this.queryAccessibilityNode(selector);
+      const element = await this.queryAccessibilityNode(selector)
       if (element) {
-        return element;
+        return element
       }
-      await this.wait(interval);
+      await this.wait(interval)
     }
 
-    return null;
+    return null
   }
 }
 
@@ -707,7 +715,7 @@ export class CDPClient {
  * Create CDP client with configuration
  */
 export function createCDPClient(config?: CDPSessionConfig): CDPClient {
-  return new CDPClient(config);
+  return new CDPClient(config)
 }
 
 /**
@@ -718,10 +726,10 @@ export async function isChromeAvailable(port: number = 9222): Promise<boolean> {
     const response = await fetch(`http://localhost:${port}/json/version`, {
       method: 'GET',
       signal: AbortSignal.timeout(2000),
-    });
-    return response.ok;
+    })
+    return response.ok
   } catch {
-    return false;
+    return false
   }
 }
 
@@ -730,8 +738,8 @@ export async function isChromeAvailable(port: number = 9222): Promise<boolean> {
  */
 export async function launchChromeWithDebugging(port: number = 9222): Promise<boolean> {
   try {
-    return await invoke('launch_chrome_debugging', { port });
+    return await invoke('launch_chrome_debugging', { port })
   } catch {
-    return false;
+    return false
   }
 }

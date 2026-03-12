@@ -8,9 +8,9 @@
  */
 export interface CaptureResult {
   /** Path to the saved screenshot file */
-  path: string;
+  path: string
   /** Unix timestamp in milliseconds when the capture was taken */
-  timestamp: number;
+  timestamp: number
 }
 
 /**
@@ -18,24 +18,24 @@ export interface CaptureResult {
  */
 export interface WindowInfo {
   /** Window title */
-  title: string;
+  title: string
   /** Process name */
-  processName: string;
+  processName: string
   /** Window bounds */
   bounds: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+    x: number
+    y: number
+    width: number
+    height: number
+  }
 }
 
 /**
  * Cursor position
  */
 export interface CursorPosition {
-  x: number;
-  y: number;
+  x: number
+  y: number
 }
 
 /**
@@ -43,15 +43,15 @@ export interface CursorPosition {
  */
 export interface FrameMetadata {
   /** Unique frame identifier */
-  id: string;
+  id: string
   /** Unix timestamp in milliseconds */
-  timestamp: number;
+  timestamp: number
   /** Relative path to the screenshot image (within session directory) */
-  imagePath: string;
+  imagePath: string
   /** Active window at time of capture */
-  activeWindow?: WindowInfo;
+  activeWindow?: WindowInfo
   /** Cursor position at time of capture */
-  cursorPosition?: CursorPosition;
+  cursorPosition?: CursorPosition
 }
 
 /**
@@ -59,17 +59,17 @@ export interface FrameMetadata {
  */
 export interface SessionManifest {
   /** Unique session identifier */
-  sessionId: string;
+  sessionId: string
   /** Session start time (Unix timestamp in ms) */
-  startTime: number;
+  startTime: number
   /** Session end time (Unix timestamp in ms) */
-  endTime?: number;
+  endTime?: number
   /** Capture interval in milliseconds */
-  intervalMs: number;
+  intervalMs: number
   /** All captured frames */
-  frames: FrameMetadata[];
+  frames: FrameMetadata[]
   /** Optional audio recording path */
-  audioPath?: string;
+  audioPath?: string
 }
 
 /**
@@ -77,15 +77,15 @@ export interface SessionManifest {
  */
 export interface CaptureFrame {
   /** Unique frame identifier */
-  id: string;
+  id: string
   /** Unix timestamp in milliseconds */
-  timestamp: number;
+  timestamp: number
   /** Path to the screenshot image */
-  imagePath: string;
+  imagePath: string
   /** Active window at time of capture */
-  activeWindow?: WindowInfo;
+  activeWindow?: WindowInfo
   /** Cursor position at time of capture */
-  cursorPosition?: CursorPosition;
+  cursorPosition?: CursorPosition
 }
 
 /**
@@ -93,16 +93,15 @@ export interface CaptureFrame {
  */
 export interface CaptureSession {
   /** Unique session identifier */
-  id: string;
+  id: string
   /** Full path to session directory */
-  directory: string;
+  directory: string
   /** Session start time (Unix timestamp in ms) */
-  startTime: number;
+  startTime: number
   /** Session end time (Unix timestamp in ms) */
-  endTime?: number;
+  endTime?: number
   /** All captured frames */
-  frames: CaptureFrame[];
+  frames: CaptureFrame[]
   /** Capture interval in milliseconds */
-  intervalMs: number;
+  intervalMs: number
 }
-

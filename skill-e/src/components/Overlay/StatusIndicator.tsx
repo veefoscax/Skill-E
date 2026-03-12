@@ -1,9 +1,9 @@
 /**
  * Status Indicator Component
- * 
+ *
  * Displays a minimal, non-intrusive status indicator in the overlay.
  * Shows a tiny red dot in the top-right corner when recording is active.
- * 
+ *
  * Features:
  * - Minimal design (8px red dot)
  * - Subtle pulsing animation
@@ -13,18 +13,18 @@
  *   - Red: Recording active
  *   - Yellow/Orange: Paused
  *   - Hidden: Not recording
- * 
+ *
  * Requirements: FR-4.26
  */
 
-import { memo } from 'react';
+import { memo } from 'react'
 
-export type RecordingStatus = 'recording' | 'paused' | 'stopped';
+export type RecordingStatus = 'recording' | 'paused' | 'stopped'
 
 interface StatusIndicatorProps {
-  status: RecordingStatus;
-  visible?: boolean;
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+  status: RecordingStatus
+  visible?: boolean
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
 }
 
 /**
@@ -38,12 +38,12 @@ export const StatusIndicator = memo(function StatusIndicator({
 }: StatusIndicatorProps) {
   // Don't render if not visible or stopped
   if (!visible || status === 'stopped') {
-    return null;
+    return null
   }
 
   // Determine color based on status
-  const color = status === 'recording' ? '#EF4444' : '#FB923C'; // Red or Orange
-  const label = status === 'recording' ? 'Recording' : 'Paused';
+  const color = status === 'recording' ? '#EF4444' : '#FB923C' // Red or Orange
+  const label = status === 'recording' ? 'Recording' : 'Paused'
 
   // Position styles
   const positionStyles = {
@@ -51,7 +51,7 @@ export const StatusIndicator = memo(function StatusIndicator({
     'top-left': { top: '16px', left: '16px' },
     'bottom-right': { bottom: '16px', right: '16px' },
     'bottom-left': { bottom: '16px', left: '16px' },
-  };
+  }
 
   return (
     <div
@@ -125,5 +125,5 @@ export const StatusIndicator = memo(function StatusIndicator({
         }
       `}</style>
     </div>
-  );
-});
+  )
+})

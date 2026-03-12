@@ -1,184 +1,184 @@
 /**
  * Rollback Manager - State Management and Rollback Support
- * 
+ *
  * Provides rollback capability for destructive actions by saving state
  * before execution and offering rollback options on failure.
- * 
+ *
  * Requirements: FR-10.10
  */
 
-import type { SkillStep } from './skill-parser';
+import type { SkillStep } from './skill-parser'
 
 /**
  * Rollback action types
  */
-export type RollbackActionType = 
-  | 'dom_change'      // DOM modification (text change, attribute change)
-  | 'navigation'      // Page navigation
-  | 'form_submit'     // Form submission
-  | 'delete'          // Delete action
-  | 'file_upload'     // File upload
-  | 'storage_change'  // LocalStorage/SessionStorage change
-  | 'unknown';        // Unknown or unsupported action
+export type RollbackActionType =
+  | 'dom_change' // DOM modification (text change, attribute change)
+  | 'navigation' // Page navigation
+  | 'form_submit' // Form submission
+  | 'delete' // Delete action
+  | 'file_upload' // File upload
+  | 'storage_change' // LocalStorage/SessionStorage change
+  | 'unknown' // Unknown or unsupported action
 
 /**
  * Saved state for rollback
  */
 export interface SavedState {
   /** Unique state identifier */
-  id: string;
-  
+  id: string
+
   /** Step ID this state is associated with */
-  stepId: string;
-  
+  stepId: string
+
   /** Action type */
-  actionType: RollbackActionType;
-  
+  actionType: RollbackActionType
+
   /** Timestamp when state was saved */
-  timestamp: number;
-  
+  timestamp: number
+
   /** Whether this action is reversible */
-  isReversible: boolean;
-  
+  isReversible: boolean
+
   /** State data (varies by action type) */
-  data: StateData;
-  
+  data: StateData
+
   /** Human-readable description */
-  description: string;
+  description: string
 }
 
 /**
  * State data union type
  */
-export type StateData = 
+export type StateData =
   | DOMChangeState
   | NavigationState
   | FormSubmitState
   | DeleteState
   | FileUploadState
   | StorageChangeState
-  | UnknownState;
+  | UnknownState
 
 /**
  * DOM change state (text, attributes, etc.)
  */
 export interface DOMChangeState {
-  type: 'dom_change';
-  
+  type: 'dom_change'
+
   /** Element selector */
-  selector: string;
-  
+  selector: string
+
   /** Previous value (text content, attribute value, etc.) */
-  previousValue: string;
-  
+  previousValue: string
+
   /** Property that was changed (textContent, value, attribute name) */
-  property: string;
-  
+  property: string
+
   /** Element snapshot (for verification) */
   elementSnapshot?: {
-    tagName: string;
-    id?: string;
-    className?: string;
-  };
+    tagName: string
+    id?: string
+    className?: string
+  }
 }
 
 /**
  * Navigation state (URL change)
  */
 export interface NavigationState {
-  type: 'navigation';
-  
+  type: 'navigation'
+
   /** Previous URL */
-  previousUrl: string;
-  
+  previousUrl: string
+
   /** Previous page title */
-  previousTitle?: string;
-  
+  previousTitle?: string
+
   /** Scroll position */
-  scrollPosition?: { x: number; y: number };
-  
+  scrollPosition?: { x: number; y: number }
+
   /** History state */
-  historyState?: any;
+  historyState?: any
 }
 
 /**
  * Form submit state
  */
 export interface FormSubmitState {
-  type: 'form_submit';
-  
+  type: 'form_submit'
+
   /** Form selector */
-  formSelector: string;
-  
+  formSelector: string
+
   /** Form data before submission */
-  formData: Record<string, string>;
-  
+  formData: Record<string, string>
+
   /** Current URL (before submission) */
-  currentUrl: string;
+  currentUrl: string
 }
 
 /**
  * Delete action state
  */
 export interface DeleteState {
-  type: 'delete';
-  
+  type: 'delete'
+
   /** Element selector */
-  selector: string;
-  
+  selector: string
+
   /** Deleted element HTML */
-  deletedHTML: string;
-  
+  deletedHTML: string
+
   /** Parent selector (for restoration) */
-  parentSelector: string;
-  
+  parentSelector: string
+
   /** Position in parent (for restoration) */
-  positionInParent: number;
+  positionInParent: number
 }
 
 /**
  * File upload state
  */
 export interface FileUploadState {
-  type: 'file_upload';
-  
+  type: 'file_upload'
+
   /** Input selector */
-  inputSelector: string;
-  
+  inputSelector: string
+
   /** Previous file name (if any) */
-  previousFileName?: string;
-  
+  previousFileName?: string
+
   /** Note: Cannot restore actual file, only clear the input */
-  canOnlyClear: true;
+  canOnlyClear: true
 }
 
 /**
  * Storage change state (localStorage, sessionStorage)
  */
 export interface StorageChangeState {
-  type: 'storage_change';
-  
+  type: 'storage_change'
+
   /** Storage type */
-  storageType: 'localStorage' | 'sessionStorage';
-  
+  storageType: 'localStorage' | 'sessionStorage'
+
   /** Key that was changed */
-  key: string;
-  
+  key: string
+
   /** Previous value */
-  previousValue: string | null;
-  
+  previousValue: string | null
+
   /** Operation type */
-  operation: 'set' | 'remove';
+  operation: 'set' | 'remove'
 }
 
 /**
  * Unknown state (cannot rollback)
  */
 export interface UnknownState {
-  type: 'unknown';
-  
+  type: 'unknown'
+
   /** Reason why state cannot be saved */
-  reason: string;
+  reason: string
 }
 
 /**
@@ -186,67 +186,67 @@ export interface UnknownState {
  */
 export interface RollbackResult {
   /** Whether rollback was successful */
-  success: boolean;
-  
+  success: boolean
+
   /** Error message (if failed) */
-  error?: string;
-  
+  error?: string
+
   /** State that was rolled back */
-  state?: SavedState;
-  
+  state?: SavedState
+
   /** Verification result */
-  verified?: boolean;
-  
+  verified?: boolean
+
   /** Additional details */
-  details?: string;
+  details?: string
 }
 
 /**
  * Rollback Manager
- * 
+ *
  * Manages state snapshots and rollback operations for skill execution.
  */
 export class RollbackManager {
   /** Saved states stack (most recent first) */
-  private stateStack: SavedState[] = [];
-  
+  private stateStack: SavedState[] = []
+
   /** Maximum number of states to keep */
-  private maxStates: number = 50;
-  
+  private maxStates: number = 50
+
   /** Target window for DOM operations */
-  private targetWindow?: Window;
+  private targetWindow?: Window
 
   /**
    * Create a new rollback manager
-   * 
+   *
    * @param targetWindow - Target window for DOM operations (optional)
    * @param maxStates - Maximum number of states to keep (default: 50)
    */
   constructor(targetWindow?: Window, maxStates: number = 50) {
-    this.targetWindow = targetWindow;
-    this.maxStates = maxStates;
+    this.targetWindow = targetWindow
+    this.maxStates = maxStates
   }
 
   /**
    * Save state before executing a step
-   * 
+   *
    * @param step - Skill step about to be executed
    * @returns Saved state (or null if not reversible)
    */
   async saveState(step: SkillStep): Promise<SavedState | null> {
     // Determine if this action is destructive/reversible
-    const actionType = this.classifyAction(step);
-    const isReversible = this.isActionReversible(actionType, step);
-    
+    const actionType = this.classifyAction(step)
+    const isReversible = this.isActionReversible(actionType, step)
+
     // If not reversible, don't save state
     if (!isReversible) {
-      return null;
+      return null
     }
-    
+
     try {
       // Capture state based on action type
-      const data = await this.captureState(step, actionType);
-      
+      const data = await this.captureState(step, actionType)
+
       const savedState: SavedState = {
         id: `state-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         stepId: step.id,
@@ -255,20 +255,20 @@ export class RollbackManager {
         isReversible,
         data,
         description: this.generateStateDescription(step, actionType),
-      };
-      
+      }
+
       // Add to stack
-      this.stateStack.unshift(savedState);
-      
+      this.stateStack.unshift(savedState)
+
       // Trim stack if too large
       if (this.stateStack.length > this.maxStates) {
-        this.stateStack = this.stateStack.slice(0, this.maxStates);
+        this.stateStack = this.stateStack.slice(0, this.maxStates)
       }
-      
-      return savedState;
+
+      return savedState
     } catch (error) {
-      console.error('Failed to save state:', error);
-      return null;
+      console.error('Failed to save state:', error)
+      return null
     }
   }
 
@@ -276,44 +276,48 @@ export class RollbackManager {
    * Classify action type for rollback purposes
    */
   private classifyAction(step: SkillStep): RollbackActionType {
-    const instruction = step.instruction.toLowerCase();
-    
+    const instruction = step.instruction.toLowerCase()
+
     // Check for delete/remove actions
     if (
       instruction.includes('delete') ||
       instruction.includes('remove') ||
       instruction.includes('clear')
     ) {
-      return 'delete';
+      return 'delete'
     }
-    
+
     // Check for navigation
-    if (step.actionType === 'navigate' || instruction.includes('navigate') || instruction.includes('go to')) {
-      return 'navigation';
+    if (
+      step.actionType === 'navigate' ||
+      instruction.includes('navigate') ||
+      instruction.includes('go to')
+    ) {
+      return 'navigation'
     }
-    
+
     // Check for form submission
     if (instruction.includes('submit') || instruction.includes('send form')) {
-      return 'form_submit';
+      return 'form_submit'
     }
-    
+
     // Check for file upload
     if (instruction.includes('upload') || instruction.includes('attach file')) {
-      return 'file_upload';
+      return 'file_upload'
     }
-    
+
     // Check for typing (DOM change)
     if (step.actionType === 'type') {
-      return 'dom_change';
+      return 'dom_change'
     }
-    
+
     // Check for storage operations
     if (instruction.includes('localstorage') || instruction.includes('sessionstorage')) {
-      return 'storage_change';
+      return 'storage_change'
     }
-    
+
     // Default to unknown
-    return 'unknown';
+    return 'unknown'
   }
 
   /**
@@ -323,32 +327,32 @@ export class RollbackManager {
     switch (actionType) {
       case 'dom_change':
         // Reversible if we have a selector
-        return !!step.target?.selector;
-      
+        return !!step.target?.selector
+
       case 'navigation':
         // Reversible (can navigate back)
-        return true;
-      
+        return true
+
       case 'form_submit':
         // Partially reversible (can navigate back, but submission happened)
-        return true;
-      
+        return true
+
       case 'delete':
         // Reversible if we can capture the element
-        return !!step.target?.selector;
-      
+        return !!step.target?.selector
+
       case 'file_upload':
         // Partially reversible (can clear input, but cannot restore file)
-        return true;
-      
+        return true
+
       case 'storage_change':
         // Reversible
-        return true;
-      
+        return true
+
       case 'unknown':
       default:
         // Not reversible
-        return false;
+        return false
     }
   }
 
@@ -356,33 +360,33 @@ export class RollbackManager {
    * Capture state based on action type
    */
   private async captureState(step: SkillStep, actionType: RollbackActionType): Promise<StateData> {
-    const win = this.targetWindow || window;
-    
+    const win = this.targetWindow || window
+
     switch (actionType) {
       case 'dom_change':
-        return await this.captureDOMChangeState(step, win);
-      
+        return await this.captureDOMChangeState(step, win)
+
       case 'navigation':
-        return this.captureNavigationState(win);
-      
+        return this.captureNavigationState(win)
+
       case 'form_submit':
-        return await this.captureFormSubmitState(step, win);
-      
+        return await this.captureFormSubmitState(step, win)
+
       case 'delete':
-        return await this.captureDeleteState(step, win);
-      
+        return await this.captureDeleteState(step, win)
+
       case 'file_upload':
-        return this.captureFileUploadState(step);
-      
+        return this.captureFileUploadState(step)
+
       case 'storage_change':
-        return this.captureStorageChangeState(step, win);
-      
+        return this.captureStorageChangeState(step, win)
+
       case 'unknown':
       default:
         return {
           type: 'unknown',
           reason: 'Action type not supported for rollback',
-        };
+        }
     }
   }
 
@@ -390,44 +394,44 @@ export class RollbackManager {
    * Capture DOM change state
    */
   private async captureDOMChangeState(step: SkillStep, win: Window): Promise<DOMChangeState> {
-    const selector = step.target?.selector || '';
-    const element = win.document.querySelector(selector);
-    
+    const selector = step.target?.selector || ''
+    const element = win.document.querySelector(selector)
+
     if (!element) {
-      throw new Error(`Element not found: ${selector}`);
+      throw new Error(`Element not found: ${selector}`)
     }
-    
+
     // Determine what property will be changed
-    let property = 'value';
-    let previousValue = '';
-    
+    let property = 'value'
+    let previousValue = ''
+
     if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-      property = 'value';
-      previousValue = element.value;
+      property = 'value'
+      previousValue = element.value
     } else if (element instanceof HTMLSelectElement) {
-      property = 'value';
-      previousValue = element.value;
+      property = 'value'
+      previousValue = element.value
     } else {
-      property = 'textContent';
-      previousValue = element.textContent || '';
+      property = 'textContent'
+      previousValue = element.textContent || ''
     }
-    
+
     // Safely get element properties for snapshot
-    let elementId: string | undefined;
-    let elementClassName: string | undefined;
-    
+    let elementId: string | undefined
+    let elementClassName: string | undefined
+
     try {
-      elementId = element.id || undefined;
+      elementId = element.id || undefined
     } catch (e) {
       // Ignore errors accessing id
     }
-    
+
     try {
-      elementClassName = element.className || undefined;
+      elementClassName = element.className || undefined
     } catch (e) {
       // Ignore errors accessing className
     }
-    
+
     return {
       type: 'dom_change',
       selector,
@@ -438,7 +442,7 @@ export class RollbackManager {
         id: elementId,
         className: elementClassName,
       },
-    };
+    }
   }
 
   /**
@@ -454,82 +458,82 @@ export class RollbackManager {
         y: win.scrollY,
       },
       historyState: win.history.state,
-    };
+    }
   }
 
   /**
    * Capture form submit state
    */
   private async captureFormSubmitState(step: SkillStep, win: Window): Promise<FormSubmitState> {
-    const formSelector = step.target?.selector || 'form';
-    const form = win.document.querySelector(formSelector);
-    
+    const formSelector = step.target?.selector || 'form'
+    const form = win.document.querySelector(formSelector)
+
     if (!form || !(form instanceof HTMLFormElement)) {
-      throw new Error(`Form not found: ${formSelector}`);
+      throw new Error(`Form not found: ${formSelector}`)
     }
-    
+
     // Capture form data
-    const formData: Record<string, string> = {};
-    
+    const formData: Record<string, string> = {}
+
     try {
-      const formDataObj = new FormData(form);
-      
+      const formDataObj = new FormData(form)
+
       formDataObj.forEach((value, key) => {
-        formData[key] = value.toString();
-      });
+        formData[key] = value.toString()
+      })
     } catch (e) {
       // If FormData fails, try to manually extract form fields
-      const inputs = form.querySelectorAll('input, textarea, select');
+      const inputs = form.querySelectorAll('input, textarea, select')
       inputs.forEach((input: any) => {
         if (input.name) {
-          formData[input.name] = input.value || '';
+          formData[input.name] = input.value || ''
         }
-      });
+      })
     }
-    
+
     return {
       type: 'form_submit',
       formSelector,
       formData,
       currentUrl: win.location.href,
-    };
+    }
   }
 
   /**
    * Capture delete state
    */
   private async captureDeleteState(step: SkillStep, win: Window): Promise<DeleteState> {
-    const selector = step.target?.selector || '';
-    const element = win.document.querySelector(selector);
-    
+    const selector = step.target?.selector || ''
+    const element = win.document.querySelector(selector)
+
     if (!element) {
-      throw new Error(`Element not found: ${selector}`);
+      throw new Error(`Element not found: ${selector}`)
     }
-    
-    const parent = element.parentElement;
+
+    const parent = element.parentElement
     if (!parent) {
-      throw new Error('Element has no parent');
+      throw new Error('Element has no parent')
     }
-    
+
     // Find position in parent
-    const siblings = Array.from(parent.children);
-    const positionInParent = siblings.indexOf(element);
-    
+    const siblings = Array.from(parent.children)
+    const positionInParent = siblings.indexOf(element)
+
     // Generate parent selector (simple approach)
-    let parentSelector = parent.tagName.toLowerCase();
+    let parentSelector = parent.tagName.toLowerCase()
     if (parent.id) {
-      parentSelector += `#${parent.id}`;
+      parentSelector += `#${parent.id}`
     } else if (parent.className) {
-      parentSelector += `.${parent.className.split(' ')[0]}`;
+      parentSelector += `.${parent.className.split(' ')[0]}`
     }
-    
+
     return {
       type: 'delete',
       selector,
       deletedHTML: element.outerHTML,
       parentSelector,
       positionInParent,
-    };
+    }
   }
 
   /**
@@ -541,7 +545,7 @@ export class RollbackManager {
       inputSelector: step.target?.selector || 'input[type="file"]',
       previousFileName: undefined, // Cannot access file name for security reasons
       canOnlyClear: true,
-    };
+    }
   }
 
   /**
@@ -549,23 +553,24 @@ export class RollbackManager {
    */
   private captureStorageChangeState(step: SkillStep, win: Window): StorageChangeState {
     // Parse instruction to determine storage type and key
-    const instruction = step.instruction.toLowerCase();
-    const storageType: 'localStorage' | 'sessionStorage' = 
-      instruction.includes('sessionstorage') ? 'sessionStorage' : 'localStorage';
-    
+    const instruction = step.instruction.toLowerCase()
+    const storageType: 'localStorage' | 'sessionStorage' = instruction.includes('sessionstorage')
+      ? 'sessionStorage'
+      : 'localStorage'
+
     // Extract key from target or instruction
-    const key = step.target?.text || '';
-    
-    const storage = storageType === 'localStorage' ? win.localStorage : win.sessionStorage;
-    const previousValue = storage.getItem(key);
-    
+    const key = step.target?.text || ''
+
+    const storage = storageType === 'localStorage' ? win.localStorage : win.sessionStorage
+    const previousValue = storage.getItem(key)
+
     return {
       type: 'storage_change',
       storageType,
       key,
       previousValue,
       operation: 'set',
-    };
+    }
   }
 
   /**
@@ -574,102 +579,102 @@ export class RollbackManager {
   private generateStateDescription(step: SkillStep, actionType: RollbackActionType): string {
     switch (actionType) {
       case 'dom_change':
-        return `Text change in ${step.target?.selector || 'element'}`;
-      
+        return `Text change in ${step.target?.selector || 'element'}`
+
       case 'navigation':
-        return `Navigation to ${step.target?.text || 'new page'}`;
-      
+        return `Navigation to ${step.target?.text || 'new page'}`
+
       case 'form_submit':
-        return `Form submission: ${step.instruction}`;
-      
+        return `Form submission: ${step.instruction}`
+
       case 'delete':
-        return `Delete ${step.target?.selector || 'element'}`;
-      
+        return `Delete ${step.target?.selector || 'element'}`
+
       case 'file_upload':
-        return `File upload: ${step.instruction}`;
-      
+        return `File upload: ${step.instruction}`
+
       case 'storage_change':
-        return `Storage change: ${step.instruction}`;
-      
+        return `Storage change: ${step.instruction}`
+
       default:
-        return step.instruction;
+        return step.instruction
     }
   }
 
   /**
    * Rollback to a previous state
-   * 
+   *
    * @param stateId - ID of the state to rollback to
    * @returns Rollback result
    */
   async rollback(stateId: string): Promise<RollbackResult> {
-    const state = this.stateStack.find(s => s.id === stateId);
-    
+    const state = this.stateStack.find(s => s.id === stateId)
+
     if (!state) {
       return {
         success: false,
         error: `State not found: ${stateId}`,
-      };
+      }
     }
-    
+
     if (!state.isReversible) {
       return {
         success: false,
         error: 'This action is not reversible',
         state,
-      };
+      }
     }
-    
+
     try {
-      const win = this.targetWindow || window;
-      
+      const win = this.targetWindow || window
+
       switch (state.data.type) {
         case 'dom_change':
-          await this.rollbackDOMChange(state.data, win);
-          break;
-        
+          await this.rollbackDOMChange(state.data, win)
+          break
+
         case 'navigation':
-          await this.rollbackNavigation(state.data, win);
-          break;
-        
+          await this.rollbackNavigation(state.data, win)
+          break
+
         case 'form_submit':
-          await this.rollbackFormSubmit(state.data, win);
-          break;
-        
+          await this.rollbackFormSubmit(state.data, win)
+          break
+
         case 'delete':
-          await this.rollbackDelete(state.data, win);
-          break;
-        
+          await this.rollbackDelete(state.data, win)
+          break
+
         case 'file_upload':
-          await this.rollbackFileUpload(state.data, win);
-          break;
-        
+          await this.rollbackFileUpload(state.data, win)
+          break
+
         case 'storage_change':
-          await this.rollbackStorageChange(state.data, win);
-          break;
-        
+          await this.rollbackStorageChange(state.data, win)
+          break
+
         default:
-          throw new Error('Unsupported state type for rollback');
+          throw new Error('Unsupported state type for rollback')
       }
-      
+
       // Remove this state and all states after it from the stack
-      const stateIndex = this.stateStack.findIndex(s => s.id === stateId);
+      const stateIndex = this.stateStack.findIndex(s => s.id === stateId)
       if (stateIndex >= 0) {
-        this.stateStack = this.stateStack.slice(stateIndex + 1);
+        this.stateStack = this.stateStack.slice(stateIndex + 1)
       }
-      
+
       return {
         success: true,
         state,
         verified: true,
         details: `Successfully rolled back: ${state.description}`,
-      };
+      }
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         state,
-      };
+      }
     }
   }
 
@@ -677,24 +682,24 @@ export class RollbackManager {
    * Rollback DOM change
    */
   private async rollbackDOMChange(state: DOMChangeState, win: Window): Promise<void> {
-    const element = win.document.querySelector(state.selector);
-    
+    const element = win.document.querySelector(state.selector)
+
     if (!element) {
-      throw new Error(`Element not found: ${state.selector}`);
+      throw new Error(`Element not found: ${state.selector}`)
     }
-    
+
     // Restore previous value
     if (state.property === 'value') {
       if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-        element.value = state.previousValue;
+        element.value = state.previousValue
       } else if (element instanceof HTMLSelectElement) {
-        element.value = state.previousValue;
+        element.value = state.previousValue
       }
     } else if (state.property === 'textContent') {
-      element.textContent = state.previousValue;
+      element.textContent = state.previousValue
     } else {
       // Generic attribute
-      element.setAttribute(state.property, state.previousValue);
+      element.setAttribute(state.property, state.previousValue)
     }
   }
 
@@ -703,14 +708,14 @@ export class RollbackManager {
    */
   private async rollbackNavigation(state: NavigationState, win: Window): Promise<void> {
     // Navigate back to previous URL
-    win.history.back();
-    
+    win.history.back()
+
     // Wait for navigation to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
     // Restore scroll position
     if (state.scrollPosition) {
-      win.scrollTo(state.scrollPosition.x, state.scrollPosition.y);
+      win.scrollTo(state.scrollPosition.x, state.scrollPosition.y)
     }
   }
 
@@ -719,20 +724,20 @@ export class RollbackManager {
    */
   private async rollbackFormSubmit(state: FormSubmitState, win: Window): Promise<void> {
     // Navigate back to the form page
-    win.history.back();
-    
+    win.history.back()
+
     // Wait for navigation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
     // Restore form data
-    const form = win.document.querySelector(state.formSelector);
+    const form = win.document.querySelector(state.formSelector)
     if (form && form instanceof HTMLFormElement) {
       Object.entries(state.formData).forEach(([key, value]) => {
-        const input = form.elements.namedItem(key);
+        const input = form.elements.namedItem(key)
         if (input && (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) {
-          input.value = value;
+          input.value = value
         }
-      });
+      })
     }
   }
 
@@ -740,26 +745,26 @@ export class RollbackManager {
    * Rollback delete
    */
   private async rollbackDelete(state: DeleteState, win: Window): Promise<void> {
-    const parent = win.document.querySelector(state.parentSelector);
-    
+    const parent = win.document.querySelector(state.parentSelector)
+
     if (!parent) {
-      throw new Error(`Parent element not found: ${state.parentSelector}`);
+      throw new Error(`Parent element not found: ${state.parentSelector}`)
     }
-    
+
     // Create element from HTML
-    const temp = win.document.createElement('div');
-    temp.innerHTML = state.deletedHTML;
-    const restoredElement = temp.firstElementChild;
-    
+    const temp = win.document.createElement('div')
+    temp.innerHTML = state.deletedHTML
+    const restoredElement = temp.firstElementChild
+
     if (!restoredElement) {
-      throw new Error('Failed to restore element from HTML');
+      throw new Error('Failed to restore element from HTML')
     }
-    
+
     // Insert at original position
     if (state.positionInParent >= parent.children.length) {
-      parent.appendChild(restoredElement);
+      parent.appendChild(restoredElement)
     } else {
-      parent.insertBefore(restoredElement, parent.children[state.positionInParent]);
+      parent.insertBefore(restoredElement, parent.children[state.positionInParent])
     }
   }
 
@@ -767,34 +772,34 @@ export class RollbackManager {
    * Rollback file upload
    */
   private async rollbackFileUpload(state: FileUploadState, win: Window): Promise<void> {
-    const input = win.document.querySelector(state.inputSelector);
-    
+    const input = win.document.querySelector(state.inputSelector)
+
     if (!input || !(input instanceof HTMLInputElement)) {
-      throw new Error(`File input not found: ${state.inputSelector}`);
+      throw new Error(`File input not found: ${state.inputSelector}`)
     }
-    
+
     // Clear the file input (cannot restore original file for security reasons)
-    input.value = '';
+    input.value = ''
   }
 
   /**
    * Rollback storage change
    */
   private async rollbackStorageChange(state: StorageChangeState, win: Window): Promise<void> {
-    const storage = state.storageType === 'localStorage' ? win.localStorage : win.sessionStorage;
-    
+    const storage = state.storageType === 'localStorage' ? win.localStorage : win.sessionStorage
+
     if (state.previousValue === null) {
       // Key didn't exist before, remove it
-      storage.removeItem(state.key);
+      storage.removeItem(state.key)
     } else {
       // Restore previous value
-      storage.setItem(state.key, state.previousValue);
+      storage.setItem(state.key, state.previousValue)
     }
   }
 
   /**
    * Rollback the most recent state
-   * 
+   *
    * @returns Rollback result
    */
   async rollbackLast(): Promise<RollbackResult> {
@@ -802,85 +807,85 @@ export class RollbackManager {
       return {
         success: false,
         error: 'No states to rollback',
-      };
+      }
     }
-    
-    const lastState = this.stateStack[0];
-    return this.rollback(lastState.id);
+
+    const lastState = this.stateStack[0]
+    return this.rollback(lastState.id)
   }
 
   /**
    * Rollback to a specific step
-   * 
+   *
    * @param stepId - Step ID to rollback to
    * @returns Rollback result
    */
   async rollbackToStep(stepId: string): Promise<RollbackResult> {
-    const state = this.stateStack.find(s => s.stepId === stepId);
-    
+    const state = this.stateStack.find(s => s.stepId === stepId)
+
     if (!state) {
       return {
         success: false,
         error: `No state found for step: ${stepId}`,
-      };
+      }
     }
-    
-    return this.rollback(state.id);
+
+    return this.rollback(state.id)
   }
 
   /**
    * Get all saved states
-   * 
+   *
    * @returns Array of saved states
    */
   getStates(): SavedState[] {
-    return [...this.stateStack];
+    return [...this.stateStack]
   }
 
   /**
    * Get state by ID
-   * 
+   *
    * @param stateId - State ID
    * @returns Saved state or undefined
    */
   getState(stateId: string): SavedState | undefined {
-    return this.stateStack.find(s => s.id === stateId);
+    return this.stateStack.find(s => s.id === stateId)
   }
 
   /**
    * Get state for a specific step
-   * 
+   *
    * @param stepId - Step ID
    * @returns Saved state or undefined
    */
   getStateForStep(stepId: string): SavedState | undefined {
-    return this.stateStack.find(s => s.stepId === stepId);
+    return this.stateStack.find(s => s.stepId === stepId)
   }
 
   /**
    * Check if a step has a saved state
-   * 
+   *
    * @param stepId - Step ID
    * @returns True if state exists
    */
   hasStateForStep(stepId: string): boolean {
-    return this.stateStack.some(s => s.stepId === stepId);
+    return this.stateStack.some(s => s.stepId === stepId)
   }
 
   /**
    * Clear all saved states
    */
   clearStates(): void {
-    this.stateStack = [];
+    this.stateStack = []
   }
 
   /**
    * Set target window for DOM operations
-   * 
+   *
    * @param targetWindow - Target window
    */
   setTargetWindow(targetWindow: Window): void {
-    this.targetWindow = targetWindow;
+    this.targetWindow = targetWindow
   }
 
   /**
@@ -893,33 +898,30 @@ export class RollbackManager {
       oldestState: this.stateStack[this.stateStack.length - 1],
       newestState: this.stateStack[0],
       statesByType: this.getStatesByType(),
-    };
+    }
   }
 
   /**
    * Get states grouped by type
    */
   private getStatesByType(): Record<RollbackActionType, number> {
-    const counts: Record<string, number> = {};
-    
+    const counts: Record<string, number> = {}
+
     this.stateStack.forEach(state => {
-      counts[state.actionType] = (counts[state.actionType] || 0) + 1;
-    });
-    
-    return counts as Record<RollbackActionType, number>;
+      counts[state.actionType] = (counts[state.actionType] || 0) + 1
+    })
+
+    return counts as Record<RollbackActionType, number>
   }
 }
 
 /**
  * Create a new rollback manager
- * 
+ *
  * @param targetWindow - Target window for DOM operations (optional)
  * @param maxStates - Maximum number of states to keep (default: 50)
  * @returns Rollback manager instance
  */
-export function createRollbackManager(
-  targetWindow?: Window,
-  maxStates?: number
-): RollbackManager {
-  return new RollbackManager(targetWindow, maxStates);
+export function createRollbackManager(targetWindow?: Window, maxStates?: number): RollbackManager {
+  return new RollbackManager(targetWindow, maxStates)
 }

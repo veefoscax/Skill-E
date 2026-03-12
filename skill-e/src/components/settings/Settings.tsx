@@ -1,34 +1,46 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   useSettingsStore,
   WHISPER_MODEL_INFO,
   type WhisperModel,
-  type LLMProvider,
-  type TranscriptionMode,
-  LLM_DEFAULTS
-} from '@/stores/settings';
-import { validateWhisperApiKey } from '@/lib/whisper';
-import { validateClaudeApiKey } from '@/lib/claude-api';
-import { checkComputeCapability } from '@/lib/whisper-local';
-import { AudioLevelMeter } from '@/components/AudioLevelMeter';
-import { Loader2, Check, X, Eye, EyeOff, Cloud, HardDrive, Cpu, Zap, ChevronDown, Mic, MicOff, FolderOpen, Settings2 } from 'lucide-react';
+} from '@/stores/settings'
+import { validateWhisperApiKey } from '@/lib/whisper'
+import { validateClaudeApiKey } from '@/lib/claude-api'
+import { checkComputeCapability } from '@/lib/whisper-local'
+import { AudioLevelMeter } from '@/components/AudioLevelMeter'
+import {
+  Loader2,
+  Check,
+  X,
+  Eye,
+  EyeOff,
+  Cloud,
+  HardDrive,
+  Cpu,
+  Zap,
+  ChevronDown,
+  Mic,
+  MicOff,
+  FolderOpen,
+  Settings2,
+} from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { open } from '@tauri-apps/plugin-dialog';
-import { LLMConfiguration } from './LLMConfiguration';
-import { DebugPanel } from './DebugPanel';
+} from '@/components/ui/dropdown-menu'
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import { open } from '@tauri-apps/plugin-dialog'
+import { LLMConfiguration } from './LLMConfiguration'
+import { DebugPanel } from './DebugPanel'
 
 /**
  * Settings Component (Compact)
- * 
+ *
  * Provides compact UI for configuring application settings.
  * Designed for small window without system decorations.
  */
@@ -57,161 +69,170 @@ export function Settings() {
     setLlmBaseUrl,
     llmModel,
     setLlmModel,
-  } = useSettingsStore();
+  } = useSettingsStore()
 
-  const [devices, setDevices] = useState<{ deviceId: string, label: string }[]>([]);
+  const [devices, setDevices] = useState<{ deviceId: string; label: string }[]>([])
 
   // Enumerate audio devices
   useEffect(() => {
     const updateDevices = () => {
       navigator.mediaDevices.enumerateDevices().then(devs => {
-        const inputs = devs.filter(d => d.kind === 'audioinput');
-        setDevices(inputs.map(d => ({
-          deviceId: d.deviceId,
-          label: d.label || `Microphone ${d.deviceId.slice(0, 5)}`
-        })));
-      });
-    };
-    updateDevices();
-    navigator.mediaDevices.addEventListener('devicechange', updateDevices);
-    return () => navigator.mediaDevices.removeEventListener('devicechange', updateDevices);
-  }, []);
+        const inputs = devs.filter(d => d.kind === 'audioinput')
+        setDevices(
+          inputs.map(d => ({
+            deviceId: d.deviceId,
+            label: d.label || `Microphone ${d.deviceId.slice(0, 5)}`,
+          }))
+        )
+      })
+    }
+    updateDevices()
+    navigator.mediaDevices.addEventListener('devicechange', updateDevices)
+    return () => navigator.mediaDevices.removeEventListener('devicechange', updateDevices)
+  }, [])
 
-  const [apiKeyInput, setApiKeyInput] = useState(whisperApiKey);
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationStatus, setValidationStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState(whisperApiKey)
+  const [isValidating, setIsValidating] = useState(false)
+  const [validationStatus, setValidationStatus] = useState<'idle' | 'valid' | 'invalid'>('idle')
+  const [showApiKey, setShowApiKey] = useState(false)
 
   // Claude API Key State
-  const [claudeApiKeyInput, setClaudeApiKeyInput] = useState(claudeApiKey);
-  const [isValidatingClaude, setIsValidatingClaude] = useState(false);
-  const [claudeValidationStatus, setClaudeValidationStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
-  const [showClaudeApiKey, setShowClaudeApiKey] = useState(false);
+  const [claudeApiKeyInput, setClaudeApiKeyInput] = useState(claudeApiKey)
+  const [isValidatingClaude, setIsValidatingClaude] = useState(false)
+  const [claudeValidationStatus, setClaudeValidationStatus] = useState<
+    'idle' | 'valid' | 'invalid'
+  >('idle')
+  const [showClaudeApiKey, setShowClaudeApiKey] = useState(false)
 
   // Microphone Test State
-  const [isTestingMic, setIsTestingMic] = useState(false);
-  const [micStream, setMicStream] = useState<MediaStream | null>(null);
-  const [micError, setMicError] = useState<string | null>(null);
+  const [isTestingMic, setIsTestingMic] = useState(false)
+  const [micStream, setMicStream] = useState<MediaStream | null>(null)
+  const [micError, setMicError] = useState<string | null>(null)
 
   // GPU State
-  const [gpuType, setGpuType] = useState<'cpu' | 'cuda' | 'metal'>('cpu');
-  const [checkingGpu, setCheckingGpu] = useState(true);
-  const [gpuDebugInfo, setGpuDebugInfo] = useState<string>('');
+  const [gpuType, setGpuType] = useState<'cpu' | 'cuda' | 'metal'>('cpu')
+  const [checkingGpu, setCheckingGpu] = useState(true)
+  const [gpuDebugInfo, setGpuDebugInfo] = useState<string>('')
 
   useEffect(() => {
     // Check GPU capability on mount
-    checkComputeCapability().then((result) => {
-      console.log('Detected GPU capability:', result);
+    checkComputeCapability()
+      .then(result => {
+        console.log('Detected GPU capability:', result)
 
-      const resLower = result.toLowerCase();
-      let type: 'cpu' | 'cuda' | 'metal' = 'cpu';
+        const resLower = result.toLowerCase()
+        let type: 'cpu' | 'cuda' | 'metal' = 'cpu'
 
-      if (resLower.includes('cuda')) type = 'cuda';
-      else if (resLower.includes('metal')) type = 'metal';
+        if (resLower.includes('cuda')) type = 'cuda'
+        else if (resLower.includes('metal')) type = 'metal'
 
-      setGpuType(type);
+        setGpuType(type)
 
-      if (type === 'cpu' && result.length > 3) {
-        // Remove "cpu" prefix if present and keep details
-        setGpuDebugInfo(result.replace(/^cpu\s*/i, ''));
-      }
+        if (type === 'cpu' && result.length > 3) {
+          // Remove "cpu" prefix if present and keep details
+          setGpuDebugInfo(result.replace(/^cpu\s*/i, ''))
+        }
 
-      setCheckingGpu(false);
+        setCheckingGpu(false)
 
-      if (type !== 'cpu' && !useGpu) {
-        // Optional: could auto-enable here
-      }
-    }).catch(err => {
-      console.error('Failed to check GPU:', err);
-      setGpuDebugInfo(`Check failed: ${err}`);
-      setCheckingGpu(false);
-    });
-  }, []);
+        if (type !== 'cpu' && !useGpu) {
+          // Optional: could auto-enable here
+        }
+      })
+      .catch(err => {
+        console.error('Failed to check GPU:', err)
+        setGpuDebugInfo(`Check failed: ${err}`)
+        setCheckingGpu(false)
+      })
+  }, [])
 
   const handleToggleMicTest = async () => {
     if (isTestingMic) {
       if (micStream) {
-        micStream.getTracks().forEach(track => track.stop());
-        setMicStream(null);
+        micStream.getTracks().forEach(track => track.stop())
+        setMicStream(null)
       }
-      setIsTestingMic(false);
+      setIsTestingMic(false)
     } else {
-      setMicError(null);
+      setMicError(null)
       try {
         const constraints = {
-          audio: selectedMicId !== 'default' ? { deviceId: { exact: selectedMicId } } : true
-        };
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        setMicStream(stream);
-        setIsTestingMic(true);
+          audio: selectedMicId !== 'default' ? { deviceId: { exact: selectedMicId } } : true,
+        }
+        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        setMicStream(stream)
+        setIsTestingMic(true)
       } catch (err) {
-        console.error('Microphone access denied:', err);
-        setMicError('Access denied. Check system permissions.');
+        console.error('Microphone access denied:', err)
+        setMicError('Access denied. Check system permissions.')
       }
     }
-  };
+  }
 
   useEffect(() => {
     return () => {
       if (micStream) {
-        micStream.getTracks().forEach(track => track.stop());
+        micStream.getTracks().forEach(track => track.stop())
       }
-    };
-  }, [micStream]);
+    }
+  }, [micStream])
 
   const handleClose = async (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const window = getCurrentWindow();
-    await window.hide();
-  };
+    e?.stopPropagation()
+    const window = getCurrentWindow()
+    await window.hide()
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+      if (e.key === 'Escape') handleClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const handleSaveApiKey = async () => {
-    setIsValidating(true);
-    const isValid = await validateWhisperApiKey(apiKeyInput);
-    setIsValidating(false);
+    setIsValidating(true)
+    const isValid = await validateWhisperApiKey(apiKeyInput)
+    setIsValidating(false)
 
     if (isValid) {
-      setValidationStatus('valid');
-      setWhisperApiKey(apiKeyInput);
-      setTimeout(() => setValidationStatus('idle'), 2000);
+      setValidationStatus('valid')
+      setWhisperApiKey(apiKeyInput)
+      setTimeout(() => setValidationStatus('idle'), 2000)
     } else {
-      setValidationStatus('invalid');
+      setValidationStatus('invalid')
     }
-  };
+  }
 
   const handleSaveClaudeApiKey = async () => {
-    setIsValidatingClaude(true);
-    const isValid = await validateClaudeApiKey(claudeApiKeyInput);
-    setIsValidatingClaude(false);
+    setIsValidatingClaude(true)
+    const isValid = await validateClaudeApiKey(claudeApiKeyInput)
+    setIsValidatingClaude(false)
 
     if (isValid) {
-      setClaudeValidationStatus('valid');
-      setClaudeApiKey(claudeApiKeyInput);
-      setTimeout(() => setClaudeValidationStatus('idle'), 2000);
+      setClaudeValidationStatus('valid')
+      setClaudeApiKey(claudeApiKeyInput)
+      setTimeout(() => setClaudeValidationStatus('idle'), 2000)
     } else {
-      setClaudeValidationStatus('invalid');
+      setClaudeValidationStatus('invalid')
     }
-  };
+  }
 
   // Ensure valid transcription mode on mount
   useEffect(() => {
     // No-op validation for now as types are enforced
-  }, [transcriptionMode, setTranscriptionMode]);
+  }, [transcriptionMode, setTranscriptionMode])
 
-  const uiTranscriptionMode = transcriptionMode === 'cloud_openai' ? 'api' : 'local';
+  const uiTranscriptionMode = transcriptionMode === 'cloud_openai' ? 'api' : 'local'
 
   return (
     <div className="h-full w-full flex flex-col bg-background text-foreground select-none border rounded-lg shadow-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b bg-muted/50 drag-region" data-tauri-drag-region>
+      <div
+        className="flex items-center justify-between p-3 border-b bg-muted/50 drag-region"
+        data-tauri-drag-region
+      >
         <div className="flex items-center gap-2">
           <Settings2 className="h-4 w-4" />
           <span className="font-semibold text-sm">Settings</span>
@@ -222,7 +243,6 @@ export function Settings() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
-
         {/* Microphone Test Section */}
         <div className="space-y-2">
           <Label className="text-xs font-medium text-muted-foreground uppercase">Microphone</Label>
@@ -231,11 +251,16 @@ export function Settings() {
             <div className="space-y-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full justify-between h-7 text-xs px-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between h-7 text-xs px-2"
+                  >
                     <span className="truncate flex-1 text-left">
                       {selectedMicId === 'default'
                         ? 'Default Microphone'
-                        : devices.find(d => d.deviceId === selectedMicId)?.label || 'Unknown Device'}
+                        : devices.find(d => d.deviceId === selectedMicId)?.label ||
+                          'Unknown Device'}
                     </span>
                     <ChevronDown className="h-3 w-3 opacity-50 flex-shrink-0" />
                   </Button>
@@ -262,11 +287,19 @@ export function Settings() {
               <span className="text-xs font-medium">Test Input</span>
               <Button
                 size="sm"
-                variant={isTestingMic ? "destructive" : "secondary"}
+                variant={isTestingMic ? 'destructive' : 'secondary'}
                 className="h-6 text-xs px-2"
                 onClick={handleToggleMicTest}
               >
-                {isTestingMic ? <><MicOff className="h-3 w-3 mr-1" /> Stop</> : <><Mic className="h-3 w-3 mr-1" /> Test</>}
+                {isTestingMic ? (
+                  <>
+                    <MicOff className="h-3 w-3 mr-1" /> Stop
+                  </>
+                ) : (
+                  <>
+                    <Mic className="h-3 w-3 mr-1" /> Test
+                  </>
+                )}
               </Button>
             </div>
 
@@ -280,24 +313,28 @@ export function Settings() {
 
         {/* Transcription Mode */}
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-muted-foreground uppercase">Transcription Mode</Label>
+          <Label className="text-xs font-medium text-muted-foreground uppercase">
+            Transcription Mode
+          </Label>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => setTranscriptionMode('cloud_openai')}
-              className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${uiTranscriptionMode === 'api'
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-card hover:bg-muted border-input'
-                }`}
+              className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${
+                uiTranscriptionMode === 'api'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card hover:bg-muted border-input'
+              }`}
             >
               <Cloud className="h-5 w-5 mb-1" />
               <span className="font-medium text-xs">Cloud API</span>
             </button>
             <button
               onClick={() => setTranscriptionMode('local_whisper')}
-              className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${uiTranscriptionMode === 'local'
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-card hover:bg-muted border-input'
-                }`}
+              className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${
+                uiTranscriptionMode === 'local'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card hover:bg-muted border-input'
+              }`}
             >
               <HardDrive className="h-5 w-5 mb-1" />
               <span className="font-medium text-xs">Local</span>
@@ -309,31 +346,47 @@ export function Settings() {
         {uiTranscriptionMode === 'local' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
             {/* GPU Toggle */}
-            <div className={`flex items-center justify-between p-3 rounded-md border ${gpuType === 'cpu' && !checkingGpu ? 'bg-muted/30 border-dashed' : 'bg-card'
-              }`}>
+            <div
+              className={`flex items-center justify-between p-3 rounded-md border ${
+                gpuType === 'cpu' && !checkingGpu ? 'bg-muted/30 border-dashed' : 'bg-card'
+              }`}
+            >
               <div className="flex items-center gap-2">
                 {useGpu ? <Zap className="h-4 w-4 text-yellow-500" /> : <Cpu className="h-4 w-4" />}
                 <div className="flex flex-col">
                   <span className="font-medium text-xs">GPU Acceleration</span>
-                  <span className={`text-[10px] truncate max-w-[180px] ${gpuType === 'cuda' ? 'text-green-600 font-medium' :
-                    gpuType === 'metal' ? 'text-blue-600 font-medium' :
-                      'text-muted-foreground'
-                    }`} title={gpuDebugInfo || (checkingGpu ? 'Checking...' : 'Hardware Status')}>
-                    {checkingGpu ? 'Checking...' :
-                      gpuType === 'cuda' ? 'NVIDIA CUDA Detected' :
-                        gpuType === 'metal' ? 'Apple Metal Detected' :
-                          'CPU Only'}
+                  <span
+                    className={`text-[10px] truncate max-w-[180px] ${
+                      gpuType === 'cuda'
+                        ? 'text-green-600 font-medium'
+                        : gpuType === 'metal'
+                          ? 'text-blue-600 font-medium'
+                          : 'text-muted-foreground'
+                    }`}
+                    title={gpuDebugInfo || (checkingGpu ? 'Checking...' : 'Hardware Status')}
+                  >
+                    {checkingGpu
+                      ? 'Checking...'
+                      : gpuType === 'cuda'
+                        ? 'NVIDIA CUDA Detected'
+                        : gpuType === 'metal'
+                          ? 'Apple Metal Detected'
+                          : 'CPU Only'}
                   </span>
                 </div>
               </div>
               <button
                 onClick={() => setUseGpu(!useGpu)}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${useGpu ? 'bg-primary' : 'bg-muted'
-                  }`}
-                title={gpuDebugInfo ? `Details: ${gpuDebugInfo}` : "Toggle GPU"}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  useGpu ? 'bg-primary' : 'bg-muted'
+                }`}
+                title={gpuDebugInfo ? `Details: ${gpuDebugInfo}` : 'Toggle GPU'}
               >
-                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${useGpu ? 'translate-x-5' : 'translate-x-1'
-                  }`} />
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    useGpu ? 'translate-x-5' : 'translate-x-1'
+                  }`}
+                />
               </button>
             </div>
 
@@ -345,25 +398,31 @@ export function Settings() {
                   <Button variant="outline" className="w-full justify-between h-8 text-xs">
                     <span className="flex items-center gap-2">
                       <span>{WHISPER_MODEL_INFO[whisperModel].name}</span>
-                      <span className="text-xs text-muted-foreground">({WHISPER_MODEL_INFO[whisperModel].size})</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({WHISPER_MODEL_INFO[whisperModel].size})
+                      </span>
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-[280px]">
-                  {(['tiny', 'base', 'small', 'medium', 'turbo', 'large-v3'] as WhisperModel[]).map((model) => (
-                    <DropdownMenuItem
-                      key={model}
-                      onClick={() => setWhisperModel(model)}
-                      className="justify-between"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium">{WHISPER_MODEL_INFO[model].name}</span>
-                        <span className="text-xs text-muted-foreground">{WHISPER_MODEL_INFO[model].description}</span>
-                      </div>
-                      {whisperModel === model && <Check className="h-4 w-4" />}
-                    </DropdownMenuItem>
-                  ))}
+                  {(['tiny', 'base', 'small', 'medium', 'turbo', 'large-v3'] as WhisperModel[]).map(
+                    model => (
+                      <DropdownMenuItem
+                        key={model}
+                        onClick={() => setWhisperModel(model)}
+                        className="justify-between"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{WHISPER_MODEL_INFO[model].name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {WHISPER_MODEL_INFO[model].description}
+                          </span>
+                        </div>
+                        {whisperModel === model && <Check className="h-4 w-4" />}
+                      </DropdownMenuItem>
+                    )
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -381,9 +440,9 @@ export function Settings() {
                   placeholder="sk-..."
                   className="pr-20 text-xs h-8"
                   value={apiKeyInput}
-                  onChange={(e) => {
-                    setApiKeyInput(e.target.value);
-                    if (validationStatus !== 'idle') setValidationStatus('idle');
+                  onChange={e => {
+                    setApiKeyInput(e.target.value)
+                    if (validationStatus !== 'idle') setValidationStatus('idle')
                   }}
                 />
                 <div className="absolute right-1 top-1 flex items-center gap-1">
@@ -416,16 +475,16 @@ export function Settings() {
                   <X className="h-3 w-3" /> Invalid API Key
                 </p>
               )}
-              <p className="text-[10px] text-muted-foreground">
-                Your key is stored locally.
-              </p>
+              <p className="text-[10px] text-muted-foreground">Your key is stored locally.</p>
             </div>
           </div>
         )}
 
         {/* LLM Configuration Component */}
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-muted-foreground uppercase">Skill Generation (LLM)</Label>
+          <Label className="text-xs font-medium text-muted-foreground uppercase">
+            Skill Generation (LLM)
+          </Label>
           <div className="p-3 rounded-md border bg-card text-left">
             <LLMConfiguration />
           </div>
@@ -433,7 +492,9 @@ export function Settings() {
 
         {/* Output Directory */}
         <div className="space-y-2">
-          <Label className="text-xs font-medium text-muted-foreground uppercase">Session Storage</Label>
+          <Label className="text-xs font-medium text-muted-foreground uppercase">
+            Session Storage
+          </Label>
           <div className="flex gap-2">
             <Input
               value={outputDir || 'Default (Documents/Skill-E)'}
@@ -450,10 +511,10 @@ export function Settings() {
                   const selected = await open({
                     directory: true,
                     multiple: false,
-                  });
-                  if (selected) setOutputDir(selected as string);
+                  })
+                  if (selected) setOutputDir(selected as string)
                 } catch (e) {
-                  console.error(e);
+                  console.error(e)
                 }
               }}
             >
@@ -466,8 +527,7 @@ export function Settings() {
         <div className="space-y-2">
           <DebugPanel />
         </div>
-
       </div>
     </div>
-  );
+  )
 }

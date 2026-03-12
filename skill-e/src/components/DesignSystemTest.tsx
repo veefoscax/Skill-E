@@ -1,18 +1,13 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Play, Settings, Info } from "lucide-react";
+} from '@/components/ui/dropdown-menu'
+import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Play, Settings, Info } from 'lucide-react'
 
 /**
  * Design System Test Component
@@ -27,9 +22,7 @@ export function DesignSystemTest() {
     <div className="flex min-h-screen items-center justify-center bg-background p-8">
       <div className="w-full max-w-md space-y-6 rounded-lg border bg-card p-6 shadow-lg">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">
-            Design System Test
-          </h1>
+          <h1 className="text-2xl font-bold text-foreground">Design System Test</h1>
           <p className="text-sm text-muted-foreground">
             Verifying shadcn/ui Mira configuration with Nunito Sans font
           </p>
@@ -55,9 +48,7 @@ export function DesignSystemTest() {
           <Separator />
 
           <div className="space-y-2">
-            <h2 className="text-sm font-semibold text-foreground">
-              Dropdown Menu
-            </h2>
+            <h2 className="text-sm font-semibold text-foreground">Dropdown Menu</h2>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
@@ -95,9 +86,7 @@ export function DesignSystemTest() {
         <Separator />
 
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-foreground">
-            Configuration
-          </h2>
+          <h2 className="text-sm font-semibold text-foreground">Configuration</h2>
           <div className="space-y-1 text-xs text-muted-foreground">
             <p>✓ Style: new-york</p>
             <p>✓ Base Color: neutral</p>
@@ -109,5 +98,5 @@ export function DesignSystemTest() {
         </div>
       </div>
     </div>
-  );
+  )
 }

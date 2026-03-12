@@ -1,50 +1,50 @@
 /**
  * Semantic Judge
- * 
+ *
  * LLM-based quality scoring and critique for generated skills.
  * Compares the original task goal with the generated skill to assess
  * Safety, Clarity, and Completeness.
- * 
+ *
  * Requirements: FR-10.12, FR-10.13
  */
 
-import type { Provider, Message } from './providers/types';
-import { createProvider } from './providers/factory';
-import type { ProviderConfig } from './providers/types';
+import type { Provider, Message } from './providers/types'
+import { createProvider } from './providers/factory'
+import type { ProviderConfig } from './providers/types'
 
 /**
  * Semantic validation result
  */
 export interface SemanticValidationResult {
   /** Overall quality score (0-100) */
-  score: number;
-  
+  score: number
+
   /** Dimension scores */
   dimensions: {
     /** Safety score (0-100) - Are there proper guardrails and confirmations? */
-    safety: number;
-    
+    safety: number
+
     /** Clarity score (0-100) - Are instructions clear and unambiguous? */
-    clarity: number;
-    
+    clarity: number
+
     /** Completeness score (0-100) - Does it cover all aspects of the task? */
-    completeness: number;
-  };
-  
+    completeness: number
+  }
+
   /** Strengths identified in the skill */
-  strengths: string[];
-  
+  strengths: string[]
+
   /** Weaknesses and areas for improvement */
-  weaknesses: string[];
-  
+  weaknesses: string[]
+
   /** Specific recommendations for improvement */
-  recommendations: string[];
-  
+  recommendations: string[]
+
   /** Whether the skill is production-ready (score >= 90) */
-  isVerified: boolean;
-  
+  isVerified: boolean
+
   /** Raw LLM response for debugging */
-  rawResponse?: string;
+  rawResponse?: string
 }
 
 /**
@@ -52,20 +52,20 @@ export interface SemanticValidationResult {
  */
 export interface SemanticValidationOptions {
   /** Provider configuration (defaults to OpenRouter if not specified) */
-  providerConfig?: ProviderConfig;
-  
+  providerConfig?: ProviderConfig
+
   /** Custom weights for dimensions (must sum to 1.0) */
   weights?: {
-    safety: number;
-    clarity: number;
-    completeness: number;
-  };
-  
+    safety: number
+    clarity: number
+    completeness: number
+  }
+
   /** Temperature for LLM (default: 0.3 for consistency) */
-  temperature?: number;
-  
+  temperature?: number
+
   /** Maximum tokens for response (default: 2000) */
-  maxTokens?: number;
+  maxTokens?: number
 }
 
 /**
@@ -73,10 +73,10 @@ export interface SemanticValidationOptions {
  * Safety is weighted highest as it's critical for production use
  */
 const DEFAULT_WEIGHTS = {
-  safety: 0.4,      // 40% - Most important
-  clarity: 0.35,    // 35% - Very important
+  safety: 0.4, // 40% - Most important
+  clarity: 0.35, // 35% - Very important
   completeness: 0.25, // 25% - Important but can be iterated
-};
+}
 
 /**
  * Default provider configuration
@@ -87,16 +87,16 @@ const DEFAULT_PROVIDER_CONFIG: ProviderConfig = {
   model: 'google/gemma-2-9b-it:free',
   temperature: 0.3,
   maxTokens: 2000,
-};
+}
 
 /**
  * Validate a generated skill against the original task goal
- * 
+ *
  * @param taskGoal - Original task description/goal from S05 processing
  * @param generatedSkill - Generated SKILL.md content from S06
  * @param options - Validation options
  * @returns Semantic validation result with scores and feedback
- * 
+ *
  * @example
  * ```typescript
  * const result = await validateSkillSemantics(
@@ -110,7 +110,7 @@ const DEFAULT_PROVIDER_CONFIG: ProviderConfig = {
  *     }
  *   }
  * );
- * 
+ *
  * console.log(`Score: ${result.score}/100`);
  * console.log(`Verified: ${result.isVerified}`);
  * ```
@@ -121,40 +121,40 @@ export async function validateSkillSemantics(
   options: SemanticValidationOptions = {}
 ): Promise<SemanticValidationResult> {
   // Merge options with defaults
-  const weights = options.weights || DEFAULT_WEIGHTS;
-  const providerConfig = options.providerConfig || DEFAULT_PROVIDER_CONFIG;
-  
+  const weights = options.weights || DEFAULT_WEIGHTS
+  const providerConfig = options.providerConfig || DEFAULT_PROVIDER_CONFIG
+
   // Validate weights sum to 1.0
-  const weightSum = weights.safety + weights.clarity + weights.completeness;
+  const weightSum = weights.safety + weights.clarity + weights.completeness
   if (Math.abs(weightSum - 1.0) > 0.01) {
-    throw new Error(`Weights must sum to 1.0, got ${weightSum}`);
+    throw new Error(`Weights must sum to 1.0, got ${weightSum}`)
   }
-  
+
   // Create provider
   const provider = createProvider({
     ...providerConfig,
     temperature: options.temperature ?? providerConfig.temperature ?? 0.3,
     maxTokens: options.maxTokens ?? providerConfig.maxTokens ?? 2000,
-  });
-  
+  })
+
   // Build the critique prompt
-  const prompt = buildCritiquePrompt(taskGoal, generatedSkill);
-  
+  const prompt = buildCritiquePrompt(taskGoal, generatedSkill)
+
   // Call LLM
   const response = await callLLM(provider, prompt, {
     temperature: options.temperature ?? 0.3,
     maxTokens: options.maxTokens ?? 2000,
-  });
-  
+  })
+
   // Parse the response
-  const result = parseValidationResponse(response, weights);
-  
-  return result;
+  const result = parseValidationResponse(response, weights)
+
+  return result
 }
 
 /**
  * Build the semantic critique prompt
- * 
+ *
  * @param taskGoal - Original task goal
  * @param generatedSkill - Generated skill markdown
  * @returns Prompt for LLM
@@ -263,12 +263,12 @@ Provide your evaluation in the following JSON format:
 ## Output
 
 Provide ONLY the JSON object, no additional text or explanation.
-`;
+`
 }
 
 /**
  * Call LLM provider and collect response
- * 
+ *
  * @param provider - LLM provider instance
  * @param prompt - Critique prompt
  * @param options - Chat options
@@ -284,28 +284,28 @@ async function callLLM(
       role: 'user',
       content: prompt,
     },
-  ];
-  
-  let fullResponse = '';
-  
+  ]
+
+  let fullResponse = ''
+
   try {
     // Collect streaming response
     for await (const chunk of provider.chat(messages, {
       temperature: options.temperature,
       maxTokens: options.maxTokens,
     })) {
-      fullResponse += chunk;
+      fullResponse += chunk
     }
-    
-    return fullResponse;
+
+    return fullResponse
   } catch (error) {
-    throw new Error(`LLM call failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`LLM call failed: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
 /**
  * Parse LLM response into structured validation result
- * 
+ *
  * @param response - Raw LLM response
  * @param weights - Dimension weights
  * @returns Parsed validation result
@@ -316,45 +316,47 @@ function parseValidationResponse(
 ): SemanticValidationResult {
   try {
     // Extract JSON from response (handle markdown code blocks)
-    let jsonText = response.trim();
-    
+    let jsonText = response.trim()
+
     // Remove markdown code blocks if present
-    const codeBlockMatch = jsonText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+    const codeBlockMatch = jsonText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
     if (codeBlockMatch) {
-      jsonText = codeBlockMatch[1].trim();
+      jsonText = codeBlockMatch[1].trim()
     }
-    
+
     // Parse JSON
-    const parsed = JSON.parse(jsonText);
-    
+    const parsed = JSON.parse(jsonText)
+
     // Validate required fields
-    if (typeof parsed.safety !== 'number' ||
-        typeof parsed.clarity !== 'number' ||
-        typeof parsed.completeness !== 'number') {
-      throw new Error('Missing or invalid dimension scores');
+    if (
+      typeof parsed.safety !== 'number' ||
+      typeof parsed.clarity !== 'number' ||
+      typeof parsed.completeness !== 'number'
+    ) {
+      throw new Error('Missing or invalid dimension scores')
     }
-    
-    if (!Array.isArray(parsed.strengths) ||
-        !Array.isArray(parsed.weaknesses) ||
-        !Array.isArray(parsed.recommendations)) {
-      throw new Error('Missing or invalid feedback arrays');
+
+    if (
+      !Array.isArray(parsed.strengths) ||
+      !Array.isArray(parsed.weaknesses) ||
+      !Array.isArray(parsed.recommendations)
+    ) {
+      throw new Error('Missing or invalid feedback arrays')
     }
-    
+
     // Clamp scores to 0-100 range
-    const safety = clamp(parsed.safety, 0, 100);
-    const clarity = clamp(parsed.clarity, 0, 100);
-    const completeness = clamp(parsed.completeness, 0, 100);
-    
+    const safety = clamp(parsed.safety, 0, 100)
+    const clarity = clamp(parsed.clarity, 0, 100)
+    const completeness = clamp(parsed.completeness, 0, 100)
+
     // Calculate weighted overall score
     const score = Math.round(
-      safety * weights.safety +
-      clarity * weights.clarity +
-      completeness * weights.completeness
-    );
-    
+      safety * weights.safety + clarity * weights.clarity + completeness * weights.completeness
+    )
+
     // Determine if verified (score >= 90)
-    const isVerified = score >= 90;
-    
+    const isVerified = score >= 90
+
     return {
       score,
       dimensions: {
@@ -367,12 +369,12 @@ function parseValidationResponse(
       recommendations: parsed.recommendations.slice(0, 5), // Limit to 5
       isVerified,
       rawResponse: response,
-    };
+    }
   } catch (error) {
     // If parsing fails, return a default result with error info
-    console.error('Failed to parse validation response:', error);
-    console.error('Raw response:', response);
-    
+    console.error('Failed to parse validation response:', error)
+    console.error('Raw response:', response)
+
     return {
       score: 0,
       dimensions: {
@@ -391,28 +393,28 @@ function parseValidationResponse(
       ],
       isVerified: false,
       rawResponse: response,
-    };
+    }
   }
 }
 
 /**
  * Clamp a number to a range
- * 
+ *
  * @param value - Value to clamp
  * @param min - Minimum value
  * @param max - Maximum value
  * @returns Clamped value
  */
 function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+  return Math.max(min, Math.min(max, value))
 }
 
 /**
  * Get a human-readable grade from a score
- * 
+ *
  * @param score - Score (0-100)
  * @returns Grade letter
- * 
+ *
  * @example
  * ```typescript
  * getGrade(95); // "A+"
@@ -421,27 +423,27 @@ function clamp(value: number, min: number, max: number): number {
  * ```
  */
 export function getGrade(score: number): string {
-  if (score >= 97) return 'A+';
-  if (score >= 93) return 'A';
-  if (score >= 90) return 'A-';
-  if (score >= 87) return 'B+';
-  if (score >= 83) return 'B';
-  if (score >= 80) return 'B-';
-  if (score >= 77) return 'C+';
-  if (score >= 73) return 'C';
-  if (score >= 70) return 'C-';
-  if (score >= 67) return 'D+';
-  if (score >= 63) return 'D';
-  if (score >= 60) return 'D-';
-  return 'F';
+  if (score >= 97) return 'A+'
+  if (score >= 93) return 'A'
+  if (score >= 90) return 'A-'
+  if (score >= 87) return 'B+'
+  if (score >= 83) return 'B'
+  if (score >= 80) return 'B-'
+  if (score >= 77) return 'C+'
+  if (score >= 73) return 'C'
+  if (score >= 70) return 'C-'
+  if (score >= 67) return 'D+'
+  if (score >= 63) return 'D'
+  if (score >= 60) return 'D-'
+  return 'F'
 }
 
 /**
  * Get a color for a score (for UI display)
- * 
+ *
  * @param score - Score (0-100)
  * @returns Color name or hex code
- * 
+ *
  * @example
  * ```typescript
  * getScoreColor(95); // "green"
@@ -450,18 +452,18 @@ export function getGrade(score: number): string {
  * ```
  */
 export function getScoreColor(score: number): string {
-  if (score >= 90) return 'green';
-  if (score >= 70) return 'yellow';
-  if (score >= 50) return 'orange';
-  return 'red';
+  if (score >= 90) return 'green'
+  if (score >= 70) return 'yellow'
+  if (score >= 50) return 'orange'
+  return 'red'
 }
 
 /**
  * Get a descriptive label for a score
- * 
+ *
  * @param score - Score (0-100)
  * @returns Descriptive label
- * 
+ *
  * @example
  * ```typescript
  * getScoreLabel(95); // "Excellent"
@@ -470,68 +472,74 @@ export function getScoreColor(score: number): string {
  * ```
  */
 export function getScoreLabel(score: number): string {
-  if (score >= 90) return 'Excellent';
-  if (score >= 80) return 'Very Good';
-  if (score >= 70) return 'Good';
-  if (score >= 60) return 'Fair';
-  if (score >= 50) return 'Needs Improvement';
-  return 'Poor';
+  if (score >= 90) return 'Excellent'
+  if (score >= 80) return 'Very Good'
+  if (score >= 70) return 'Good'
+  if (score >= 60) return 'Fair'
+  if (score >= 50) return 'Needs Improvement'
+  return 'Poor'
 }
 
 /**
  * Format validation result as markdown for display
- * 
+ *
  * @param result - Validation result
  * @returns Formatted markdown
  */
 export function formatValidationResultMarkdown(result: SemanticValidationResult): string {
-  const lines: string[] = [];
-  
-  lines.push(`# Skill Quality Report`);
-  lines.push('');
-  lines.push(`## Overall Score: ${result.score}/100 (${getGrade(result.score)})`);
-  lines.push('');
-  
+  const lines: string[] = []
+
+  lines.push(`# Skill Quality Report`)
+  lines.push('')
+  lines.push(`## Overall Score: ${result.score}/100 (${getGrade(result.score)})`)
+  lines.push('')
+
   if (result.isVerified) {
-    lines.push('✅ **VERIFIED** - This skill is production-ready!');
+    lines.push('✅ **VERIFIED** - This skill is production-ready!')
   } else {
-    lines.push('⚠️ **NOT VERIFIED** - This skill needs improvement before production use.');
+    lines.push('⚠️ **NOT VERIFIED** - This skill needs improvement before production use.')
   }
-  
-  lines.push('');
-  lines.push('## Dimension Scores');
-  lines.push('');
-  lines.push(`- **Safety**: ${result.dimensions.safety}/100 - ${getScoreLabel(result.dimensions.safety)}`);
-  lines.push(`- **Clarity**: ${result.dimensions.clarity}/100 - ${getScoreLabel(result.dimensions.clarity)}`);
-  lines.push(`- **Completeness**: ${result.dimensions.completeness}/100 - ${getScoreLabel(result.dimensions.completeness)}`);
-  lines.push('');
-  
+
+  lines.push('')
+  lines.push('## Dimension Scores')
+  lines.push('')
+  lines.push(
+    `- **Safety**: ${result.dimensions.safety}/100 - ${getScoreLabel(result.dimensions.safety)}`
+  )
+  lines.push(
+    `- **Clarity**: ${result.dimensions.clarity}/100 - ${getScoreLabel(result.dimensions.clarity)}`
+  )
+  lines.push(
+    `- **Completeness**: ${result.dimensions.completeness}/100 - ${getScoreLabel(result.dimensions.completeness)}`
+  )
+  lines.push('')
+
   if (result.strengths.length > 0) {
-    lines.push('## Strengths');
-    lines.push('');
+    lines.push('## Strengths')
+    lines.push('')
     result.strengths.forEach(strength => {
-      lines.push(`- ✅ ${strength}`);
-    });
-    lines.push('');
+      lines.push(`- ✅ ${strength}`)
+    })
+    lines.push('')
   }
-  
+
   if (result.weaknesses.length > 0) {
-    lines.push('## Weaknesses');
-    lines.push('');
+    lines.push('## Weaknesses')
+    lines.push('')
     result.weaknesses.forEach(weakness => {
-      lines.push(`- ⚠️ ${weakness}`);
-    });
-    lines.push('');
+      lines.push(`- ⚠️ ${weakness}`)
+    })
+    lines.push('')
   }
-  
+
   if (result.recommendations.length > 0) {
-    lines.push('## Recommendations');
-    lines.push('');
+    lines.push('## Recommendations')
+    lines.push('')
     result.recommendations.forEach((rec, i) => {
-      lines.push(`${i + 1}. ${rec}`);
-    });
-    lines.push('');
+      lines.push(`${i + 1}. ${rec}`)
+    })
+    lines.push('')
   }
-  
-  return lines.join('\n');
+
+  return lines.join('\n')
 }

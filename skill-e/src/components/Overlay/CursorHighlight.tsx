@@ -1,42 +1,42 @@
 /**
  * Cursor Highlight Component
- * 
+ *
  * Displays an enlarged cursor highlight during recording to make cursor
  * movements more visible in the captured video.
- * 
+ *
  * Features:
  * - Follows mouse cursor position in real-time
  * - Enlarged circle (32px default) around cursor
  * - Subtle ring animation
  * - Only visible during recording
  * - GPU-accelerated for smooth performance
- * 
+ *
  * Requirements: FR-4.5
  */
 
-import { useState, useEffect, useRef, memo } from 'react';
-import { useRecordingStore } from '@/stores/recording';
+import { useState, useEffect, useRef, memo } from 'react'
+import { useRecordingStore } from '@/stores/recording'
 
 /**
  * Props for CursorHighlight component
  */
 interface CursorHighlightProps {
   /** Size of the highlight ring in pixels */
-  size?: number;
+  size?: number
   /** Color of the highlight ring */
-  color?: string;
+  color?: string
   /** Whether to show the highlight */
-  visible?: boolean;
+  visible?: boolean
   /** Thickness of the ring border */
-  thickness?: number;
+  thickness?: number
 }
 
 /**
  * Cursor Highlight Component
- * 
+ *
  * Renders an enlarged visual indicator around the cursor position
  * to improve visibility during screen recordings.
- * 
+ *
  * @example
  * <CursorHighlight size={40} color="#EF4444" thickness={3} />
  */
@@ -46,69 +46,69 @@ export const CursorHighlight = memo(function CursorHighlight({
   visible = true,
   thickness = 2,
 }: CursorHighlightProps) {
-  const isRecording = useRecordingStore((state) => state.isRecording);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isMoving, setIsMoving] = useState(false);
-  const moveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const lastPositionRef = useRef({ x: 0, y: 0 });
+  const isRecording = useRecordingStore(state => state.isRecording)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [isMoving, setIsMoving] = useState(false)
+  const moveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const rafRef = useRef<number | null>(null)
+  const lastPositionRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
     // Only track mouse when recording is active and highlight is visible
     if (!isRecording || !visible) {
-      return;
+      return
     }
 
     const handleMouseMove = (e: MouseEvent) => {
       // Use requestAnimationFrame for smooth updates
       if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
+        cancelAnimationFrame(rafRef.current)
       }
 
       rafRef.current = requestAnimationFrame(() => {
-        setPosition({ x: e.clientX, y: e.clientY });
-        
+        setPosition({ x: e.clientX, y: e.clientY })
+
         // Detect if cursor is moving
-        const dx = e.clientX - lastPositionRef.current.x;
-        const dy = e.clientY - lastPositionRef.current.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
+        const dx = e.clientX - lastPositionRef.current.x
+        const dy = e.clientY - lastPositionRef.current.y
+        const distance = Math.sqrt(dx * dx + dy * dy)
+
         if (distance > 2) {
-          setIsMoving(true);
-          lastPositionRef.current = { x: e.clientX, y: e.clientY };
-          
+          setIsMoving(true)
+          lastPositionRef.current = { x: e.clientX, y: e.clientY }
+
           // Clear existing timeout
           if (moveTimeoutRef.current) {
-            clearTimeout(moveTimeoutRef.current);
+            clearTimeout(moveTimeoutRef.current)
           }
-          
+
           // Set moving to false after cursor stops
           moveTimeoutRef.current = setTimeout(() => {
-            setIsMoving(false);
-          }, 150);
+            setIsMoving(false)
+          }, 150)
         }
-      });
-    };
+      })
+    }
 
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mousemove', handleMouseMove)
       if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
+        cancelAnimationFrame(rafRef.current)
       }
       if (moveTimeoutRef.current) {
-        clearTimeout(moveTimeoutRef.current);
+        clearTimeout(moveTimeoutRef.current)
       }
-    };
-  }, [isRecording, visible]);
+    }
+  }, [isRecording, visible])
 
   // Don't render if not recording or not visible
   if (!isRecording || !visible) {
-    return null;
+    return null
   }
 
-  const halfSize = size / 2;
+  const halfSize = size / 2
 
   return (
     <div
@@ -138,7 +138,7 @@ export const CursorHighlight = memo(function CursorHighlight({
           boxShadow: `0 0 ${isMoving ? 12 : 8}px ${color}40`,
         }}
       />
-      
+
       {/* Inner dot at cursor center */}
       <div
         className="cursor-highlight-center"
@@ -155,17 +155,17 @@ export const CursorHighlight = memo(function CursorHighlight({
         }}
       />
     </div>
-  );
-});
+  )
+})
 
 /**
  * Cursor Highlight with click indicator
- * 
+ *
  * Extended version that shows a ripple effect on click
  */
 interface CursorHighlightWithClickProps extends CursorHighlightProps {
   /** Whether to show click ripple effect */
-  showClickEffect?: boolean;
+  showClickEffect?: boolean
 }
 
 export const CursorHighlightWithClick = memo(function CursorHighlightWithClick({
@@ -175,55 +175,55 @@ export const CursorHighlightWithClick = memo(function CursorHighlightWithClick({
   thickness = 2,
   showClickEffect = true,
 }: CursorHighlightWithClickProps) {
-  const isRecording = useRecordingStore((state) => state.isRecording);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [clicks, setClicks] = useState<{ id: number; x: number; y: number }[]>([]);
-  const clickIdRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
+  const isRecording = useRecordingStore(state => state.isRecording)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [clicks, setClicks] = useState<{ id: number; x: number; y: number }[]>([])
+  const clickIdRef = useRef(0)
+  const rafRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (!isRecording || !visible) {
-      return;
+      return
     }
 
     const handleMouseMove = (e: MouseEvent) => {
       if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
+        cancelAnimationFrame(rafRef.current)
       }
       rafRef.current = requestAnimationFrame(() => {
-        setPosition({ x: e.clientX, y: e.clientY });
-      });
-    };
+        setPosition({ x: e.clientX, y: e.clientY })
+      })
+    }
 
     const handleClick = (e: MouseEvent) => {
-      if (!showClickEffect) return;
-      
-      const newClick = { id: clickIdRef.current++, x: e.clientX, y: e.clientY };
-      setClicks(prev => [...prev, newClick]);
-      
+      if (!showClickEffect) return
+
+      const newClick = { id: clickIdRef.current++, x: e.clientX, y: e.clientY }
+      setClicks(prev => [...prev, newClick])
+
       // Remove click effect after animation
       setTimeout(() => {
-        setClicks(prev => prev.filter(c => c.id !== newClick.id));
-      }, 600);
-    };
+        setClicks(prev => prev.filter(c => c.id !== newClick.id))
+      }, 600)
+    }
 
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    window.addEventListener('click', handleClick, { passive: true });
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
+    window.addEventListener('click', handleClick, { passive: true })
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('click', handleClick);
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('click', handleClick)
       if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
+        cancelAnimationFrame(rafRef.current)
       }
-    };
-  }, [isRecording, visible, showClickEffect]);
+    }
+  }, [isRecording, visible, showClickEffect])
 
   if (!isRecording || !visible) {
-    return null;
+    return null
   }
 
-  const halfSize = size / 2;
+  const halfSize = size / 2
 
   return (
     <>
@@ -296,5 +296,5 @@ export const CursorHighlightWithClick = memo(function CursorHighlightWithClick({
         </div>
       ))}
     </>
-  );
-});
+  )
+})

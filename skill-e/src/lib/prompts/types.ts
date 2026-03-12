@@ -1,11 +1,11 @@
 /**
  * Prompt System Types
- * 
+ *
  * Type definitions for the optimized prompt generation system.
  * Follows best practices from research on LLM prompt engineering.
  */
 
-import type { OptimizedContext } from '../context-optimizer';
+import type { OptimizedContext } from '../context-optimizer'
 // Note: OptimizedStep type is available in context-optimizer module if needed
 
 /**
@@ -13,13 +13,13 @@ import type { OptimizedContext } from '../context-optimizer';
  */
 export interface PromptOptions {
   /** Include few-shot examples in prompt */
-  includeExamples?: boolean;
+  includeExamples?: boolean
   /** Number of examples to include (1-3) */
-  exampleCount?: number;
+  exampleCount?: number
   /** Maximum prompt length in tokens (approximate) */
-  maxTokens?: number;
+  maxTokens?: number
   /** Style of prompt structure */
-  structure?: 'xml' | 'markdown' | 'json';
+  structure?: 'xml' | 'markdown' | 'json'
 }
 
 /**
@@ -27,15 +27,15 @@ export interface PromptOptions {
  */
 export interface PromptSection {
   /** Section tag name (for XML structure) */
-  tag?: string;
+  tag?: string
   /** Section title (for markdown structure) */
-  title?: string;
+  title?: string
   /** Section content */
-  content: string;
+  content: string
   /** Section priority (for truncation) */
-  priority: number;
+  priority: number
   /** Approximate token count */
-  tokenEstimate?: number;
+  tokenEstimate?: number
 }
 
 /**
@@ -43,17 +43,17 @@ export interface PromptSection {
  */
 export interface FewShotExample {
   /** Example name/identifier */
-  name: string;
+  name: string
   /** Input context */
   input: {
-    taskGoal: string;
-    steps: string[];
-    variables?: string[];
-  };
+    taskGoal: string
+    steps: string[]
+    variables?: string[]
+  }
   /** Expected output (SKILL.md content) */
-  output: string;
+  output: string
   /** Why this example is useful */
-  description: string;
+  description: string
 }
 
 /**
@@ -61,44 +61,44 @@ export interface FewShotExample {
  */
 export interface GeneratedPrompt {
   /** Final prompt string */
-  prompt: string;
+  prompt: string
   /** Token count estimate */
-  tokenEstimate: number;
+  tokenEstimate: number
   /** Sections included */
-  sections: string[];
+  sections: string[]
   /** Examples included */
-  examples: string[];
+  examples: string[]
 }
 
 /**
  * Skill template type
  */
-export type SkillTemplateType = 'minimal' | 'standard' | 'complex' | 'api-integration';
+export type SkillTemplateType = 'minimal' | 'standard' | 'complex' | 'api-integration'
 
 /**
  * Skill template configuration
  */
 export interface SkillTemplate {
   /** Template name */
-  name: string;
+  name: string
   /** Template type */
-  type: SkillTemplateType;
+  type: SkillTemplateType
   /** Template description */
-  description: string;
+  description: string
   /** Sections to include */
   sections: {
-    quickStart: boolean;
-    parameters: boolean;
-    whenToUse: boolean;
-    prerequisites: boolean;
-    instructions: boolean;
-    verification: boolean;
-    troubleshooting: boolean;
-    guardrails: boolean;
-    references: boolean;
-  };
+    quickStart: boolean
+    parameters: boolean
+    whenToUse: boolean
+    prerequisites: boolean
+    instructions: boolean
+    verification: boolean
+    troubleshooting: boolean
+    guardrails: boolean
+    references: boolean
+  }
   /** Target token count for output */
-  targetTokens: number;
+  targetTokens: number
 }
 
 /**
@@ -106,18 +106,18 @@ export interface SkillTemplate {
  */
 export interface PromptBuildContext {
   /** Optimized context from S05 */
-  optimizedContext: OptimizedContext;
+  optimizedContext: OptimizedContext
   /** Template to use */
-  template: SkillTemplate;
+  template: SkillTemplate
   /** Options for generation */
-  options: PromptOptions;
+  options: PromptOptions
   /** User preferences */
   preferences?: {
-    skillName?: string;
-    skillDescription?: string;
-    includeScreenshots?: boolean;
-    targetAudience?: 'beginner' | 'intermediate' | 'expert';
-  };
+    skillName?: string
+    skillDescription?: string
+    includeScreenshots?: boolean
+    targetAudience?: 'beginner' | 'intermediate' | 'expert'
+  }
 }
 
 /**
@@ -125,11 +125,11 @@ export interface PromptBuildContext {
  */
 export interface IPromptBuilder {
   /** Build complete prompt */
-  build(context: PromptBuildContext): GeneratedPrompt;
+  build(context: PromptBuildContext): GeneratedPrompt
   /** Build specific section */
-  buildSection(section: keyof SkillTemplate['sections'], context: PromptBuildContext): string;
+  buildSection(section: keyof SkillTemplate['sections'], context: PromptBuildContext): string
   /** Add few-shot examples */
-  addExamples(examples: FewShotExample[]): void;
+  addExamples(examples: FewShotExample[]): void
   /** Estimate token count */
-  estimateTokens(prompt: string): number;
+  estimateTokens(prompt: string): number
 }

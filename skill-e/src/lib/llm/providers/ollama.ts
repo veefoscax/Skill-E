@@ -1,43 +1,40 @@
 /**
  * Ollama Provider
- * 
+ *
  * Implementation for Ollama local LLM server.
  * Runs models locally with OpenAI-compatible API.
  */
 
-import { BaseLLMProvider } from '../base-provider';
+import { BaseLLMProvider } from '../base-provider'
 import type {
   ProviderConfig,
   GenerateOptions,
   StreamOptions,
   GenerationResult,
   LLMProvider,
-} from '../types';
+} from '../types'
 
 /**
  * Ollama Local LLM Provider
  */
 export class OllamaProvider extends BaseLLMProvider {
   constructor(config: ProviderConfig) {
-    super(config);
+    super(config)
   }
-  
+
   /**
    * Build request headers
    */
   protected buildHeaders(): Record<string, string> {
     return {
       'Content-Type': 'application/json',
-    };
+    }
   }
-  
+
   /**
    * Build request body for Ollama API
    */
-  protected buildRequestBody(
-    prompt: string,
-    options: GenerateOptions
-  ): Record<string, unknown> {
+  protected buildRequestBody(prompt: string, options: GenerateOptions): Record<string, unknown> {
     return {
       model: options.model,
       messages: [
@@ -53,22 +50,22 @@ export class OllamaProvider extends BaseLLMProvider {
         ...(options.topP !== undefined && { top_p: options.topP }),
         ...(options.stopSequences && { stop: options.stopSequences }),
       },
-    };
+    }
   }
-  
+
   /**
    * Generate text completion
    */
   async generate(prompt: string, options: GenerateOptions): Promise<GenerationResult> {
-    const startTime = Date.now();
-    
-    const body = this.buildRequestBody(prompt, options);
-    const response = await this.makeRequest('/chat', body);
-    const text = this.extractTextFromResponse(response);
-    
-    return this.createResult(text, options.model, startTime, response);
+    const startTime = Date.now()
+
+    const body = this.buildRequestBody(prompt, options)
+    const response = await this.makeRequest('/chat', body)
+    const text = this.extractTextFromResponse(response)
+
+    return this.createResult(text, options.model, startTime, response)
   }
-  
+
   /**
    * Stream text generation
    */
@@ -87,52 +84,52 @@ export class OllamaProvider extends BaseLLMProvider {
         num_predict: options.maxTokens || 4000,
         ...(options.topP !== undefined && { top_p: options.topP }),
       },
-    };
-    
-    const url = `${this.config.baseUrl}/chat`;
-    const headers = this.buildHeaders();
-    
+    }
+
+    const url = `${this.config.baseUrl}/chat`
+    const headers = this.buildHeaders()
+
     const response = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-    });
-    
+    })
+
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Ollama streaming error (${response.status}): ${errorText}`);
+      const errorText = await response.text()
+      throw new Error(`Ollama streaming error (${response.status}): ${errorText}`)
     }
-    
+
     if (!response.body) {
-      throw new Error('No response body for streaming');
+      throw new Error('No response body for streaming')
     }
-    
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+
     try {
       while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) break;
-        
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(line => line.trim() !== '');
-        
+        const { done, value } = await reader.read()
+
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n').filter(line => line.trim() !== '')
+
         for (const line of lines) {
           try {
-            const parsed = JSON.parse(line);
-            
+            const parsed = JSON.parse(line)
+
             // Ollama streaming format:
             // message.content (accumulated) or message.content delta
             if (parsed.message?.content) {
-              options.onChunk(parsed.message.content);
+              options.onChunk(parsed.message.content)
             }
-            
+
             // Check if done
             if (parsed.done) {
-              options.onComplete?.();
-              return;
+              options.onComplete?.()
+              return
             }
           } catch (e) {
             // Skip invalid JSON
@@ -140,34 +137,34 @@ export class OllamaProvider extends BaseLLMProvider {
         }
       }
     } catch (error) {
-      options.onError?.(error as Error);
-      throw error;
+      options.onError?.(error as Error)
+      throw error
     } finally {
-      reader.releaseLock();
+      reader.releaseLock()
     }
-    
-    options.onComplete?.();
+
+    options.onComplete?.()
   }
-  
+
   /**
    * List available models from Ollama server
    */
   async listModels(): Promise<string[]> {
     try {
-      const response = await fetch(`${this.config.baseUrl}/tags`);
-      
+      const response = await fetch(`${this.config.baseUrl}/tags`)
+
       if (!response.ok) {
-        return this.config.availableModels;
+        return this.config.availableModels
       }
-      
-      const data = await response.json() as { models?: Array<{ name: string }> };
-      return data.models?.map(m => m.name) || this.config.availableModels;
+
+      const data = (await response.json()) as { models?: Array<{ name: string }> }
+      return data.models?.map(m => m.name) || this.config.availableModels
     } catch (error) {
-      console.warn('Failed to list Ollama models:', error);
-      return this.config.availableModels;
+      console.warn('Failed to list Ollama models:', error)
+      return this.config.availableModels
     }
   }
-  
+
   /**
    * Pull a model from Ollama registry
    */
@@ -176,32 +173,32 @@ export class OllamaProvider extends BaseLLMProvider {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: modelName }),
-    });
-    
+    })
+
     if (!response.ok) {
-      throw new Error(`Failed to pull model ${modelName}: ${response.statusText}`);
+      throw new Error(`Failed to pull model ${modelName}: ${response.statusText}`)
     }
-    
+
     if (!response.body || !onProgress) {
-      return;
+      return
     }
-    
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+
     try {
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter(l => l.trim());
-        
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n').filter(l => l.trim())
+
         for (const line of lines) {
           try {
-            const parsed = JSON.parse(line);
+            const parsed = JSON.parse(line)
             if (parsed.completed !== undefined && parsed.total) {
-              onProgress(parsed.completed / parsed.total);
+              onProgress(parsed.completed / parsed.total)
             }
           } catch {
             // Ignore parse errors
@@ -209,10 +206,10 @@ export class OllamaProvider extends BaseLLMProvider {
         }
       }
     } finally {
-      reader.releaseLock();
+      reader.releaseLock()
     }
   }
-  
+
   /**
    * Validate configuration
    */
@@ -221,23 +218,23 @@ export class OllamaProvider extends BaseLLMProvider {
       // Check if Ollama server is running
       const response = await fetch(`${this.config.baseUrl}/tags`, {
         method: 'GET',
-      });
-      
+      })
+
       if (!response.ok) {
-        return false;
+        return false
       }
-      
+
       // Check if default model is available
-      const data = await response.json() as { models?: Array<{ name: string }> };
-      const models = data.models?.map(m => m.name) || [];
-      
-      return models.includes(this.config.defaultModel);
+      const data = (await response.json()) as { models?: Array<{ name: string }> }
+      const models = data.models?.map(m => m.name) || []
+
+      return models.includes(this.config.defaultModel)
     } catch (error) {
-      console.error('Ollama validation failed:', error);
-      return false;
+      console.error('Ollama validation failed:', error)
+      return false
     }
   }
-  
+
   /**
    * Get provider metadata
    */
@@ -250,15 +247,7 @@ export class OllamaProvider extends BaseLLMProvider {
       docsUrl: 'https://github.com/ollama/ollama/blob/main/docs/api.md',
       requiresApiKey: false,
       hasFreeTier: true,
-      popularModels: [
-        'llama3.1',
-        'llama3',
-        'mistral',
-        'codellama',
-        'qwen2',
-        'gemma2',
-        'phi3',
-      ],
+      popularModels: ['llama3.1', 'llama3', 'mistral', 'codellama', 'qwen2', 'gemma2', 'phi3'],
       features: [
         'Local execution',
         'Privacy focused',
@@ -266,6 +255,6 @@ export class OllamaProvider extends BaseLLMProvider {
         'Custom models',
         'Open source',
       ],
-    };
+    }
   }
 }

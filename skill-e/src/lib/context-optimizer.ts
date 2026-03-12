@@ -1,20 +1,20 @@
 /**
  * Context Preparation & Optimization
- * 
+ *
  * Implements Smart Context Selection (FR-6.19) and Hierarchical Summarization (FR-6.20)
  * to prevent context bloat when generating skills.
- * 
+ *
  * Key principles:
  * - Use only "Key Steps" (max ~10 key frames) instead of raw video/frames
  * - Compress console/network logs into summaries
  * - Hierarchical structure: High-level goal → Step summaries → Detailed logs (on demand)
  * - Prefer API/DOM automation; fall back to image-based only when necessary
- * 
+ *
  * Requirements: FR-6.19, FR-6.20
  */
 
-import type { ProcessedSession, ProcessedStep, LLMContext } from '../types/processing';
-import { readFile } from '@tauri-apps/plugin-fs'; // UPDATED: Use Tauri FS plugin
+import type { ProcessedSession, ProcessedStep, LLMContext } from '../types/processing'
+import { readFile } from '@tauri-apps/plugin-fs' // UPDATED: Use Tauri FS plugin
 
 /**
  * Optimized context for skill generation
@@ -22,53 +22,53 @@ import { readFile } from '@tauri-apps/plugin-fs'; // UPDATED: Use Tauri FS plugi
  */
 export interface OptimizedContext {
   /** High-level task description (Level 1) */
-  taskGoal: string;
+  taskGoal: string
 
   /** Key steps only (max ~10) with summaries (Level 2) */
-  keySteps: OptimizedStep[];
+  keySteps: OptimizedStep[]
 
   /** Complete narration for context */
-  fullNarration: string;
+  fullNarration: string
 
   /** Detected variables */
   variables: Array<{
-    name: string;
-    type: string;
-    description: string;
-    exampleValue: string;
-  }>;
+    name: string
+    type: string
+    description: string
+    exampleValue: string
+  }>
 
   /** Detected conditionals */
   conditionals: Array<{
-    condition: string;
-    thenAction: string;
-    elseAction?: string;
-  }>;
+    condition: string
+    thenAction: string
+    elseAction?: string
+  }>
 
   /** Compressed summary statistics */
   summary: {
-    totalSteps: number;
-    totalClicks: number;
-    totalTextInputs: number;
-    totalAnnotations: number;
-    durationSeconds: number;
-    mainApplication?: string;
-  };
+    totalSteps: number
+    totalClicks: number
+    totalTextInputs: number
+    totalAnnotations: number
+    durationSeconds: number
+    mainApplication?: string
+  }
 
   /** Compressed console/network logs (Level 3 - summary only) */
   logs?: {
-    consoleErrors: number;
-    consoleWarnings: number;
-    consoleInfo: number;
-    networkRequests: number;
-    apiCallPatterns?: string[]; // e.g., ["POST /login", "GET /user"]
-  };
+    consoleErrors: number
+    consoleWarnings: number
+    consoleInfo: number
+    networkRequests: number
+    apiCallPatterns?: string[] // e.g., ["POST /login", "GET /user"]
+  }
 
   /** Reference to full data (not embedded in prompt) */
   references: {
-    screenshotArchive: string;
-    sessionDataPath: string;
-  };
+    screenshotArchive: string
+    sessionDataPath: string
+  }
 }
 
 /**
@@ -76,38 +76,38 @@ export interface OptimizedContext {
  */
 export interface OptimizedStep {
   /** Step number */
-  number: number;
+  number: number
 
   /** Brief description (from transcript or inferred) */
-  description: string;
+  description: string
 
   /** Base64 screenshot (key frame only) */
-  screenshot?: string;
+  screenshot?: string
 
   /** Time range */
   timeRange: {
-    start: number;
-    end: number;
-  };
+    start: number
+    end: number
+  }
 
   /** Action summary (not detailed logs) */
   actions: {
-    clicks: number;
-    textInputs: number;
-    annotations: number;
-  };
+    clicks: number
+    textInputs: number
+    annotations: number
+  }
 
   /** Important notes only (filtered) */
-  notes: string[];
+  notes: string[]
 
   /** Window/app context */
   context?: {
-    window?: string;
-    application?: string;
-  };
+    window?: string
+    application?: string
+  }
 
   /** OCR text (truncated if too long) */
-  ocrText?: string;
+  ocrText?: string
 }
 
 /**
@@ -115,19 +115,19 @@ export interface OptimizedStep {
  */
 export interface OptimizationConfig {
   /** Maximum number of key steps to include (default: 10) */
-  maxKeySteps: number;
+  maxKeySteps: number
 
   /** Maximum OCR text length per step (default: 500 chars) */
-  maxOcrLength: number;
+  maxOcrLength: number
 
   /** Maximum note length (default: 200 chars) */
-  maxNoteLength: number;
+  maxNoteLength: number
 
   /** Whether to include screenshots (default: true) */
-  includeScreenshots: boolean;
+  includeScreenshots: boolean
 
   /** Whether to include OCR text (default: true) */
-  includeOcr: boolean;
+  includeOcr: boolean
 }
 
 /**
@@ -139,13 +139,13 @@ export const DEFAULT_OPTIMIZATION_CONFIG: OptimizationConfig = {
   maxNoteLength: 200,
   includeScreenshots: true,
   includeOcr: true,
-};
+}
 
 /**
  * Optimize processed session for skill generation
- * 
+ *
  * Implements Smart Context Selection (FR-6.19) and Hierarchical Summarization (FR-6.20)
- * 
+ *
  * @param processedSession - Complete processed session from S05
  * @param config - Optimization configuration
  * @returns Optimized context ready for LLM
@@ -155,15 +155,13 @@ export async function optimizeContext(
   config: OptimizationConfig = DEFAULT_OPTIMIZATION_CONFIG
 ): Promise<OptimizedContext> {
   // Level 1: High-level goal
-  const taskGoal = extractTaskGoal(processedSession);
+  const taskGoal = extractTaskGoal(processedSession)
 
   // Smart Context Selection: Select key steps only (FR-6.19)
-  const keySteps = selectKeySteps(processedSession.steps, config.maxKeySteps);
+  const keySteps = selectKeySteps(processedSession.steps, config.maxKeySteps)
 
   // Level 2: Step summaries
-  const optimizedSteps = await Promise.all(
-    keySteps.map(step => optimizeStep(step, config))
-  );
+  const optimizedSteps = await Promise.all(keySteps.map(step => optimizeStep(step, config)))
 
   // Compress variables
   const variables = processedSession.allVariables.map(v => ({
@@ -171,14 +169,14 @@ export async function optimizeContext(
     type: inferVariableType(v.description),
     description: truncateText(v.description, 200),
     exampleValue: extractExampleValue(v.transcriptSegment),
-  }));
+  }))
 
   // Compress conditionals
   const conditionals = processedSession.allConditionals.map(c => ({
     condition: truncateText(c.condition, 150),
     thenAction: truncateText(c.thenAction, 150),
     elseAction: c.elseAction ? truncateText(c.elseAction, 150) : undefined,
-  }));
+  }))
 
   // Calculate summary statistics
   const summary = {
@@ -190,10 +188,10 @@ export async function optimizeContext(
       processedSession.allAnnotations.selectedElements.length,
     durationSeconds: Math.round(processedSession.duration / 1000),
     mainApplication: extractMainApplication(processedSession.steps),
-  };
+  }
 
   // Hierarchical Summarization: Compress logs (FR-6.20, Level 3)
-  const logs = compressLogs(processedSession);
+  const logs = compressLogs(processedSession)
 
   return {
     taskGoal,
@@ -207,128 +205,125 @@ export async function optimizeContext(
       screenshotArchive: processedSession.sessionId,
       sessionDataPath: processedSession.sessionId,
     },
-  };
+  }
 }
 
 /**
  * Extract high-level task goal from session (Level 1)
- * 
+ *
  * @param session - Processed session
  * @returns Task goal description
  */
 function extractTaskGoal(session: ProcessedSession): string {
   // Try to extract from first sentence of transcript (highest priority)
   if (session.fullTranscript && session.fullTranscript.trim()) {
-    const firstSentence = session.fullTranscript.split(/[.!?]/)[0].trim();
+    const firstSentence = session.fullTranscript.split(/[.!?]/)[0].trim()
     if (firstSentence.length > 10 && firstSentence.length < 200) {
-      return firstSentence;
+      return firstSentence
     }
   }
 
   // Second priority: Analyze steps for application context
-  const mainApp = extractMainApplication(session.steps);
-  const appContexts: string[] = [];
-  
+  const mainApp = extractMainApplication(session.steps)
+  const appContexts: string[] = []
+
   // Extract window titles from steps if available
   for (const step of session.steps.slice(0, 5)) {
     if (step.windowTitle) {
-      appContexts.push(step.windowTitle);
+      appContexts.push(step.windowTitle)
     }
   }
-  
-  const uniqueApps = [...new Set(appContexts)].slice(0, 2).join(' → ');
-  
+
+  const uniqueApps = [...new Set(appContexts)].slice(0, 2).join(' → ')
+
   // Count action types
-  const hasClicks = session.allAnnotations.clicks.length > 0;
-  const hasTextInput = session.allAnnotations.keyboardInputs.length > 0;
-  const hasDrawings = session.allAnnotations.drawings.length > 0;
-  const stepCount = session.steps.length;
+  const hasClicks = session.allAnnotations.clicks.length > 0
+  const hasTextInput = session.allAnnotations.keyboardInputs.length > 0
+  const hasDrawings = session.allAnnotations.drawings.length > 0
+  const stepCount = session.steps.length
 
   // Build specific description
-  let actionDescription = '';
+  let actionDescription = ''
   if (hasClicks && hasTextInput) {
-    actionDescription = 'interactive workflow with navigation and data entry';
+    actionDescription = 'interactive workflow with navigation and data entry'
   } else if (hasClicks && hasDrawings) {
-    actionDescription = 'annotated demonstration with visual highlights';
+    actionDescription = 'annotated demonstration with visual highlights'
   } else if (hasClicks) {
-    actionDescription = 'navigation and interaction sequence';
+    actionDescription = 'navigation and interaction sequence'
   } else if (hasTextInput) {
-    actionDescription = 'data entry and text input workflow';
+    actionDescription = 'data entry and text input workflow'
   } else {
-    actionDescription = 'automated demonstration';
+    actionDescription = 'automated demonstration'
   }
 
   if (mainApp || uniqueApps) {
-    const app = uniqueApps || mainApp;
-    return `${actionDescription} in ${app} (${stepCount} steps recorded)`;
+    const app = uniqueApps || mainApp
+    return `${actionDescription} in ${app} (${stepCount} steps recorded)`
   }
 
-  return `${actionDescription} (${stepCount} steps recorded)`;
+  return `${actionDescription} (${stepCount} steps recorded)`
 }
 
 /**
  * Select key steps from all steps (Smart Context Selection - FR-6.19)
- * 
+ *
  * Prioritizes steps with:
  * - Annotations (drawings, element selections)
  * - Transcript content
  * - Window changes
  * - Variables or conditionals
- * 
+ *
  * @param steps - All processed steps
  * @param maxKeySteps - Maximum number of steps to select
  * @returns Selected key steps
  */
-function selectKeySteps(
-  steps: ProcessedStep[],
-  maxKeySteps: number
-): ProcessedStep[] {
+function selectKeySteps(steps: ProcessedStep[], maxKeySteps: number): ProcessedStep[] {
   // If we have fewer steps than the limit, return all
   if (steps.length <= maxKeySteps) {
-    return steps;
+    return steps
   }
 
   // Score each step by importance
-  const scoredSteps = steps.map((step) => {
-    let score = 0;
+  const scoredSteps = steps.map(step => {
+    let score = 0
 
     // Transcript content (higher score for longer transcripts)
-    score += Math.min(step.transcript.length / 100, 5);
+    score += Math.min(step.transcript.length / 100, 5)
 
     // Annotations (high importance)
-    score += step.annotations.drawings.filter(d => d.isPinned).length * 3;
-    score += step.annotations.selectedElements.length * 3;
-    score += step.annotations.clicks.length * 1;
+    score += step.annotations.drawings.filter(d => d.isPinned).length * 3
+    score += step.annotations.selectedElements.length * 3
+    score += step.annotations.clicks.length * 1
 
     // Window/app context
-    if (step.windowTitle) score += 2;
-    if (step.applicationName) score += 1;
+    if (step.windowTitle) score += 2
+    if (step.applicationName) score += 1
 
     // Variables and conditionals (very high importance)
-    score += step.variables.length * 5;
-    score += step.conditionals.length * 5;
+    score += step.variables.length * 5
+    score += step.conditionals.length * 5
 
     // OCR content (indicates important visual information)
-    if (step.ocrText && step.ocrText.length > 50) score += 2;
+    if (step.ocrText && step.ocrText.length > 50) score += 2
 
-    return { step, score };
-  });
+    return { step, score }
+  })
 
   // Sort by score (descending)
-  scoredSteps.sort((a, b) => b.score - a.score);
+  scoredSteps.sort((a, b) => b.score - a.score)
 
   // Take top N steps
-  const selectedSteps = scoredSteps.slice(0, maxKeySteps).map(s => s.step);
+  const selectedSteps = scoredSteps.slice(0, maxKeySteps).map(s => s.step)
 
   // Re-sort by step number to maintain chronological order
-  selectedSteps.sort((a, b) => a.stepNumber - b.stepNumber);
+  selectedSteps.sort((a, b) => a.stepNumber - b.stepNumber)
 
-  return selectedSteps;
+  return selectedSteps
 }
 
 /**
  * Optimize a single step (Level 2)
- * 
+ *
  * @param step - Processed step
  * @param config - Optimization configuration
  * @returns Optimized step
@@ -338,48 +333,48 @@ async function optimizeStep(
   config: OptimizationConfig
 ): Promise<OptimizedStep> {
   // Read screenshot if needed
-  let screenshot: string | undefined;
+  let screenshot: string | undefined
   if (config.includeScreenshots && step.screenshotPath) {
     try {
-      screenshot = await readImageAsBase64(step.screenshotPath);
+      screenshot = await readImageAsBase64(step.screenshotPath)
     } catch (error) {
-      console.warn(`Failed to read screenshot for step ${step.stepNumber}:`, error);
+      console.warn(`Failed to read screenshot for step ${step.stepNumber}:`, error)
     }
   }
 
   // Build notes (filter and truncate)
-  const notes: string[] = [];
+  const notes: string[] = []
 
   // Add important drawing annotations
   for (const drawing of step.annotations.drawings) {
     if (drawing.isPinned) {
-      const note = `${drawing.type} annotation at (${Math.round(drawing.startPoint.x)}, ${Math.round(drawing.startPoint.y)})`;
-      notes.push(truncateText(note, config.maxNoteLength));
+      const note = `${drawing.type} annotation at (${Math.round(drawing.startPoint.x)}, ${Math.round(drawing.startPoint.y)})`
+      notes.push(truncateText(note, config.maxNoteLength))
     }
   }
 
   // Add element selections (very important)
   for (const element of step.annotations.selectedElements) {
-    const note = `Selected: ${element.tagName} - "${element.textContent}"`;
-    notes.push(truncateText(note, config.maxNoteLength));
+    const note = `Selected: ${element.tagName} - "${element.textContent}"`
+    notes.push(truncateText(note, config.maxNoteLength))
   }
 
   // Limit total notes to avoid bloat
-  const limitedNotes = notes.slice(0, 5);
+  const limitedNotes = notes.slice(0, 5)
 
   // Build context
-  const context: OptimizedStep['context'] = {};
+  const context: OptimizedStep['context'] = {}
   if (step.windowTitle) {
-    context.window = truncateText(step.windowTitle, 100);
+    context.window = truncateText(step.windowTitle, 100)
   }
   if (step.applicationName) {
-    context.application = truncateText(step.applicationName, 50);
+    context.application = truncateText(step.applicationName, 50)
   }
 
   // Truncate OCR text if needed
-  let ocrText: string | undefined;
+  let ocrText: string | undefined
   if (config.includeOcr && step.ocrText) {
-    ocrText = truncateText(step.ocrText, config.maxOcrLength);
+    ocrText = truncateText(step.ocrText, config.maxOcrLength)
   }
 
   return {
@@ -395,14 +390,14 @@ async function optimizeStep(
     notes: limitedNotes,
     context: Object.keys(context).length > 0 ? context : undefined,
     ocrText,
-  };
+  }
 }
 
 /**
  * Compress console/network logs into summaries (Level 3 - FR-6.20)
- * 
+ *
  * Instead of including full logs, provide counts and patterns
- * 
+ *
  * @param session - Processed session
  * @returns Compressed log summary
  */
@@ -413,147 +408,148 @@ function compressLogs(_session: ProcessedSession): OptimizedContext['logs'] {
   // For now, return undefined (no log data available yet)
   // This will be populated when S02 adds console/network capture
 
-  return undefined;
+  return undefined
 }
 
 /**
  * Extract main application from steps
- * 
+ *
  * @param steps - Processed steps
  * @returns Most common application name
  */
 function extractMainApplication(steps: ProcessedStep[]): string | undefined {
-  const appCounts = new Map<string, number>();
+  const appCounts = new Map<string, number>()
 
   for (const step of steps) {
     if (step.applicationName) {
-      const count = appCounts.get(step.applicationName) || 0;
-      appCounts.set(step.applicationName, count + 1);
+      const count = appCounts.get(step.applicationName) || 0
+      appCounts.set(step.applicationName, count + 1)
     }
   }
 
   if (appCounts.size === 0) {
-    return undefined;
+    return undefined
   }
 
   // Find most common application
-  let maxCount = 0;
-  let mainApp: string | undefined;
+  let maxCount = 0
+  let mainApp: string | undefined
 
   for (const [app, count] of appCounts.entries()) {
     if (count > maxCount) {
-      maxCount = count;
-      mainApp = app;
+      maxCount = count
+      mainApp = app
     }
   }
 
-  return mainApp;
+  return mainApp
 }
 
 /**
  * Infer variable type from description
- * 
+ *
  * @param description - Variable description
  * @returns Inferred type
  */
 function inferVariableType(description: string): string {
-  const lower = description.toLowerCase();
+  const lower = description.toLowerCase()
 
-  if (lower.includes('email')) return 'email';
-  if (lower.includes('password')) return 'password';
-  if (lower.includes('url') || lower.includes('link')) return 'url';
-  if (lower.includes('number') || lower.includes('count')) return 'number';
-  if (lower.includes('date')) return 'date';
-  if (lower.includes('file') || lower.includes('path')) return 'file';
-  if (lower.includes('select') || lower.includes('choose') || lower.includes('option')) return 'selection';
+  if (lower.includes('email')) return 'email'
+  if (lower.includes('password')) return 'password'
+  if (lower.includes('url') || lower.includes('link')) return 'url'
+  if (lower.includes('number') || lower.includes('count')) return 'number'
+  if (lower.includes('date')) return 'date'
+  if (lower.includes('file') || lower.includes('path')) return 'file'
+  if (lower.includes('select') || lower.includes('choose') || lower.includes('option'))
+    return 'selection'
 
-  return 'text';
+  return 'text'
 }
 
 /**
  * Extract example value from transcript segment
- * 
+ *
  * @param segment - Transcript segment
  * @returns Example value
  */
 function extractExampleValue(segment: string): string {
   // Try to extract quoted values
-  const quotedMatch = segment.match(/["']([^"']+)["']/);
+  const quotedMatch = segment.match(/["']([^"']+)["']/)
   if (quotedMatch) {
-    return quotedMatch[1];
+    return quotedMatch[1]
   }
 
   // Try to extract email-like patterns
-  const emailMatch = segment.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/);
+  const emailMatch = segment.match(/\b[\w.+-]+@[\w.-]+\.\w+\b/)
   if (emailMatch) {
-    return emailMatch[0];
+    return emailMatch[0]
   }
 
   // Try to extract URL-like patterns
-  const urlMatch = segment.match(/https?:\/\/[^\s]+/);
+  const urlMatch = segment.match(/https?:\/\/[^\s]+/)
   if (urlMatch) {
-    return urlMatch[0];
+    return urlMatch[0]
   }
 
   // Fallback: use first few words
-  const words = segment.split(/\s+/).slice(0, 3);
-  return words.join(' ');
+  const words = segment.split(/\s+/).slice(0, 3)
+  return words.join(' ')
 }
 
 /**
  * Truncate text to maximum length
- * 
+ *
  * @param text - Text to truncate
  * @param maxLength - Maximum length
  * @returns Truncated text
  */
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
-    return text;
+    return text
   }
 
-  return text.substring(0, maxLength - 3) + '...';
+  return text.substring(0, maxLength - 3) + '...'
 }
 
 /**
  * Read image file and convert to base64
- * 
+ *
  * @param imagePath - Path to image file
  * @returns Base64-encoded image data with data URL prefix
  */
 async function readImageAsBase64(imagePath: string): Promise<string> {
   try {
     // UPDATED: Use Tauri FS plugin to read file directly
-    const bytes = await readFile(imagePath);
+    const bytes = await readFile(imagePath)
 
     // Convert Uint8Array to base64
-    let binary = '';
-    const len = bytes.byteLength;
+    let binary = ''
+    const len = bytes.byteLength
     for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
+      binary += String.fromCharCode(bytes[i])
     }
     // Use browser's btoa for base64 encoding
-    const base64 = btoa(binary);
+    const base64 = btoa(binary)
 
     // Determine mime type (simple extension check)
-    const ext = imagePath.split('.').pop()?.toLowerCase();
-    let mimeType = 'image/png';
-    if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
-    else if (ext === 'webp') mimeType = 'image/webp';
+    const ext = imagePath.split('.').pop()?.toLowerCase()
+    let mimeType = 'image/png'
+    if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg'
+    else if (ext === 'webp') mimeType = 'image/webp'
 
-    return `data:${mimeType};base64,${base64}`;
+    return `data:${mimeType};base64,${base64}`
   } catch (error) {
-    console.warn('Failed to read image as base64 using FS:', imagePath, error);
+    console.warn('Failed to read image as base64 using FS:', imagePath, error)
     // Fallback? No, fetch will fail so we assume failure
-    throw error;
+    throw error
   }
 }
 
 /**
  * Convert optimized context to LLM context format
- * 
+ *
  * This bridges the new optimized format with the existing LLMContext interface
- * 
+ *
  * @param optimizedContext - Optimized context
  * @returns LLM context
  */
@@ -587,5 +583,5 @@ export function toLLMContext(optimizedContext: OptimizedContext): LLMContext {
       totalPageLoads: 0, // Not tracked in optimized format
     },
     references: optimizedContext.references,
-  };
+  }
 }

@@ -1,13 +1,13 @@
 /**
  * StepEditor Component - Usage Example
- * 
+ *
  * Demonstrates how to use the StepEditor component for inline step editing.
  */
 
-import * as React from 'react';
-import { StepEditor } from './StepEditor';
-import type { SkillStep } from '@/lib/skill-parser';
-import { parseSkill } from '@/lib/skill-parser';
+import * as React from 'react'
+import { StepEditor } from './StepEditor'
+import type { SkillStep } from '@/lib/skill-parser'
+import { parseSkill } from '@/lib/skill-parser'
 
 /**
  * Example: Basic step editing
@@ -25,28 +25,24 @@ export function BasicStepEditingExample() {
     requiresConfirmation: false,
     status: 'pending',
     stepNumber: 1,
-  });
+  })
 
   const handleSave = (updatedStep: SkillStep) => {
-    console.log('Step saved:', updatedStep);
-    setStep(updatedStep);
-    alert('Step saved successfully!');
-  };
+    console.log('Step saved:', updatedStep)
+    setStep(updatedStep)
+    alert('Step saved successfully!')
+  }
 
   const handleCancel = () => {
-    console.log('Edit cancelled');
-  };
+    console.log('Edit cancelled')
+  }
 
   return (
     <div className="p-4">
       <h2 className="text-lg font-semibold mb-4">Basic Step Editing</h2>
-      <StepEditor
-        step={step}
-        onSave={handleSave}
-        onCancel={handleCancel}
-      />
+      <StepEditor step={step} onSave={handleSave} onCancel={handleCancel} />
     </div>
-  );
+  )
 }
 
 /**
@@ -67,26 +63,26 @@ export function StepEditingWithRerunExample() {
     status: 'failed',
     error: 'Element not found',
     stepNumber: 1,
-  });
+  })
 
   const handleSave = (updatedStep: SkillStep) => {
-    console.log('Step saved:', updatedStep);
-    setStep(updatedStep);
-  };
+    console.log('Step saved:', updatedStep)
+    setStep(updatedStep)
+  }
 
   const handleRerun = (stepToRun: SkillStep) => {
-    console.log('Re-running step:', stepToRun);
-    alert(`Re-running step: ${stepToRun.instruction}`);
-    
+    console.log('Re-running step:', stepToRun)
+    alert(`Re-running step: ${stepToRun.instruction}`)
+
     // Simulate execution
     setTimeout(() => {
       setStep({
         ...stepToRun,
         status: 'success',
         error: undefined,
-      });
-    }, 1000);
-  };
+      })
+    }, 1000)
+  }
 
   return (
     <div className="p-4">
@@ -96,14 +92,9 @@ export function StepEditingWithRerunExample() {
           <strong>Error:</strong> {step.error}
         </p>
       </div>
-      <StepEditor
-        step={step}
-        onSave={handleSave}
-        onRerun={handleRerun}
-        showRerun={true}
-      />
+      <StepEditor step={step} onSave={handleSave} onRerun={handleRerun} showRerun={true} />
     </div>
-  );
+  )
 }
 
 /**
@@ -123,22 +114,19 @@ export function TypeActionEditingExample() {
     requiresConfirmation: false,
     status: 'pending',
     stepNumber: 2,
-  });
+  })
 
   const handleSave = (updatedStep: SkillStep) => {
-    console.log('Type action step saved:', updatedStep);
-    setStep(updatedStep);
-  };
+    console.log('Type action step saved:', updatedStep)
+    setStep(updatedStep)
+  }
 
   return (
     <div className="p-4">
       <h2 className="text-lg font-semibold mb-4">Type Action Editing</h2>
-      <StepEditor
-        step={step}
-        onSave={handleSave}
-      />
+      <StepEditor step={step} onSave={handleSave} />
     </div>
-  );
+  )
 }
 
 /**
@@ -157,17 +145,14 @@ export function ReadOnlyStepViewerExample() {
     requiresConfirmation: false,
     status: 'success',
     stepNumber: 3,
-  };
+  }
 
   return (
     <div className="p-4">
       <h2 className="text-lg font-semibold mb-4">Read-only Step Viewer</h2>
-      <StepEditor
-        step={step}
-        readOnly={true}
-      />
+      <StepEditor step={step} readOnly={true} />
     </div>
-  );
+  )
 }
 
 /**
@@ -193,56 +178,48 @@ description: Log in to the application
 ### Step 3: Submit
 
 1. Click the "Sign In" button
-2. Verify dashboard is displayed`;
+2. Verify dashboard is displayed`
 
-  const [parsedSkill] = React.useState(() => parseSkill(sampleSkillMarkdown));
-  const [steps, setSteps] = React.useState<SkillStep[]>(parsedSkill.steps);
-  const [editingStepId, setEditingStepId] = React.useState<string | null>(null);
+  const [parsedSkill] = React.useState(() => parseSkill(sampleSkillMarkdown))
+  const [steps, setSteps] = React.useState<SkillStep[]>(parsedSkill.steps)
+  const [editingStepId, setEditingStepId] = React.useState<string | null>(null)
 
   const handleEditStep = (stepId: string) => {
-    setEditingStepId(stepId);
-  };
+    setEditingStepId(stepId)
+  }
 
   const handleSaveStep = (updatedStep: SkillStep) => {
-    setSteps(prevSteps =>
-      prevSteps.map(s => (s.id === updatedStep.id ? updatedStep : s))
-    );
-    setEditingStepId(null);
-  };
+    setSteps(prevSteps => prevSteps.map(s => (s.id === updatedStep.id ? updatedStep : s)))
+    setEditingStepId(null)
+  }
 
   const handleCancelEdit = () => {
-    setEditingStepId(null);
-  };
+    setEditingStepId(null)
+  }
 
   const handleRerunStep = (step: SkillStep) => {
-    console.log('Re-running step:', step);
-    
+    console.log('Re-running step:', step)
+
     // Simulate execution
     setSteps(prevSteps =>
-      prevSteps.map(s =>
-        s.id === step.id
-          ? { ...s, status: 'running' as const }
-          : s
-      )
-    );
+      prevSteps.map(s => (s.id === step.id ? { ...s, status: 'running' as const } : s))
+    )
 
     setTimeout(() => {
       setSteps(prevSteps =>
         prevSteps.map(s =>
-          s.id === step.id
-            ? { ...s, status: 'success' as const, error: undefined }
-            : s
+          s.id === step.id ? { ...s, status: 'success' as const, error: undefined } : s
         )
-      );
-    }, 1500);
-  };
+      )
+    }, 1500)
+  }
 
   return (
     <div className="p-4 space-y-4">
       <h2 className="text-lg font-semibold">Skill Validation Workflow</h2>
-      
+
       <div className="space-y-4">
-        {steps.map((step) => (
+        {steps.map(step => (
           <div key={step.id} className="border rounded-lg p-4">
             {editingStepId === step.id ? (
               <StepEditor
@@ -264,10 +241,10 @@ description: Log in to the application
                         step.status === 'success'
                           ? 'bg-green-100 text-green-700'
                           : step.status === 'failed'
-                          ? 'bg-red-100 text-red-700'
-                          : step.status === 'running'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-gray-100 text-gray-700'
+                            ? 'bg-red-100 text-red-700'
+                            : step.status === 'running'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-gray-100 text-gray-700'
                       }`}
                     >
                       {step.status}
@@ -280,44 +257,40 @@ description: Log in to the application
                     Edit
                   </button>
                 </div>
-                
+
                 <p className="text-sm">{step.instruction}</p>
-                
+
                 {step.target && (
                   <div className="text-xs text-muted-foreground space-y-1">
                     {step.target.selector && (
-                      <div>Selector: <code>{step.target.selector}</code></div>
+                      <div>
+                        Selector: <code>{step.target.selector}</code>
+                      </div>
                     )}
                     {step.target.coordinates && (
                       <div>
                         Coordinates: ({step.target.coordinates.x}, {step.target.coordinates.y})
                       </div>
                     )}
-                    {step.target.description && (
-                      <div>Description: {step.target.description}</div>
-                    )}
+                    {step.target.description && <div>Description: {step.target.description}</div>}
                   </div>
                 )}
-                
-                {step.error && (
-                  <div className="text-sm text-destructive">
-                    Error: {step.error}
-                  </div>
-                )}
+
+                {step.error && <div className="text-sm text-destructive">Error: {step.error}</div>}
               </div>
             )}
           </div>
         ))}
       </div>
     </div>
-  );
+  )
 }
 
 /**
  * Example: All examples in one demo
  */
 export function StepEditorDemo() {
-  const [activeExample, setActiveExample] = React.useState<string>('basic');
+  const [activeExample, setActiveExample] = React.useState<string>('basic')
 
   const examples = {
     basic: <BasicStepEditingExample />,
@@ -325,7 +298,7 @@ export function StepEditorDemo() {
     type: <TypeActionEditingExample />,
     readonly: <ReadOnlyStepViewerExample />,
     workflow: <SkillValidationWorkflowExample />,
-  };
+  }
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -338,7 +311,7 @@ export function StepEditorDemo() {
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          {Object.keys(examples).map((key) => (
+          {Object.keys(examples).map(key => (
             <button
               key={key}
               onClick={() => setActiveExample(key)}
@@ -358,5 +331,5 @@ export function StepEditorDemo() {
         </div>
       </div>
     </div>
-  );
+  )
 }

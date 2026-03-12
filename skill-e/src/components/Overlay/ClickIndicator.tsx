@@ -1,6 +1,6 @@
 /**
  * Click Indicator Component
- * 
+ *
  * Displays a numbered circle at click positions with ripple animation.
  * Features:
  * - Numbered display (1, 2, 3...)
@@ -9,65 +9,65 @@
  * - Fade-out after 3 seconds (unless pinned)
  * - Optimized for 60fps performance
  * - Non-intrusive design with subtle shadows
- * 
+ *
  * Requirements: FR-4.1, FR-4.2, FR-4.3, NFR-4.2, NFR-4.3
  */
 
-import { useEffect, useState, useRef, memo } from 'react';
-import { ClickIndicator as ClickIndicatorType, COLORS } from '../../lib/overlay/click-tracker';
+import { useEffect, useState, useRef, memo } from 'react'
+import { ClickIndicator as ClickIndicatorType, COLORS } from '../../lib/overlay/click-tracker'
 
 interface ClickIndicatorProps {
-  click: ClickIndicatorType;
-  isPinned?: boolean;
-  onFadeComplete?: (clickId: string) => void;
+  click: ClickIndicatorType
+  isPinned?: boolean
+  onFadeComplete?: (clickId: string) => void
 }
 
 /**
  * Memoized ClickIndicator component for performance optimization
  * Only re-renders when click data or pin state changes
  */
-export const ClickIndicator = memo(function ClickIndicator({ 
-  click, 
-  isPinned = false, 
-  onFadeComplete 
+export const ClickIndicator = memo(function ClickIndicator({
+  click,
+  isPinned = false,
+  onFadeComplete,
 }: ClickIndicatorProps) {
-  const [isVisible, setIsVisible] = useState(true);
-  const [isFading, setIsFading] = useState(false);
-  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isVisible, setIsVisible] = useState(true)
+  const [isFading, setIsFading] = useState(false)
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     // Don't fade if pinned
     if (isPinned) {
-      return;
+      return
     }
 
     // Start fading after 2.5 seconds (fade animation takes 0.5s)
     fadeTimerRef.current = setTimeout(() => {
-      setIsFading(true);
-    }, 2500);
+      setIsFading(true)
+    }, 2500)
 
     // Remove from DOM after 3 seconds total
     removeTimerRef.current = setTimeout(() => {
-      setIsVisible(false);
-      onFadeComplete?.(click.id);
-    }, 3000);
+      setIsVisible(false)
+      onFadeComplete?.(click.id)
+    }, 3000)
 
     return () => {
       if (fadeTimerRef.current) {
-        clearTimeout(fadeTimerRef.current);
+        clearTimeout(fadeTimerRef.current)
       }
       if (removeTimerRef.current) {
-        clearTimeout(removeTimerRef.current);
+        clearTimeout(removeTimerRef.current)
       }
-    };
-  }, [click.id, isPinned, onFadeComplete]);
+    }
+  }, [click.id, isPinned, onFadeComplete])
 
   if (!isVisible) {
-    return null;
+    return null
   }
 
-  const color = COLORS[click.color];
+  const color = COLORS[click.color]
 
   return (
     <div
@@ -197,5 +197,5 @@ export const ClickIndicator = memo(function ClickIndicator({
         }
       `}</style>
     </div>
-  );
-});
+  )
+})

@@ -1,50 +1,50 @@
 /**
  * Draggable StepBubble Component
- * 
+ *
  * StepBubble with drag and drop support for reordering.
  * Uses HTML5 native drag and drop API.
- * 
+ *
  * Requirements: FR-4.38
  */
 
-import React, { useState, useCallback } from 'react';
-import { CaptureStep } from '@/stores/recording';
-import { StepBubble, StepBubbleExpanded } from './StepBubble';
+import React, { useState, useCallback } from 'react'
+import { CaptureStep } from '@/stores/recording'
+import { StepBubble, StepBubbleExpanded } from './StepBubble'
 
 /**
  * Props for DraggableStepBubble component
  */
 interface DraggableStepBubbleProps {
   /** The capture step to display */
-  step: CaptureStep;
+  step: CaptureStep
   /** Index of this step in the list */
-  index: number;
+  index: number
   /** Whether this step should be faded */
-  isFaded?: boolean;
+  isFaded?: boolean
   /** Whether the timeline is being hovered */
-  isTimelineHovered?: boolean;
+  isTimelineHovered?: boolean
   /** Whether this step is expanded */
-  isExpanded?: boolean;
+  isExpanded?: boolean
   /** Whether reordering is enabled */
-  reorderEnabled?: boolean;
+  reorderEnabled?: boolean
   /** Callback when step is clicked */
-  onClick?: (step: CaptureStep) => void;
+  onClick?: (step: CaptureStep) => void
   /** Callback when step is deleted */
-  onDelete?: (stepId: string) => void;
+  onDelete?: (stepId: string) => void
   /** Callback when step note is edited */
-  onEditNote?: (stepId: string, note: string) => void;
+  onEditNote?: (stepId: string, note: string) => void
   /** Callback when step is moved (drag & drop) */
-  onMove?: (dragIndex: number, dropIndex: number) => void;
+  onMove?: (dragIndex: number, dropIndex: number) => void
   /** Callback for keyboard reordering */
-  onReorder?: (stepId: string, direction: 'up' | 'down') => void;
+  onReorder?: (stepId: string, direction: 'up' | 'down') => void
 }
 
 /**
  * Draggable StepBubble Component
- * 
+ *
  * Wraps StepBubble with drag and drop functionality.
  * Shows drag handle when reordering is enabled.
- * 
+ *
  * Requirements: FR-4.38
  */
 export function DraggableStepBubble({
@@ -60,81 +60,90 @@ export function DraggableStepBubble({
   onMove,
   onReorder,
 }: DraggableStepBubbleProps) {
-  const [isDragging, setIsDragging] = useState(false);
-  const [isDragOver, setIsDragOver] = useState<'top' | 'bottom' | null>(null);
+  const [isDragging, setIsDragging] = useState(false)
+  const [isDragOver, setIsDragOver] = useState<'top' | 'bottom' | null>(null)
 
   // Drag start handler
-  const handleDragStart = useCallback((e: React.DragEvent) => {
-    setIsDragging(true);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', JSON.stringify({ index, stepId: step.id }));
-    
-    // Set drag image (optional - uses default if not set)
-    const target = e.currentTarget as HTMLElement;
-    if (target) {
-      e.dataTransfer.setDragImage(target, 20, 20);
-    }
-  }, [index, step.id]);
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      setIsDragging(true)
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', JSON.stringify({ index, stepId: step.id }))
+
+      // Set drag image (optional - uses default if not set)
+      const target = e.currentTarget as HTMLElement
+      if (target) {
+        e.dataTransfer.setDragImage(target, 20, 20)
+      }
+    },
+    [index, step.id]
+  )
 
   // Drag end handler
   const handleDragEnd = useCallback(() => {
-    setIsDragging(false);
-    setIsDragOver(null);
-  }, []);
+    setIsDragging(false)
+    setIsDragOver(null)
+  }, [])
 
   // Drag over handler
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+
     // Determine if dropping above or below
-    const rect = e.currentTarget.getBoundingClientRect();
-    const midpoint = rect.top + rect.height / 2;
-    const dropPosition = e.clientY < midpoint ? 'top' : 'bottom';
-    
-    setIsDragOver(dropPosition);
-  }, []);
+    const rect = e.currentTarget.getBoundingClientRect()
+    const midpoint = rect.top + rect.height / 2
+    const dropPosition = e.clientY < midpoint ? 'top' : 'bottom'
+
+    setIsDragOver(dropPosition)
+  }, [])
 
   // Drag leave handler
   const handleDragLeave = useCallback(() => {
-    setIsDragOver(null);
-  }, []);
+    setIsDragOver(null)
+  }, [])
 
   // Drop handler
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(null);
-    setIsDragging(false);
-    
-    try {
-      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-      const dragIndex = data.index;
-      
-      if (dragIndex === index) return; // Dropped on itself
-      
-      // Calculate drop index based on position
-      const rect = e.currentTarget.getBoundingClientRect();
-      const midpoint = rect.top + rect.height / 2;
-      const dropIndex = e.clientY < midpoint ? index : index + 1;
-      
-      onMove?.(dragIndex, dropIndex);
-    } catch {
-      // Ignore invalid drop data
-    }
-  }, [index, onMove]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setIsDragOver(null)
+      setIsDragging(false)
+
+      try {
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'))
+        const dragIndex = data.index
+
+        if (dragIndex === index) return // Dropped on itself
+
+        // Calculate drop index based on position
+        const rect = e.currentTarget.getBoundingClientRect()
+        const midpoint = rect.top + rect.height / 2
+        const dropIndex = e.clientY < midpoint ? index : index + 1
+
+        onMove?.(dragIndex, dropIndex)
+      } catch {
+        // Ignore invalid drop data
+      }
+    },
+    [index, onMove]
+  )
 
   // Keyboard reordering
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!reorderEnabled) return;
-    
-    if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      onReorder?.(step.id, 'up');
-    } else if (e.key === 'ArrowDown' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      onReorder?.(step.id, 'down');
-    }
-  }, [reorderEnabled, step.id, onReorder]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!reorderEnabled) return
+
+      if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        onReorder?.(step.id, 'up')
+      } else if (e.key === 'ArrowDown' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        onReorder?.(step.id, 'down')
+      }
+    },
+    [reorderEnabled, step.id, onReorder]
+  )
 
   // Drag handle component
   const DragHandle = () => (
@@ -143,23 +152,13 @@ export function DraggableStepBubble({
       draggable={reorderEnabled}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      title={reorderEnabled ? "Drag to reorder (or Cmd+↑/↓)" : undefined}
+      title={reorderEnabled ? 'Drag to reorder (or Cmd+↑/↓)' : undefined}
     >
-      <svg
-        className="w-4 h-4 text-gray-400"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M4 8h16M4 16h16"
-        />
+      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
       </svg>
     </div>
-  );
+  )
 
   // Keyboard controls component
   const KeyboardControls = () => (
@@ -184,7 +183,7 @@ export function DraggableStepBubble({
         </svg>
       </button>
     </div>
-  );
+  )
 
   // Wrapper class for drag states
   const wrapperClass = `
@@ -193,7 +192,7 @@ export function DraggableStepBubble({
     ${isDragOver === 'top' ? 'border-t-2 border-blue-500' : ''}
     ${isDragOver === 'bottom' ? 'border-b-2 border-blue-500' : ''}
     transition-all duration-150
-  `;
+  `
 
   return (
     <div
@@ -211,11 +210,11 @@ export function DraggableStepBubble({
       {isDragOver === 'bottom' && (
         <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10" />
       )}
-      
+
       <div className="flex items-center gap-1">
         {/* Drag handle - only when reordering enabled */}
         {reorderEnabled && <DragHandle />}
-        
+
         {/* Step bubble content */}
         <div className="flex-1 min-w-0">
           {isExpanded ? (
@@ -237,40 +236,40 @@ export function DraggableStepBubble({
             />
           )}
         </div>
-        
+
         {/* Keyboard reorder controls - only when expanded and reordering enabled */}
         {reorderEnabled && isExpanded && <KeyboardControls />}
       </div>
     </div>
-  );
+  )
 }
 
 /**
  * Draggable StepBubble List
- * 
+ *
  * Container that manages drag and drop state for multiple steps.
  */
 interface DraggableStepListProps {
   /** Array of steps to display */
-  steps: CaptureStep[];
+  steps: CaptureStep[]
   /** Whether steps should be faded */
-  getIsFaded: (step: CaptureStep) => boolean;
+  getIsFaded: (step: CaptureStep) => boolean
   /** Whether the timeline is hovered */
-  isTimelineHovered: boolean;
+  isTimelineHovered: boolean
   /** Currently expanded step ID */
-  expandedStepId: string | null;
+  expandedStepId: string | null
   /** Whether reordering is enabled */
-  reorderEnabled: boolean;
+  reorderEnabled: boolean
   /** Callback when a step is clicked */
-  onStepClick: (step: CaptureStep) => void;
+  onStepClick: (step: CaptureStep) => void
   /** Callback when a step is deleted */
-  onStepDelete: (stepId: string) => void;
+  onStepDelete: (stepId: string) => void
   /** Callback when a step note is edited */
-  onStepEditNote: (stepId: string, note: string) => void;
+  onStepEditNote: (stepId: string, note: string) => void
   /** Callback when steps are reordered */
-  onStepsReorder: (newSteps: CaptureStep[]) => void;
+  onStepsReorder: (newSteps: CaptureStep[]) => void
   /** Callback for individual step move */
-  onStepMove: (stepId: string, direction: 'up' | 'down') => void;
+  onStepMove: (stepId: string, direction: 'up' | 'down') => void
 }
 
 export function DraggableStepList({
@@ -286,18 +285,21 @@ export function DraggableStepList({
   onStepMove,
 }: DraggableStepListProps) {
   // Handle move from drag and drop
-  const handleMove = useCallback((dragIndex: number, dropIndex: number) => {
-    if (dragIndex === dropIndex) return;
-    
-    const newSteps = [...steps];
-    const [movedStep] = newSteps.splice(dragIndex, 1);
-    
-    // Adjust drop index if removing from before
-    const adjustedDropIndex = dragIndex < dropIndex ? dropIndex - 1 : dropIndex;
-    newSteps.splice(adjustedDropIndex, 0, movedStep);
-    
-    onStepsReorder(newSteps);
-  }, [steps, onStepsReorder]);
+  const handleMove = useCallback(
+    (dragIndex: number, dropIndex: number) => {
+      if (dragIndex === dropIndex) return
+
+      const newSteps = [...steps]
+      const [movedStep] = newSteps.splice(dragIndex, 1)
+
+      // Adjust drop index if removing from before
+      const adjustedDropIndex = dragIndex < dropIndex ? dropIndex - 1 : dropIndex
+      newSteps.splice(adjustedDropIndex, 0, movedStep)
+
+      onStepsReorder(newSteps)
+    },
+    [steps, onStepsReorder]
+  )
 
   return (
     <div className="space-y-2">
@@ -318,5 +320,5 @@ export function DraggableStepList({
         />
       ))}
     </div>
-  );
+  )
 }

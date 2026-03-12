@@ -1,27 +1,27 @@
 /**
  * Anthropic Provider
- * 
+ *
  * Implementation for Anthropic's Claude API.
  * Uses a different request/response format than OpenAI.
  */
 
-import { BaseLLMProvider } from '../base-provider';
+import { BaseLLMProvider } from '../base-provider'
 import type {
   ProviderConfig,
   GenerateOptions,
   StreamOptions,
   GenerationResult,
   LLMProvider,
-} from '../types';
+} from '../types'
 
 /**
  * Anthropic Claude Provider
  */
 export class AnthropicProvider extends BaseLLMProvider {
   constructor(config: ProviderConfig) {
-    super(config);
+    super(config)
   }
-  
+
   /**
    * Build request headers
    */
@@ -30,16 +30,13 @@ export class AnthropicProvider extends BaseLLMProvider {
       'Content-Type': 'application/json',
       'x-api-key': this.config.apiKey,
       'anthropic-version': '2023-06-01',
-    };
+    }
   }
-  
+
   /**
    * Build request body for Anthropic API
    */
-  protected buildRequestBody(
-    prompt: string,
-    options: GenerateOptions
-  ): Record<string, unknown> {
+  protected buildRequestBody(prompt: string, options: GenerateOptions): Record<string, unknown> {
     return {
       model: options.model,
       max_tokens: options.maxTokens || 4000,
@@ -51,24 +48,24 @@ export class AnthropicProvider extends BaseLLMProvider {
           content: prompt,
         },
       ],
-    };
+    }
   }
-  
+
   /**
    * Generate text completion
    */
   async generate(prompt: string, options: GenerateOptions): Promise<GenerationResult> {
-    const startTime = Date.now();
-    
-    const body = this.buildRequestBody(prompt, options);
-    const response = await this.makeRequest('/messages', body);
-    
+    const startTime = Date.now()
+
+    const body = this.buildRequestBody(prompt, options)
+    const response = await this.makeRequest('/messages', body)
+
     // Anthropic response: content[0].text
-    const text = this.extractTextFromResponse(response);
-    
-    return this.createResult(text, options.model, startTime, response);
+    const text = this.extractTextFromResponse(response)
+
+    return this.createResult(text, options.model, startTime, response)
   }
-  
+
   /**
    * Stream text generation
    */
@@ -76,54 +73,54 @@ export class AnthropicProvider extends BaseLLMProvider {
     const body = {
       ...this.buildRequestBody(prompt, options),
       stream: true,
-    };
-    
-    const url = `${this.config.baseUrl}/messages`;
-    const headers = this.buildHeaders();
-    
+    }
+
+    const url = `${this.config.baseUrl}/messages`
+    const headers = this.buildHeaders()
+
     const response = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
-    });
-    
+    })
+
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Anthropic streaming error (${response.status}): ${errorText}`);
+      const errorText = await response.text()
+      throw new Error(`Anthropic streaming error (${response.status}): ${errorText}`)
     }
-    
+
     if (!response.body) {
-      throw new Error('No response body for streaming');
+      throw new Error('No response body for streaming')
     }
-    
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+
     try {
       while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) break;
-        
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(line => line.trim() !== '');
-        
+        const { done, value } = await reader.read()
+
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n').filter(line => line.trim() !== '')
+
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            
+            const data = line.slice(6)
+
             if (data === '[DONE]') {
-              options.onComplete?.();
-              return;
+              options.onComplete?.()
+              return
             }
-            
+
             try {
-              const parsed = JSON.parse(data);
-              
+              const parsed = JSON.parse(data)
+
               // Anthropic streaming format:
               // type: content_block_delta, delta: { text: "..." }
               if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                options.onChunk(parsed.delta.text);
+                options.onChunk(parsed.delta.text)
               }
             } catch (e) {
               // Skip invalid JSON
@@ -132,36 +129,36 @@ export class AnthropicProvider extends BaseLLMProvider {
         }
       }
     } catch (error) {
-      options.onError?.(error as Error);
-      throw error;
+      options.onError?.(error as Error)
+      throw error
     } finally {
-      reader.releaseLock();
+      reader.releaseLock()
     }
-    
-    options.onComplete?.();
+
+    options.onComplete?.()
   }
-  
+
   /**
    * Validate configuration
    */
   async validate(): Promise<boolean> {
     if (!this.config.apiKey || !this.config.apiKey.startsWith('sk-')) {
-      return false;
+      return false
     }
-    
+
     try {
       // Try a simple request
       await this.generate('Hello', {
         model: this.config.defaultModel,
         maxTokens: 10,
-      });
-      return true;
+      })
+      return true
     } catch (error) {
-      console.error('Anthropic validation failed:', error);
-      return false;
+      console.error('Anthropic validation failed:', error)
+      return false
     }
   }
-  
+
   /**
    * Get provider metadata
    */
@@ -180,13 +177,7 @@ export class AnthropicProvider extends BaseLLMProvider {
         'claude-3-sonnet-20240229',
         'claude-3-haiku-20240307',
       ],
-      features: [
-        'Streaming',
-        'Vision',
-        'Function calling',
-        '100K+ context',
-        'Artifacts',
-      ],
-    };
+      features: ['Streaming', 'Vision', 'Function calling', '100K+ context', 'Artifacts'],
+    }
   }
 }

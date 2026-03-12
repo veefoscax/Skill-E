@@ -1,11 +1,11 @@
 /**
  * OCR Worker Client
- * 
+ *
  * Client-side wrapper for the OCR Web Worker.
  * Provides a simple API for text extraction using worker threads.
- * 
+ *
  * Requirements: FR-5.6, Performance Optimization
- * 
+ *
  * @example
  * ```typescript
  * const ocr = new OCRWorkerClient();
@@ -15,18 +15,18 @@
  * ```
  */
 
-import type { OCRResult, OCRRegion } from '../types/processing';
+import type { OCRResult, OCRRegion } from '../types/processing'
 
 /**
  * OCR Worker Client options
  */
 interface OCRWorkerOptions {
   /** Language for OCR (default: 'eng') */
-  language?: string;
+  language?: string
   /** Confidence threshold (0-1, default: 0.6) */
-  confidenceThreshold?: number;
+  confidenceThreshold?: number
   /** Timeout in milliseconds (default: 30000) */
-  timeout?: number;
+  timeout?: number
 }
 
 /**
@@ -34,66 +34,65 @@ interface OCRWorkerOptions {
  */
 interface OCRWorkerResult {
   /** Success status */
-  success: boolean;
+  success: boolean
   /** Extracted text (if successful) */
-  text?: string;
+  text?: string
   /** Confidence score (if successful) */
-  confidence?: number;
+  confidence?: number
   /** Text regions (if successful) */
-  regions?: OCRRegion[];
+  regions?: OCRRegion[]
   /** Error message (if failed) */
-  error?: string;
+  error?: string
 }
 
 /**
  * OCR Worker Client
- * 
+ *
  * Manages a Web Worker for OCR processing.
  */
 export class OCRWorkerClient {
-  private worker: Worker | null = null;
-  private messageId = 0;
+  private worker: Worker | null = null
+  private messageId = 0
   private pendingMessages = new Map<
     string,
     { resolve: (value: OCRWorkerResult) => void; reject: (reason: Error) => void }
-  >();
-  private options: Required<OCRWorkerOptions>;
+  >()
+  private options: Required<OCRWorkerOptions>
 
   constructor(options: OCRWorkerOptions = {}) {
     this.options = {
       language: options.language ?? 'eng',
       confidenceThreshold: options.confidenceThreshold ?? 0.6,
       timeout: options.timeout ?? 30000,
-    };
+    }
   }
 
   /**
    * Initialize the worker
    */
   private async initWorker(): Promise<Worker> {
-    if (this.worker) return this.worker;
+    if (this.worker) return this.worker
 
     // Create worker from the worker file
-    this.worker = new Worker(
-      new URL('../workers/ocr-worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    this.worker = new Worker(new URL('../workers/ocr-worker.ts', import.meta.url), {
+      type: 'module',
+    })
 
-    this.worker.onmessage = (event) => {
-      const { id, type, payload } = event.data;
-      const pending = this.pendingMessages.get(id);
-      
-      if (!pending) return;
+    this.worker.onmessage = event => {
+      const { id, type, payload } = event.data
+      const pending = this.pendingMessages.get(id)
 
-      this.pendingMessages.delete(id);
+      if (!pending) return
+
+      this.pendingMessages.delete(id)
 
       if (type === 'result') {
         // Convert worker result to OCRRegion format
         const regions: OCRRegion[] = payload.regions.map(
           (region: {
-            text: string;
-            bbox: { x0: number; y0: number; x1: number; y1: number };
-            confidence: number;
+            text: string
+            bbox: { x0: number; y0: number; x1: number; y1: number }
+            confidence: number
           }) => ({
             text: region.text,
             boundingBox: {
@@ -104,65 +103,65 @@ export class OCRWorkerClient {
             },
             confidence: region.confidence,
           })
-        );
+        )
 
         pending.resolve({
           success: true,
           text: payload.text,
           confidence: payload.confidence,
           regions,
-        });
+        })
       } else if (type === 'error') {
         pending.resolve({
           success: false,
           error: payload.error,
-        });
+        })
       }
-    };
+    }
 
-    this.worker.onerror = (error) => {
-      console.error('OCR Worker error:', error);
+    this.worker.onerror = error => {
+      console.error('OCR Worker error:', error)
       // Reject all pending messages
-      this.pendingMessages.forEach((pending) => {
-        pending.reject(new Error('Worker error'));
-      });
-      this.pendingMessages.clear();
-    };
+      this.pendingMessages.forEach(pending => {
+        pending.reject(new Error('Worker error'))
+      })
+      this.pendingMessages.clear()
+    }
 
-    return this.worker;
+    return this.worker
   }
 
   /**
    * Extract text from an image
-   * 
+   *
    * @param imagePath - Path to image or base64 data URL
    * @returns OCR result
    */
   async extractText(imagePath: string): Promise<OCRWorkerResult> {
-    const worker = await this.initWorker();
-    const id = `ocr-${++this.messageId}`;
+    const worker = await this.initWorker()
+    const id = `ocr-${++this.messageId}`
 
     return new Promise((resolve, reject) => {
       // Set timeout
       const timeoutId = setTimeout(() => {
-        this.pendingMessages.delete(id);
+        this.pendingMessages.delete(id)
         resolve({
           success: false,
           error: 'OCR extraction timed out',
-        });
-      }, this.options.timeout);
+        })
+      }, this.options.timeout)
 
       // Store pending message
       this.pendingMessages.set(id, {
-        resolve: (result) => {
-          clearTimeout(timeoutId);
-          resolve(result);
+        resolve: result => {
+          clearTimeout(timeoutId)
+          resolve(result)
         },
-        reject: (error) => {
-          clearTimeout(timeoutId);
-          reject(error);
+        reject: error => {
+          clearTimeout(timeoutId)
+          reject(error)
         },
-      });
+      })
 
       // Send message to worker
       worker.postMessage({
@@ -173,58 +172,56 @@ export class OCRWorkerClient {
           language: this.options.language,
           confidenceThreshold: this.options.confidenceThreshold,
         },
-      });
-    });
+      })
+    })
   }
 
   /**
    * Extract text from multiple images in parallel
-   * 
+   *
    * @param imagePaths - Array of image paths
    * @returns Array of OCR results
    */
   async extractMultiple(imagePaths: string[]): Promise<OCRWorkerResult[]> {
     // Process in batches to avoid overwhelming the worker
-    const BATCH_SIZE = 3;
-    const results: OCRWorkerResult[] = [];
+    const BATCH_SIZE = 3
+    const results: OCRWorkerResult[] = []
 
     for (let i = 0; i < imagePaths.length; i += BATCH_SIZE) {
-      const batch = imagePaths.slice(i, i + BATCH_SIZE);
-      const batchResults = await Promise.all(
-        batch.map((path) => this.extractText(path))
-      );
-      results.push(...batchResults);
+      const batch = imagePaths.slice(i, i + BATCH_SIZE)
+      const batchResults = await Promise.all(batch.map(path => this.extractText(path)))
+      results.push(...batchResults)
     }
 
-    return results;
+    return results
   }
 
   /**
    * Terminate the worker and cleanup resources
    */
   async terminate(): Promise<void> {
-    if (!this.worker) return;
+    if (!this.worker) return
 
     // Reject all pending messages
-    this.pendingMessages.forEach((pending) => {
-      pending.reject(new Error('Worker terminated'));
-    });
-    this.pendingMessages.clear();
+    this.pendingMessages.forEach(pending => {
+      pending.reject(new Error('Worker terminated'))
+    })
+    this.pendingMessages.clear()
 
     // Send terminate message
-    this.worker.postMessage({ id: 'terminate', type: 'terminate' });
+    this.worker.postMessage({ id: 'terminate', type: 'terminate' })
 
     // Wait a bit for cleanup
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 100))
 
-    this.worker.terminate();
-    this.worker = null;
+    this.worker.terminate()
+    this.worker = null
   }
 }
 
 /**
  * Convenience function for one-off OCR extraction
- * 
+ *
  * @param imagePath - Path to image
  * @param options - OCR options
  * @returns OCR result
@@ -233,23 +230,23 @@ export async function extractTextWithWorker(
   imagePath: string,
   options?: OCRWorkerOptions
 ): Promise<OCRResult | null> {
-  const client = new OCRWorkerClient(options);
-  
+  const client = new OCRWorkerClient(options)
+
   try {
-    const result = await client.extractText(imagePath);
-    
+    const result = await client.extractText(imagePath)
+
     if (result.success && result.text !== undefined) {
       return {
         frameId: extractFrameId(imagePath),
         text: result.text,
         confidence: result.confidence ?? 0,
         regions: result.regions ?? [],
-      };
+      }
     }
-    
-    return null;
+
+    return null
   } finally {
-    await client.terminate();
+    await client.terminate()
   }
 }
 
@@ -257,13 +254,13 @@ export async function extractTextWithWorker(
  * Extract frame ID from image path
  */
 function extractFrameId(imagePath: string): string {
-  const match = imagePath.match(/frame-([\w-]+)\./);
-  return match ? match[1] : `frame-${Date.now()}`;
+  const match = imagePath.match(/frame-([\w-]+)\./)
+  return match ? match[1] : `frame-${Date.now()}`
 }
 
 /**
  * Batch process multiple images with progress callback
- * 
+ *
  * @param imagePaths - Array of image paths
  * @param onProgress - Progress callback
  * @returns Map of frameId to OCR result
@@ -272,29 +269,29 @@ export async function batchExtractWithWorker(
   imagePaths: string[],
   onProgress?: (processed: number, total: number) => void
 ): Promise<Map<string, OCRResult>> {
-  const client = new OCRWorkerClient();
-  const results = new Map<string, OCRResult>();
+  const client = new OCRWorkerClient()
+  const results = new Map<string, OCRResult>()
 
   try {
     for (let i = 0; i < imagePaths.length; i++) {
-      const path = imagePaths[i];
-      const result = await client.extractText(path);
+      const path = imagePaths[i]
+      const result = await client.extractText(path)
 
       if (result.success) {
-        const frameId = extractFrameId(path);
+        const frameId = extractFrameId(path)
         results.set(frameId, {
           frameId,
           text: result.text ?? '',
           confidence: result.confidence ?? 0,
           regions: result.regions ?? [],
-        });
+        })
       }
 
-      onProgress?.(i + 1, imagePaths.length);
+      onProgress?.(i + 1, imagePaths.length)
     }
   } finally {
-    await client.terminate();
+    await client.terminate()
   }
 
-  return results;
+  return results
 }

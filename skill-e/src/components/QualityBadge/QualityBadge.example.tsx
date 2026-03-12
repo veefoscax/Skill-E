@@ -1,11 +1,11 @@
 /**
  * Quality Badge Example
- * 
+ *
  * Demonstrates the QualityBadge component with different scores and configurations.
  */
 
-import { QualityBadge } from './QualityBadge';
-import type { SemanticValidationResult } from '@/lib/semantic-judge';
+import { QualityBadge } from './QualityBadge'
+import type { SemanticValidationResult } from '@/lib/semantic-judge'
 
 /**
  * Example validation results
@@ -24,15 +24,13 @@ const excellentResult: SemanticValidationResult = {
     'Step-by-step verification checks throughout',
     'Professional language and consistent formatting',
   ],
-  weaknesses: [
-    'Could add more troubleshooting tips for edge cases',
-  ],
+  weaknesses: ['Could add more troubleshooting tips for edge cases'],
   recommendations: [
     'Consider adding a "Common Issues" section',
     'Add estimated time for each major step',
   ],
   isVerified: true,
-};
+}
 
 const goodResult: SemanticValidationResult = {
   score: 82,
@@ -57,7 +55,7 @@ const goodResult: SemanticValidationResult = {
     'Add rollback instructions for critical steps',
   ],
   isVerified: false,
-};
+}
 
 const fairResult: SemanticValidationResult = {
   score: 68,
@@ -66,10 +64,7 @@ const fairResult: SemanticValidationResult = {
     clarity: 72,
     completeness: 70,
   },
-  strengths: [
-    'Basic instructions are present',
-    'Parameters are documented',
-  ],
+  strengths: ['Basic instructions are present', 'Parameters are documented'],
   weaknesses: [
     'No PAUSE markers for destructive actions',
     'Unclear instructions in several steps',
@@ -83,7 +78,7 @@ const fairResult: SemanticValidationResult = {
     'Include verification steps to confirm success',
   ],
   isVerified: false,
-};
+}
 
 const poorResult: SemanticValidationResult = {
   score: 42,
@@ -92,9 +87,7 @@ const poorResult: SemanticValidationResult = {
     clarity: 45,
     completeness: 50,
   },
-  strengths: [
-    'Attempts to document the process',
-  ],
+  strengths: ['Attempts to document the process'],
   weaknesses: [
     'No safety measures or confirmations',
     'Very unclear and ambiguous instructions',
@@ -110,7 +103,7 @@ const poorResult: SemanticValidationResult = {
     'Add proper error handling and verification',
   ],
   isVerified: false,
-};
+}
 
 /**
  * Example component showing different QualityBadge configurations
@@ -124,70 +117,70 @@ export function QualityBadgeExample() {
           Hover over each badge to see the detailed breakdown tooltip.
         </p>
       </div>
-      
+
       {/* Excellent Score (Verified) */}
       <div className="space-y-3 p-6 rounded-lg border bg-card">
         <h2 className="text-lg font-semibold">Excellent Score (95/100) - Verified</h2>
         <p className="text-sm text-muted-foreground">
           High-quality skill with comprehensive safety measures and clear documentation.
         </p>
-        
+
         <div className="space-y-4">
           <div>
             <p className="text-xs text-muted-foreground mb-2">Default Size (md)</p>
             <QualityBadge result={excellentResult} />
           </div>
-          
+
           <div>
             <p className="text-xs text-muted-foreground mb-2">Small Size</p>
             <QualityBadge result={excellentResult} size="sm" />
           </div>
-          
+
           <div>
             <p className="text-xs text-muted-foreground mb-2">Large Size</p>
             <QualityBadge result={excellentResult} size="lg" />
           </div>
-          
+
           <div>
             <p className="text-xs text-muted-foreground mb-2">With Details</p>
             <QualityBadge result={excellentResult} showDetails />
           </div>
         </div>
       </div>
-      
+
       {/* Good Score */}
       <div className="space-y-3 p-6 rounded-lg border bg-card">
         <h2 className="text-lg font-semibold">Good Score (82/100)</h2>
         <p className="text-sm text-muted-foreground">
           Solid skill with room for improvement in safety and completeness.
         </p>
-        
+
         <QualityBadge result={goodResult} />
         <QualityBadge result={goodResult} showDetails />
       </div>
-      
+
       {/* Fair Score */}
       <div className="space-y-3 p-6 rounded-lg border bg-card">
         <h2 className="text-lg font-semibold">Fair Score (68/100)</h2>
         <p className="text-sm text-muted-foreground">
           Needs improvement in safety measures and clarity.
         </p>
-        
+
         <QualityBadge result={fairResult} />
         <QualityBadge result={fairResult} showDetails />
       </div>
-      
+
       {/* Poor Score */}
       <div className="space-y-3 p-6 rounded-lg border bg-card">
         <h2 className="text-lg font-semibold">Poor Score (42/100)</h2>
         <p className="text-sm text-muted-foreground">
           Requires significant improvements before production use.
         </p>
-        
+
         <QualityBadge result={poorResult} />
         <QualityBadge result={poorResult} showDetails />
       </div>
-      
+
       {/* Size Comparison */}
       <div className="space-y-3 p-6 rounded-lg border bg-card">
         <h2 className="text-lg font-semibold">Size Comparison</h2>
@@ -197,7 +190,7 @@ export function QualityBadgeExample() {
           <QualityBadge result={excellentResult} size="lg" />
         </div>
       </div>
-      
+
       {/* In Context */}
       <div className="space-y-3 p-6 rounded-lg border bg-card">
         <div className="flex items-center justify-between">
@@ -211,5 +204,5 @@ export function QualityBadgeExample() {
         </div>
       </div>
     </div>
-  );
+  )
 }

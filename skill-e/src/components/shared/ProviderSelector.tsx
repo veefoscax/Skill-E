@@ -1,29 +1,29 @@
 /**
  * Unified Provider Selector Component
- * 
+ *
  * Used in both Settings and ProcessingScreen error handling
  * to ensure consistent provider selection experience everywhere.
  */
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Check, ChevronDown, Eye, EyeOff, Sparkles } from 'lucide-react';
-import { useSettingsStore, type LLMProvider, LLM_DEFAULTS } from '@/stores/settings';
-import { ModelSelector } from './ModelSelector';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Check, ChevronDown, Eye, EyeOff, Sparkles } from 'lucide-react'
+import { useSettingsStore, type LLMProvider, LLM_DEFAULTS } from '@/stores/settings'
+import { ModelSelector } from './ModelSelector'
 
 interface ProviderSelectorProps {
   /** If true, shows a compact version for error screens */
-  compact?: boolean;
+  compact?: boolean
   /** Called when provider changes */
-  onProviderChange?: (provider: LLMProvider) => void;
+  onProviderChange?: (provider: LLMProvider) => void
 }
 
 // Providers that allow Base URL editing
@@ -34,8 +34,8 @@ const ALLOW_BASE_URL_EDIT = [
   'kimi-code',
   'minimax',
   'qwen-portal',
-  'xiaomi'
-];
+  'xiaomi',
+]
 
 export function ProviderSelector({ compact = false, onProviderChange }: ProviderSelectorProps) {
   const {
@@ -47,29 +47,29 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
     setLlmBaseUrl,
     llmModel,
     setLlmModel,
-  } = useSettingsStore();
+  } = useSettingsStore()
 
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false)
 
   const handleProviderChange = (provider: LLMProvider) => {
-    setLlmProvider(provider);
-    
+    setLlmProvider(provider)
+
     // Auto-fill defaults sempre que mudar de provedor
-    const defaults = LLM_DEFAULTS[provider];
+    const defaults = LLM_DEFAULTS[provider]
     if (defaults.baseUrl !== undefined) {
-      setLlmBaseUrl(defaults.baseUrl);
+      setLlmBaseUrl(defaults.baseUrl)
     }
     if (defaults.defaultModel) {
-      setLlmModel(defaults.defaultModel);
-    }
-    
-    // Special case for Ollama
-    if (provider === 'ollama' && !llmApiKey) {
-      setLlmApiKey('ollama');
+      setLlmModel(defaults.defaultModel)
     }
 
-    onProviderChange?.(provider);
-  };
+    // Special case for Ollama
+    if (provider === 'ollama' && !llmApiKey) {
+      setLlmApiKey('ollama')
+    }
+
+    onProviderChange?.(provider)
+  }
 
   if (compact) {
     // Compact version for error screens
@@ -89,7 +89,7 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-[280px] max-h-[250px] overflow-y-auto" align="start">
-              {(Object.keys(LLM_DEFAULTS) as LLMProvider[]).map((p) => (
+              {(Object.keys(LLM_DEFAULTS) as LLMProvider[]).map(p => (
                 <DropdownMenuItem
                   key={p}
                   onClick={() => handleProviderChange(p)}
@@ -111,8 +111,12 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
             </Label>
             <Input
               value={llmBaseUrl}
-              onChange={(e) => setLlmBaseUrl(e.target.value)}
-              placeholder={llmProvider === 'kimi-code' ? 'https://api.kimi.com/coding/v1' : 'https://api.example.com/v1'}
+              onChange={e => setLlmBaseUrl(e.target.value)}
+              placeholder={
+                llmProvider === 'kimi-code'
+                  ? 'https://api.kimi.com/coding/v1'
+                  : 'https://api.example.com/v1'
+              }
               className="font-mono text-xs h-9 mt-1"
             />
             {llmProvider === 'kimi-code' && (
@@ -133,7 +137,7 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
                 placeholder={llmProvider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
                 className="pr-10 text-xs h-9"
                 value={llmApiKey}
-                onChange={(e) => setLlmApiKey(e.target.value)}
+                onChange={e => setLlmApiKey(e.target.value)}
               />
               <Button
                 type="button"
@@ -167,7 +171,7 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
           {llmProvider} → {llmBaseUrl || 'default'}
         </p>
       </div>
-    );
+    )
   }
 
   // Full version for Settings
@@ -186,8 +190,11 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
               <ChevronDown className="h-4 w-4 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[300px] max-h-[300px] overflow-y-auto z-[20000]" align="start">
-            {(Object.keys(LLM_DEFAULTS) as LLMProvider[]).map((p) => (
+          <DropdownMenuContent
+            className="w-[300px] max-h-[300px] overflow-y-auto z-[20000]"
+            align="start"
+          >
+            {(Object.keys(LLM_DEFAULTS) as LLMProvider[]).map(p => (
               <DropdownMenuItem
                 key={p}
                 onClick={() => handleProviderChange(p)}
@@ -207,12 +214,19 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
       {ALLOW_BASE_URL_EDIT.includes(llmProvider) && (
         <div className="space-y-2">
           <Label className="text-xs font-medium">
-            Base URL {llmProvider === 'kimi-code' && <span className="text-blue-600">(editable for worldwide)</span>}
+            Base URL{' '}
+            {llmProvider === 'kimi-code' && (
+              <span className="text-blue-600">(editable for worldwide)</span>
+            )}
           </Label>
           <Input
             value={llmBaseUrl}
-            onChange={(e) => setLlmBaseUrl(e.target.value)}
-            placeholder={llmProvider === 'kimi-code' ? 'https://api.kimi.com/coding/v1' : 'https://api.example.com/v1'}
+            onChange={e => setLlmBaseUrl(e.target.value)}
+            placeholder={
+              llmProvider === 'kimi-code'
+                ? 'https://api.kimi.com/coding/v1'
+                : 'https://api.example.com/v1'
+            }
             className="font-mono text-xs h-9"
           />
           {llmProvider === 'kimi-code' && (
@@ -233,7 +247,7 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
               placeholder={llmProvider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
               className="pr-10 text-xs h-9"
               value={llmApiKey}
-              onChange={(e) => setLlmApiKey(e.target.value)}
+              onChange={e => setLlmApiKey(e.target.value)}
             />
             <Button
               type="button"
@@ -259,15 +273,21 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
           onChange={setLlmModel}
         />
         <p className="text-[10px] text-muted-foreground">
-          {llmProvider === 'moonshot' ? 'Chinese LLM: moonshot-v1-8k' :
-            llmProvider === 'kimi-code' ? 'kimi-k2, k1-unsupervised, etc. (api.kimi.com)' :
-              llmProvider === 'ollama' ? 'Select from your local models' :
-                llmProvider === 'google' ? 'gemini-pro or similar' :
-                  llmProvider === 'openai' ? 'gpt-4o, gpt-4-turbo, etc.' :
-                    llmProvider === 'anthropic' ? 'claude-3-5-sonnet, claude-3-opus, etc.' :
-                      'Select target model'}
+          {llmProvider === 'moonshot'
+            ? 'Chinese LLM: moonshot-v1-8k'
+            : llmProvider === 'kimi-code'
+              ? 'kimi-k2, k1-unsupervised, etc. (api.kimi.com)'
+              : llmProvider === 'ollama'
+                ? 'Select from your local models'
+                : llmProvider === 'google'
+                  ? 'gemini-pro or similar'
+                  : llmProvider === 'openai'
+                    ? 'gpt-4o, gpt-4-turbo, etc.'
+                    : llmProvider === 'anthropic'
+                      ? 'claude-3-5-sonnet, claude-3-opus, etc.'
+                      : 'Select target model'}
         </p>
       </div>
     </div>
-  );
+  )
 }

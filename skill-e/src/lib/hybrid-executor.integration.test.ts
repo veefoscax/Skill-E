@@ -1,18 +1,18 @@
 /**
  * Hybrid Executor Integration Tests
- * 
+ *
  * Validates acceptance criteria AC3: Browser Automation Modes
  * - Image-based: Uses screenshot + click coordinates
  * - DOM-based: Uses CSS selectors or XPath
  * - Hybrid: Tries DOM first, falls back to image
  * - Warns when anti-bot measures detected (handled by bot-detection module)
- * 
+ *
  * Requirements: FR-10.4, FR-10.5
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { HybridExecutor } from './hybrid-executor';
-import type { SkillStep } from './skill-parser';
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { HybridExecutor } from './hybrid-executor'
+import type { SkillStep } from './skill-parser'
 
 // Mock the executors for integration tests
 vi.mock('./browser-automation', () => ({
@@ -23,7 +23,7 @@ vi.mock('./browser-automation', () => ({
   })),
   createDOMExecutor: vi.fn(),
   executeStepDOM: vi.fn(),
-}));
+}))
 
 vi.mock('./image-executor', () => ({
   ImageExecutor: vi.fn().mockImplementation(() => ({
@@ -32,14 +32,14 @@ vi.mock('./image-executor', () => ({
   })),
   createImageExecutor: vi.fn(),
   executeStepImage: vi.fn(),
-}));
+}))
 
 describe('Hybrid Executor - Integration Tests', () => {
-  let executor: HybridExecutor;
+  let executor: HybridExecutor
 
   beforeEach(() => {
-    executor = new HybridExecutor();
-  });
+    executor = new HybridExecutor()
+  })
 
   describe('AC3: Browser Automation Modes', () => {
     describe('Image-based: Uses screenshot + click coordinates', () => {
@@ -55,16 +55,14 @@ describe('Hybrid Executor - Integration Tests', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { mode: 'image' });
+        const result = await executor.executeStep(step, { mode: 'image' })
 
         // Should attempt image-based execution
-        expect(result.executionLog).toBeDefined();
-        expect(result.executionLog!.some(log => 
-          log.includes('image-based execution')
-        )).toBe(true);
-      });
+        expect(result.executionLog).toBeDefined()
+        expect(result.executionLog!.some(log => log.includes('image-based execution'))).toBe(true)
+      })
 
       it('should use image reference when provided', async () => {
         const step: SkillStep = {
@@ -78,16 +76,14 @@ describe('Hybrid Executor - Integration Tests', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { mode: 'image' });
+        const result = await executor.executeStep(step, { mode: 'image' })
 
-        expect(result.executionLog).toBeDefined();
-        expect(result.executionLog!.some(log => 
-          log.includes('image-based execution')
-        )).toBe(true);
-      });
-    });
+        expect(result.executionLog).toBeDefined()
+        expect(result.executionLog!.some(log => log.includes('image-based execution'))).toBe(true)
+      })
+    })
 
     describe('DOM-based: Uses CSS selectors or XPath', () => {
       it('should execute using CSS selector', async () => {
@@ -102,15 +98,13 @@ describe('Hybrid Executor - Integration Tests', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { mode: 'dom' });
+        const result = await executor.executeStep(step, { mode: 'dom' })
 
-        expect(result.executionLog).toBeDefined();
-        expect(result.executionLog!.some(log => 
-          log.includes('DOM execution')
-        )).toBe(true);
-      });
+        expect(result.executionLog).toBeDefined()
+        expect(result.executionLog!.some(log => log.includes('DOM execution'))).toBe(true)
+      })
 
       it('should execute using XPath selector', async () => {
         const step: SkillStep = {
@@ -124,15 +118,13 @@ describe('Hybrid Executor - Integration Tests', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { mode: 'dom' });
+        const result = await executor.executeStep(step, { mode: 'dom' })
 
-        expect(result.executionLog).toBeDefined();
-        expect(result.executionLog!.some(log => 
-          log.includes('DOM execution')
-        )).toBe(true);
-      });
+        expect(result.executionLog).toBeDefined()
+        expect(result.executionLog!.some(log => log.includes('DOM execution'))).toBe(true)
+      })
 
       it('should handle type action with selector', async () => {
         const step: SkillStep = {
@@ -146,16 +138,14 @@ describe('Hybrid Executor - Integration Tests', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { mode: 'dom' });
+        const result = await executor.executeStep(step, { mode: 'dom' })
 
-        expect(result.executionLog).toBeDefined();
-        expect(result.executionLog!.some(log => 
-          log.includes('DOM execution')
-        )).toBe(true);
-      });
-    });
+        expect(result.executionLog).toBeDefined()
+        expect(result.executionLog!.some(log => log.includes('DOM execution'))).toBe(true)
+      })
+    })
 
     describe('Hybrid: Tries DOM first, falls back to image', () => {
       it('should try DOM first when both selector and coordinates available', async () => {
@@ -171,16 +161,16 @@ describe('Hybrid Executor - Integration Tests', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { mode: 'hybrid' });
+        const result = await executor.executeStep(step, { mode: 'hybrid' })
 
-        expect(result.executionLog).toBeDefined();
+        expect(result.executionLog).toBeDefined()
         // Should show Phase 1 (DOM) attempt
-        expect(result.executionLog!.some(log => 
-          log.includes('Phase 1: Attempting DOM execution')
-        )).toBe(true);
-      });
+        expect(
+          result.executionLog!.some(log => log.includes('Phase 1: Attempting DOM execution'))
+        ).toBe(true)
+      })
 
       it('should fall back to image when DOM fails', async () => {
         const step: SkillStep = {
@@ -194,19 +184,21 @@ describe('Hybrid Executor - Integration Tests', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { mode: 'hybrid' });
+        const result = await executor.executeStep(step, { mode: 'hybrid' })
 
-        expect(result.executionLog).toBeDefined();
+        expect(result.executionLog).toBeDefined()
         // Should show both Phase 1 (DOM) and Phase 2 (Image) attempts
-        expect(result.executionLog!.some(log => 
-          log.includes('Phase 1: Attempting DOM execution')
-        )).toBe(true);
-        expect(result.executionLog!.some(log => 
-          log.includes('Phase 2: Falling back to image-based execution')
-        )).toBe(true);
-      });
+        expect(
+          result.executionLog!.some(log => log.includes('Phase 1: Attempting DOM execution'))
+        ).toBe(true)
+        expect(
+          result.executionLog!.some(log =>
+            log.includes('Phase 2: Falling back to image-based execution')
+          )
+        ).toBe(true)
+      })
 
       it('should skip image fallback when not available', async () => {
         const step: SkillStep = {
@@ -220,16 +212,16 @@ describe('Hybrid Executor - Integration Tests', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { mode: 'hybrid' });
+        const result = await executor.executeStep(step, { mode: 'hybrid' })
 
-        expect(result.executionLog).toBeDefined();
-        expect(result.executionLog!.some(log => 
-          log.includes('Skipping image execution')
-        )).toBe(true);
-      });
-    });
+        expect(result.executionLog).toBeDefined()
+        expect(result.executionLog!.some(log => log.includes('Skipping image execution'))).toBe(
+          true
+        )
+      })
+    })
 
     describe('Human intervention when both fail', () => {
       it('should pause for human when both DOM and image fail', async () => {
@@ -244,19 +236,19 @@ describe('Hybrid Executor - Integration Tests', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { 
+        const result = await executor.executeStep(step, {
           mode: 'hybrid',
-          pauseOnFailure: true 
-        });
+          pauseOnFailure: true,
+        })
 
         // Should indicate need for human intervention
-        expect(result.needsHuman).toBe(true);
-        expect(result.executorUsed).toBe('none');
-        expect(result.suggestions).toBeDefined();
-        expect(result.suggestions!.length).toBeGreaterThan(0);
-      });
+        expect(result.needsHuman).toBe(true)
+        expect(result.executorUsed).toBe('none')
+        expect(result.suggestions).toBeDefined()
+        expect(result.suggestions!.length).toBeGreaterThan(0)
+      })
 
       it('should provide helpful suggestions for manual intervention', async () => {
         const step: SkillStep = {
@@ -270,23 +262,21 @@ describe('Hybrid Executor - Integration Tests', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { 
+        const result = await executor.executeStep(step, {
           mode: 'hybrid',
-          pauseOnFailure: true 
-        });
+          pauseOnFailure: true,
+        })
 
-        expect(result.suggestions).toBeDefined();
-        expect(result.suggestions!.some(s => 
-          s.includes('Try clicking the element manually')
-        )).toBe(true);
-        expect(result.suggestions!.some(s => 
-          s.includes('Submit button')
-        )).toBe(true);
-      });
-    });
-  });
+        expect(result.suggestions).toBeDefined()
+        expect(result.suggestions!.some(s => s.includes('Try clicking the element manually'))).toBe(
+          true
+        )
+        expect(result.suggestions!.some(s => s.includes('Submit button'))).toBe(true)
+      })
+    })
+  })
 
   describe('FR-10.4: Image-based click (screenshot + coordinates)', () => {
     it('should support clicking by coordinates', async () => {
@@ -300,15 +290,13 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { mode: 'image' });
+      const result = await executor.executeStep(step, { mode: 'image' })
 
-      expect(result.executionLog).toBeDefined();
-      expect(result.executionLog!.some(log => 
-        log.includes('image-based execution')
-      )).toBe(true);
-    });
+      expect(result.executionLog).toBeDefined()
+      expect(result.executionLog!.some(log => log.includes('image-based execution'))).toBe(true)
+    })
 
     it('should support clicking by image reference', async () => {
       const step: SkillStep = {
@@ -321,16 +309,14 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { mode: 'image' });
+      const result = await executor.executeStep(step, { mode: 'image' })
 
-      expect(result.executionLog).toBeDefined();
-      expect(result.executionLog!.some(log => 
-        log.includes('image-based execution')
-      )).toBe(true);
-    });
-  });
+      expect(result.executionLog).toBeDefined()
+      expect(result.executionLog!.some(log => log.includes('image-based execution'))).toBe(true)
+    })
+  })
 
   describe('FR-10.5: DOM-based actions (CSS selectors, XPath)', () => {
     it('should support CSS selectors', async () => {
@@ -344,15 +330,13 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { mode: 'dom' });
+      const result = await executor.executeStep(step, { mode: 'dom' })
 
-      expect(result.executionLog).toBeDefined();
-      expect(result.executionLog!.some(log => 
-        log.includes('DOM execution')
-      )).toBe(true);
-    });
+      expect(result.executionLog).toBeDefined()
+      expect(result.executionLog!.some(log => log.includes('DOM execution'))).toBe(true)
+    })
 
     it('should support XPath selectors', async () => {
       const step: SkillStep = {
@@ -365,15 +349,13 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { mode: 'dom' });
+      const result = await executor.executeStep(step, { mode: 'dom' })
 
-      expect(result.executionLog).toBeDefined();
-      expect(result.executionLog!.some(log => 
-        log.includes('DOM execution')
-      )).toBe(true);
-    });
+      expect(result.executionLog).toBeDefined()
+      expect(result.executionLog!.some(log => log.includes('DOM execution'))).toBe(true)
+    })
 
     it('should support typing into input fields', async () => {
       const step: SkillStep = {
@@ -387,15 +369,13 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { mode: 'dom' });
+      const result = await executor.executeStep(step, { mode: 'dom' })
 
-      expect(result.executionLog).toBeDefined();
-      expect(result.executionLog!.some(log => 
-        log.includes('DOM execution')
-      )).toBe(true);
-    });
+      expect(result.executionLog).toBeDefined()
+      expect(result.executionLog!.some(log => log.includes('DOM execution'))).toBe(true)
+    })
 
     it('should support navigation', async () => {
       const step: SkillStep = {
@@ -408,15 +388,13 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { mode: 'dom' });
+      const result = await executor.executeStep(step, { mode: 'dom' })
 
-      expect(result.executionLog).toBeDefined();
-      expect(result.executionLog!.some(log => 
-        log.includes('DOM execution')
-      )).toBe(true);
-    });
+      expect(result.executionLog).toBeDefined()
+      expect(result.executionLog!.some(log => log.includes('DOM execution'))).toBe(true)
+    })
 
     it('should support element verification', async () => {
       const step: SkillStep = {
@@ -429,16 +407,14 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { mode: 'dom' });
+      const result = await executor.executeStep(step, { mode: 'dom' })
 
-      expect(result.executionLog).toBeDefined();
-      expect(result.executionLog!.some(log => 
-        log.includes('DOM execution')
-      )).toBe(true);
-    });
-  });
+      expect(result.executionLog).toBeDefined()
+      expect(result.executionLog!.some(log => log.includes('DOM execution'))).toBe(true)
+    })
+  })
 
   describe('Execution result structure', () => {
     it('should return complete execution result', async () => {
@@ -452,16 +428,16 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step);
+      const result = await executor.executeStep(step)
 
       // Verify result structure
-      expect(result).toHaveProperty('success');
-      expect(result).toHaveProperty('executorUsed');
-      expect(result).toHaveProperty('executionLog');
-      expect(Array.isArray(result.executionLog)).toBe(true);
-    });
+      expect(result).toHaveProperty('success')
+      expect(result).toHaveProperty('executorUsed')
+      expect(result).toHaveProperty('executionLog')
+      expect(Array.isArray(result.executionLog)).toBe(true)
+    })
 
     it('should include error details on failure', async () => {
       const step: SkillStep = {
@@ -474,16 +450,16 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { pauseOnFailure: true });
+      const result = await executor.executeStep(step, { pauseOnFailure: true })
 
       if (!result.success) {
-        expect(result.error).toBeDefined();
-        expect(typeof result.error).toBe('string');
+        expect(result.error).toBeDefined()
+        expect(typeof result.error).toBe('string')
       }
-    });
-  });
+    })
+  })
 
   describe('Configuration options', () => {
     it('should respect mode option', async () => {
@@ -498,26 +474,24 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
       // Test DOM mode
-      const domResult = await executor.executeStep(step, { mode: 'dom' });
-      expect(domResult.executionLog!.some(log => 
-        log.includes('Execution mode: dom')
-      )).toBe(true);
+      const domResult = await executor.executeStep(step, { mode: 'dom' })
+      expect(domResult.executionLog!.some(log => log.includes('Execution mode: dom'))).toBe(true)
 
       // Test image mode
-      const imageResult = await executor.executeStep(step, { mode: 'image' });
-      expect(imageResult.executionLog!.some(log => 
-        log.includes('Execution mode: image')
-      )).toBe(true);
+      const imageResult = await executor.executeStep(step, { mode: 'image' })
+      expect(imageResult.executionLog!.some(log => log.includes('Execution mode: image'))).toBe(
+        true
+      )
 
       // Test hybrid mode
-      const hybridResult = await executor.executeStep(step, { mode: 'hybrid' });
-      expect(hybridResult.executionLog!.some(log => 
-        log.includes('Execution mode: hybrid')
-      )).toBe(true);
-    });
+      const hybridResult = await executor.executeStep(step, { mode: 'hybrid' })
+      expect(hybridResult.executionLog!.some(log => log.includes('Execution mode: hybrid'))).toBe(
+        true
+      )
+    })
 
     it('should respect fallbackToImage option', async () => {
       const step: SkillStep = {
@@ -531,27 +505,29 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
       // With fallback enabled
-      const withFallback = await executor.executeStep(step, { 
+      const withFallback = await executor.executeStep(step, {
         mode: 'hybrid',
-        fallbackToImage: true 
-      });
-      expect(withFallback.executionLog!.some(log => 
-        log.includes('Falling back to image-based execution')
-      )).toBe(true);
+        fallbackToImage: true,
+      })
+      expect(
+        withFallback.executionLog!.some(log =>
+          log.includes('Falling back to image-based execution')
+        )
+      ).toBe(true)
 
       // With fallback disabled
-      const noFallback = await executor.executeStep(step, { 
+      const noFallback = await executor.executeStep(step, {
         mode: 'hybrid',
         fallbackToImage: false,
-        pauseOnFailure: false
-      });
-      expect(noFallback.executionLog!.some(log => 
-        log.includes('Skipping image execution')
-      )).toBe(true);
-    });
+        pauseOnFailure: false,
+      })
+      expect(noFallback.executionLog!.some(log => log.includes('Skipping image execution'))).toBe(
+        true
+      )
+    })
 
     it('should respect pauseOnFailure option', async () => {
       const step: SkillStep = {
@@ -564,21 +540,21 @@ describe('Hybrid Executor - Integration Tests', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
       // With pause enabled
-      const withPause = await executor.executeStep(step, { 
-        pauseOnFailure: true 
-      });
-      expect(withPause.needsHuman).toBe(true);
-      expect(withPause.suggestions).toBeDefined();
+      const withPause = await executor.executeStep(step, {
+        pauseOnFailure: true,
+      })
+      expect(withPause.needsHuman).toBe(true)
+      expect(withPause.suggestions).toBeDefined()
 
       // With pause disabled
-      const noPause = await executor.executeStep(step, { 
-        pauseOnFailure: false 
-      });
-      expect(noPause.needsHuman).toBeUndefined();
-      expect(noPause.suggestions).toBeUndefined();
-    });
-  });
-});
+      const noPause = await executor.executeStep(step, {
+        pauseOnFailure: false,
+      })
+      expect(noPause.needsHuman).toBeUndefined()
+      expect(noPause.suggestions).toBeUndefined()
+    })
+  })
+})

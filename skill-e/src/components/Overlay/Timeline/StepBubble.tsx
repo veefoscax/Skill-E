@@ -1,27 +1,27 @@
 /**
  * StepBubble Component
- * 
+ *
  * Displays individual capture steps with icons and labels in the live timeline.
  * Features slide-in animation and auto-fade behavior.
- * 
+ *
  * Requirements: FR-4.29, FR-4.30
  */
 
-import React from 'react';
-import { CaptureStep } from '@/stores/recording';
+import React from 'react'
+import { CaptureStep } from '@/stores/recording'
 
 /**
  * Props for StepBubble component
  */
 interface StepBubbleProps {
   /** The capture step to display */
-  step: CaptureStep;
+  step: CaptureStep
   /** Whether this step should be faded (older than 5 seconds) */
-  isFaded?: boolean;
+  isFaded?: boolean
   /** Whether the timeline is being hovered (restore full opacity) */
-  isTimelineHovered?: boolean;
+  isTimelineHovered?: boolean
   /** Callback when step is clicked */
-  onClick?: (step: CaptureStep) => void;
+  onClick?: (step: CaptureStep) => void
 }
 
 /**
@@ -34,8 +34,8 @@ function getStepIcon(type: CaptureStep['type']): string {
     click: '🖱️',
     keystroke: '⌨️',
     network: '🌐',
-  };
-  return icons[type] || '📝';
+  }
+  return icons[type] || '📝'
 }
 
 /**
@@ -47,55 +47,53 @@ function getStepColorClass(type: CaptureStep['type']): string {
     click: 'bg-purple-500/10 border-purple-500/30 text-purple-600',
     keystroke: 'bg-green-500/10 border-green-500/30 text-green-600',
     network: 'bg-orange-500/10 border-orange-500/30 text-orange-600',
-  };
-  return colors[type] || 'bg-gray-500/10 border-gray-500/30 text-gray-600';
+  }
+  return colors[type] || 'bg-gray-500/10 border-gray-500/30 text-gray-600'
 }
 
 /**
  * Format timestamp for display (relative time)
  */
 function formatTimestamp(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-  const seconds = Math.floor(diff / 1000);
-  
-  if (seconds < 1) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  
-  const hours = Math.floor(minutes / 60);
-  return `${hours}h ago`;
+  const now = Date.now()
+  const diff = now - timestamp
+  const seconds = Math.floor(diff / 1000)
+
+  if (seconds < 1) return 'just now'
+  if (seconds < 60) return `${seconds}s ago`
+
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+
+  const hours = Math.floor(minutes / 60)
+  return `${hours}h ago`
 }
 
 /**
  * StepBubble Component
- * 
+ *
  * Displays a single capture step with:
  * - Icon representing step type
  * - Label describing the action
  * - Slide-in animation on mount
  * - Auto-fade after 5 seconds
  * - Restore opacity on timeline hover
- * 
+ *
  * Requirements: FR-4.29, FR-4.30, FR-4.31, FR-4.32
  */
-export function StepBubble({ 
-  step, 
-  isFaded = false, 
+export function StepBubble({
+  step,
+  isFaded = false,
   isTimelineHovered = false,
-  onClick 
+  onClick,
 }: StepBubbleProps) {
-  const icon = getStepIcon(step.type);
-  const colorClass = getStepColorClass(step.type);
-  const timestamp = formatTimestamp(step.timestamp);
-  
+  const icon = getStepIcon(step.type)
+  const colorClass = getStepColorClass(step.type)
+  const timestamp = formatTimestamp(step.timestamp)
+
   // Determine opacity based on fade state and hover
-  const opacityClass = isFaded && !isTimelineHovered 
-    ? 'opacity-50' 
-    : 'opacity-100';
-  
+  const opacityClass = isFaded && !isTimelineHovered ? 'opacity-50' : 'opacity-100'
+
   return (
     <div
       className={`
@@ -116,25 +114,19 @@ export function StepBubble({
       <span className="text-lg leading-none" role="img" aria-label={step.type}>
         {icon}
       </span>
-      
+
       {/* Label */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">
-          {step.label}
-        </p>
-        {step.note && (
-          <p className="text-xs opacity-70 truncate">
-            {step.note}
-          </p>
-        )}
+        <p className="text-sm font-medium truncate">{step.label}</p>
+        {step.note && <p className="text-xs opacity-70 truncate">{step.note}</p>}
       </div>
-      
+
       {/* Timestamp (optional, shown on hover) */}
       <span className="text-xs opacity-0 group-hover:opacity-70 transition-opacity">
         {timestamp}
       </span>
     </div>
-  );
+  )
 }
 
 /**
@@ -143,11 +135,11 @@ export function StepBubble({
  */
 interface StepBubbleExpandedProps extends StepBubbleProps {
   /** Whether to show expanded details */
-  isExpanded?: boolean;
+  isExpanded?: boolean
   /** Callback when delete is clicked */
-  onDelete?: (stepId: string) => void;
+  onDelete?: (stepId: string) => void
   /** Callback when note is edited */
-  onEditNote?: (stepId: string, note: string) => void;
+  onEditNote?: (stepId: string, note: string) => void
 }
 
 export function StepBubbleExpanded({
@@ -159,16 +151,16 @@ export function StepBubbleExpanded({
   onDelete,
   onEditNote,
 }: StepBubbleExpandedProps) {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [noteText, setNoteText] = React.useState(step.note || '');
-  
+  const [isEditing, setIsEditing] = React.useState(false)
+  const [noteText, setNoteText] = React.useState(step.note || '')
+
   const handleSaveNote = () => {
     if (onEditNote && noteText !== step.note) {
-      onEditNote(step.id, noteText);
+      onEditNote(step.id, noteText)
     }
-    setIsEditing(false);
-  };
-  
+    setIsEditing(false)
+  }
+
   if (!isExpanded) {
     return (
       <StepBubble
@@ -177,15 +169,13 @@ export function StepBubbleExpanded({
         isTimelineHovered={isTimelineHovered}
         onClick={onClick}
       />
-    );
+    )
   }
-  
-  const icon = getStepIcon(step.type);
-  const colorClass = getStepColorClass(step.type);
-  const opacityClass = isFaded && !isTimelineHovered 
-    ? 'opacity-50' 
-    : 'opacity-100';
-  
+
+  const icon = getStepIcon(step.type)
+  const colorClass = getStepColorClass(step.type)
+  const opacityClass = isFaded && !isTimelineHovered ? 'opacity-50' : 'opacity-100'
+
   return (
     <div
       className={`
@@ -203,9 +193,7 @@ export function StepBubbleExpanded({
         <span className="text-lg leading-none" role="img" aria-label={step.type}>
           {icon}
         </span>
-        <p className="text-sm font-medium flex-1">
-          {step.label}
-        </p>
+        <p className="text-sm font-medium flex-1">{step.label}</p>
         <button
           onClick={() => onClick?.(step)}
           className="text-xs opacity-50 hover:opacity-100"
@@ -214,30 +202,22 @@ export function StepBubbleExpanded({
           ✕
         </button>
       </div>
-      
+
       {/* Details */}
       <div className="text-xs space-y-1 pl-7">
-        <p className="opacity-70">
-          {new Date(step.timestamp).toLocaleTimeString()}
-        </p>
-        
+        <p className="opacity-70">{new Date(step.timestamp).toLocaleTimeString()}</p>
+
         {step.data && (
           <div className="space-y-1">
             {step.data.selector && (
-              <p className="font-mono text-xs">
-                Selector: {step.data.selector}
-              </p>
+              <p className="font-mono text-xs">Selector: {step.data.selector}</p>
             )}
             {step.data.position && (
               <p>
                 Position: ({step.data.position.x}, {step.data.position.y})
               </p>
             )}
-            {step.data.text && (
-              <p>
-                Text: "{step.data.text}"
-              </p>
-            )}
+            {step.data.text && <p>Text: "{step.data.text}"</p>}
             {step.data.method && step.data.url && (
               <p className="font-mono text-xs">
                 {step.data.method} {step.data.url}
@@ -246,7 +226,7 @@ export function StepBubbleExpanded({
           </div>
         )}
       </div>
-      
+
       {/* Note editing */}
       <div className="pl-7">
         {isEditing ? (
@@ -254,13 +234,13 @@ export function StepBubbleExpanded({
             <input
               type="text"
               value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
+              onChange={e => setNoteText(e.target.value)}
               placeholder="Add note..."
               className="flex-1 px-2 py-1 text-xs rounded border bg-white/50"
               autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSaveNote();
-                if (e.key === 'Escape') setIsEditing(false);
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleSaveNote()
+                if (e.key === 'Escape') setIsEditing(false)
               }}
             />
             <button
@@ -279,14 +259,14 @@ export function StepBubbleExpanded({
           </button>
         )}
       </div>
-      
+
       {/* Actions */}
       {onDelete && (
         <div className="pl-7 pt-1 border-t border-current/10">
           <button
             onClick={() => {
               if (confirm('Delete this step?')) {
-                onDelete(step.id);
+                onDelete(step.id)
               }
             }}
             className="text-xs text-red-500 hover:text-red-600"
@@ -296,5 +276,5 @@ export function StepBubbleExpanded({
         </div>
       )}
     </div>
-  );
+  )
 }

@@ -1,6 +1,6 @@
 /**
  * LLM Provider Types
- * 
+ *
  * Type definitions for the multi-provider LLM architecture.
  * Supports Anthropic, OpenAI, OpenRouter, Zifu AI, Kimi, Google, and Ollama.
  */
@@ -8,29 +8,29 @@
 /**
  * Supported LLM providers
  */
-export type LLMProvider = 
+export type LLMProvider =
   | 'anthropic'
   | 'openai'
   | 'openrouter'
   | 'zhipu'
   | 'moonshot'
   | 'google'
-  | 'ollama';
+  | 'ollama'
 
 /**
  * Generation options
  */
 export interface GenerateOptions {
   /** Model to use */
-  model: string;
+  model: string
   /** Maximum tokens to generate */
-  maxTokens?: number;
+  maxTokens?: number
   /** Temperature (0-2) */
-  temperature?: number;
+  temperature?: number
   /** Top-p sampling */
-  topP?: number;
+  topP?: number
   /** Stop sequences */
-  stopSequences?: string[];
+  stopSequences?: string[]
 }
 
 /**
@@ -38,11 +38,11 @@ export interface GenerateOptions {
  */
 export interface StreamOptions extends GenerateOptions {
   /** Callback for each chunk */
-  onChunk: (chunk: string) => void;
+  onChunk: (chunk: string) => void
   /** Callback when complete */
-  onComplete?: () => void;
+  onComplete?: () => void
   /** Callback on error */
-  onError?: (error: Error) => void;
+  onError?: (error: Error) => void
 }
 
 /**
@@ -50,19 +50,19 @@ export interface StreamOptions extends GenerateOptions {
  */
 export interface GenerationResult {
   /** Generated text */
-  text: string;
+  text: string
   /** Token usage (if available) */
   usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+  }
   /** Model used */
-  model: string;
+  model: string
   /** Provider used */
-  provider: LLMProvider;
+  provider: LLMProvider
   /** Generation time in ms */
-  generationTimeMs: number;
+  generationTimeMs: number
 }
 
 /**
@@ -70,31 +70,31 @@ export interface GenerationResult {
  */
 export interface ProviderConfig {
   /** Provider name */
-  name: LLMProvider;
+  name: LLMProvider
   /** Display name */
-  displayName: string;
+  displayName: string
   /** Base URL for API */
-  baseUrl: string;
+  baseUrl: string
   /** API key */
-  apiKey: string;
+  apiKey: string
   /** Default model */
-  defaultModel: string;
+  defaultModel: string
   /** Available models */
-  availableModels: string[];
+  availableModels: string[]
   /** Whether streaming is supported */
-  supportsStreaming: boolean;
+  supportsStreaming: boolean
   /** Custom headers */
-  headers?: Record<string, string>;
+  headers?: Record<string, string>
   /** Parameter name mappings (provider-specific -> standard) */
   parameterMapping?: {
-    maxTokens?: string;
-    temperature?: string;
-    topP?: string;
-  };
+    maxTokens?: string
+    temperature?: string
+    topP?: string
+  }
   /** Response path to extract text (dot notation) */
-  responsePath: string;
+  responsePath: string
   /** Usage path to extract token counts (dot notation) */
-  usagePath?: string;
+  usagePath?: string
 }
 
 /**
@@ -102,23 +102,23 @@ export interface ProviderConfig {
  */
 export interface ProviderMetadata {
   /** Provider ID */
-  id: LLMProvider;
+  id: LLMProvider
   /** Display name */
-  name: string;
+  name: string
   /** Provider description */
-  description: string;
+  description: string
   /** Website URL */
-  website: string;
+  website: string
   /** Documentation URL */
-  docsUrl: string;
+  docsUrl: string
   /** Whether API key is required */
-  requiresApiKey: boolean;
+  requiresApiKey: boolean
   /** Whether it has a free tier */
-  hasFreeTier: boolean;
+  hasFreeTier: boolean
   /** Popular models */
-  popularModels: string[];
+  popularModels: string[]
   /** Special features */
-  features: string[];
+  features: string[]
 }
 
 /**
@@ -127,28 +127,28 @@ export interface ProviderMetadata {
  */
 export interface ILLMProvider {
   /** Provider configuration */
-  readonly config: ProviderConfig;
-  
+  readonly config: ProviderConfig
+
   /** Generate text completion */
-  generate(prompt: string, options: GenerateOptions): Promise<GenerationResult>;
-  
+  generate(prompt: string, options: GenerateOptions): Promise<GenerationResult>
+
   /** Generate with streaming */
-  stream(prompt: string, options: StreamOptions): Promise<void>;
-  
+  stream(prompt: string, options: StreamOptions): Promise<void>
+
   /** Get available models */
-  getModels(): string[];
-  
+  getModels(): string[]
+
   /** Validate configuration */
-  validate(): Promise<boolean>;
-  
+  validate(): Promise<boolean>
+
   /** Get provider metadata */
-  getMetadata(): ProviderMetadata;
+  getMetadata(): ProviderMetadata
 }
 
 /**
  * Provider factory function type
  */
-export type ProviderFactory = (config: ProviderConfig) => ILLMProvider;
+export type ProviderFactory = (config: ProviderConfig) => ILLMProvider
 
 /**
  * Map of provider IDs to their display names
@@ -161,7 +161,7 @@ export const PROVIDER_DISPLAY_NAMES: Record<LLMProvider, string> = {
   moonshot: 'Moonshot AI (Kimi)',
   google: 'Google (Gemini)',
   ollama: 'Ollama (Local)',
-};
+}
 
 /**
  * Default models per provider
@@ -174,7 +174,7 @@ export const DEFAULT_MODELS: Record<LLMProvider, string> = {
   moonshot: 'moonshot-v1-8k',
   google: 'gemini-1.5-pro',
   ollama: 'llama3.1',
-};
+}
 
 /**
  * Base URLs for providers
@@ -187,4 +187,4 @@ export const PROVIDER_BASE_URLS: Record<LLMProvider, string> = {
   moonshot: 'https://api.moonshot.ai/v1',
   google: 'https://generativelanguage.googleapis.com/v1beta',
   ollama: 'http://localhost:11434/api',
-};
+}

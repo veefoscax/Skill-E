@@ -1,12 +1,12 @@
 /**
  * StepRunner Component Examples
- * 
+ *
  * Demonstrates different states and configurations of the StepRunner component.
  */
 
-import { StepRunner } from './StepRunner';
-import type { SkillStep } from '@/lib/skill-parser';
-import type { ExecutionScreenshot } from '@/lib/skill-executor';
+import { StepRunner } from './StepRunner'
+import type { SkillStep } from '@/lib/skill-parser'
+import type { ExecutionScreenshot } from '@/lib/skill-executor'
 
 /**
  * Example: Pending Step
@@ -23,14 +23,14 @@ export function PendingStepExample() {
     target: {
       text: 'https://example.com/login',
     },
-  };
-  
+  }
+
   return (
     <div className="p-8 bg-background">
       <h2 className="text-2xl font-bold mb-4">Pending Step</h2>
       <StepRunner step={step} />
     </div>
-  );
+  )
 }
 
 /**
@@ -49,14 +49,14 @@ export function RunningStepExample() {
       selector: '#login-btn',
       description: 'Login button',
     },
-  };
-  
+  }
+
   return (
     <div className="p-8 bg-background">
       <h2 className="text-2xl font-bold mb-4">Running Step</h2>
       <StepRunner step={step} isExecuting={true} />
     </div>
-  );
+  )
 }
 
 /**
@@ -76,8 +76,8 @@ export function SuccessStepExample() {
       text: '{email}',
       description: 'Email input field',
     },
-  };
-  
+  }
+
   const screenshots: ExecutionScreenshot[] = [
     {
       id: 'screenshot-1',
@@ -95,14 +95,14 @@ export function SuccessStepExample() {
       timestamp: Date.now() - 1000,
       description: 'After entering email',
     },
-  ];
-  
+  ]
+
   return (
     <div className="p-8 bg-background">
       <h2 className="text-2xl font-bold mb-4">Successful Step with Screenshots</h2>
       <StepRunner step={step} screenshots={screenshots} />
     </div>
-  );
+  )
 }
 
 /**
@@ -117,13 +117,14 @@ export function FailedStepExample() {
     actionType: 'click',
     status: 'failed',
     requiresConfirmation: false,
-    error: 'Element not found: #submit-btn. The selector may be incorrect or the element may not be visible.',
+    error:
+      'Element not found: #submit-btn. The selector may be incorrect or the element may not be visible.',
     target: {
       selector: '#submit-btn',
       description: 'Submit button',
     },
-  };
-  
+  }
+
   const screenshots: ExecutionScreenshot[] = [
     {
       id: 'screenshot-3',
@@ -133,32 +134,32 @@ export function FailedStepExample() {
       timestamp: Date.now(),
       description: 'Error state - element not found',
     },
-  ];
-  
+  ]
+
   const handleRetry = () => {
-    console.log('Retry clicked');
-  };
-  
+    console.log('Retry clicked')
+  }
+
   const handleSkip = () => {
-    console.log('Skip clicked');
-  };
-  
+    console.log('Skip clicked')
+  }
+
   const handleEdit = () => {
-    console.log('Edit clicked');
-  };
-  
+    console.log('Edit clicked')
+  }
+
   return (
     <div className="p-8 bg-background">
       <h2 className="text-2xl font-bold mb-4">Failed Step with Actions</h2>
-      <StepRunner 
-        step={step} 
+      <StepRunner
+        step={step}
         screenshots={screenshots}
         onRetry={handleRetry}
         onSkip={handleSkip}
         onEdit={handleEdit}
       />
     </div>
-  );
+  )
 }
 
 /**
@@ -174,14 +175,14 @@ export function SkippedStepExample() {
     status: 'skipped',
     requiresConfirmation: false,
     feedback: 'User skipped this step as page was already loaded',
-  };
-  
+  }
+
   return (
     <div className="p-8 bg-background">
       <h2 className="text-2xl font-bold mb-4">Skipped Step with Feedback</h2>
       <StepRunner step={step} />
     </div>
-  );
+  )
 }
 
 /**
@@ -200,14 +201,14 @@ export function ConfirmationStepExample() {
       selector: '#delete-all-btn',
       description: 'Delete all button',
     },
-  };
-  
+  }
+
   return (
     <div className="p-8 bg-background">
       <h2 className="text-2xl font-bold mb-4">Step Requiring Confirmation</h2>
       <StepRunner step={step} />
     </div>
-  );
+  )
 }
 
 /**
@@ -226,14 +227,14 @@ export function CoordinatesStepExample() {
       coordinates: { x: 450, y: 320 },
       description: 'Button at center of screen',
     },
-  };
-  
+  }
+
   return (
     <div className="p-8 bg-background">
       <h2 className="text-2xl font-bold mb-4">Step with Coordinates</h2>
       <StepRunner step={step} />
     </div>
-  );
+  )
 }
 
 /**
@@ -254,14 +255,14 @@ export function SectionStepExample() {
       text: '{password}',
       description: 'Password input field',
     },
-  };
-  
+  }
+
   return (
     <div className="p-8 bg-background">
       <h2 className="text-2xl font-bold mb-4">Step with Section</h2>
       <StepRunner step={step} isExecuting={true} />
     </div>
-  );
+  )
 }
 
 /**
@@ -276,14 +277,14 @@ export function NoScreenshotsExample() {
     actionType: 'verify',
     status: 'success',
     requiresConfirmation: false,
-  };
-  
+  }
+
   return (
     <div className="p-8 bg-background">
       <h2 className="text-2xl font-bold mb-4">Step without Screenshots</h2>
       <StepRunner step={step} showScreenshots={false} />
     </div>
-  );
+  )
 }
 
 /**
@@ -299,14 +300,14 @@ export function NoActionsExample() {
     status: 'failed',
     requiresConfirmation: false,
     error: 'Results do not match expected values',
-  };
-  
+  }
+
   return (
     <div className="p-8 bg-background">
       <h2 className="text-2xl font-bold mb-4">Step without Action Buttons</h2>
       <StepRunner step={step} showActions={false} />
     </div>
-  );
+  )
 }
 
 /**
@@ -316,7 +317,7 @@ export function AllExamples() {
   return (
     <div className="p-8 bg-background space-y-8">
       <h1 className="text-3xl font-bold mb-8">StepRunner Component Examples</h1>
-      
+
       <div className="grid grid-cols-1 gap-8">
         <PendingStepExample />
         <RunningStepExample />
@@ -330,7 +331,7 @@ export function AllExamples() {
         <NoActionsExample />
       </div>
     </div>
-  );
+  )
 }
 
-export default AllExamples;
+export default AllExamples

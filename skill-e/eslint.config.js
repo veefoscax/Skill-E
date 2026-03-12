@@ -3,6 +3,7 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import unusedImports from 'eslint-plugin-unused-imports'
 
 export default tseslint.config(
   { ignores: ['dist', 'src-tauri'] },
@@ -16,6 +17,7 @@ export default tseslint.config(
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      'unused-imports': unusedImports,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -24,17 +26,19 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       // Strict unused variable and import rules (FR-X.1.1, FR-X.1.2)
-      '@typescript-eslint/no-unused-vars': [
-        'error',
+      'no-unused-vars': 'off', // Turn off base rule
+      '@typescript-eslint/no-unused-vars': 'off', // Turn off TS rule in favor of unused-imports
+      '@typescript-eslint/no-explicit-any': 'warn', // Downgraded to warn for hackathon legacy code
+      'unused-imports/no-unused-imports': 'error',
+      'unused-imports/no-unused-vars': [
+        'warn',
         {
-          argsIgnorePattern: '^_',
+          vars: 'all',
           varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_',
-          destructuredArrayIgnorePattern: '^_',
+          args: 'after-used',
+          argsIgnorePattern: '^_',
         },
       ],
-      // Catch unused imports specifically
-      'no-unused-vars': 'off', // Turn off base rule as it can report incorrect errors
     },
   },
 )

@@ -1,168 +1,164 @@
 /**
  * InlineOverlay - Overlay rendered inside main window (not separate window)
- * 
+ *
  * This avoids the freeze/white screen issue with Tauri overlay windows.
  * Uses CSS pointer-events to allow clicking through to underlying content.
  */
 
-import { useEffect, useState, useCallback } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { listen, emit } from '@tauri-apps/api/event';
-import { useRecordingStore } from '@/stores/recording';
-import { useOverlayStore } from '@/stores/overlay';
+import { useEffect, useState } from 'react'
+import { listen, emit } from '@tauri-apps/api/event'
+import { useRecordingStore } from '@/stores/recording'
+import { useOverlayStore } from '@/stores/overlay'
 import {
-  Circle,
   Square,
   Pause,
   Play,
   Mic,
-  MicOff,
   Camera,
   MousePointer,
   Clock,
-  X
-} from 'lucide-react';
-import { Button } from '../ui/button';
+} from 'lucide-react'
+import { Button } from '../ui/button'
 
 interface InlineOverlayProps {
-  onStop: () => void;
+  onStop: () => void
 }
 
 export function InlineOverlay({ onStop }: InlineOverlayProps) {
-  const { isRecording, isPaused, duration, pauseRecording, resumeRecording, stopRecording } = useRecordingStore();
-  const { isVisible, mode, setMode, hideOverlay } = useOverlayStore();
-  const [isEmergencyMode, setIsEmergencyMode] = useState(false);
+  const { isRecording, isPaused, duration, pauseRecording, resumeRecording, stopRecording } =
+    useRecordingStore()
+  const { isVisible, mode, setMode, hideOverlay } = useOverlayStore()
+  const [isEmergencyMode, setIsEmergencyMode] = useState(false)
 
   // Helper to add step and broadcast to main window
   const addStepAndBroadcast = async (step: any) => {
     // 1. Add to local store (for immediate feedback if we had UI here)
-    useRecordingStore.getState().addStep(step);
+    useRecordingStore.getState().addStep(step)
 
     // 2. Broadcast to main window so Toolbar updates
-    await emit('recording:step-added', step);
-  };
+    await emit('recording:step-added', step)
+  }
 
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [recentClicks, setRecentClicks] = useState<Array<{ x: number; y: number; time: number }>>([]);
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const [recentClicks, setRecentClicks] = useState<Array<{ x: number; y: number; time: number }>>(
+    []
+  )
 
   // Update clock
   useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Track mouse position
   useEffect(() => {
-    if (!isRecording) return;
+    if (!isRecording) return
 
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
+      setMousePos({ x: e.clientX, y: e.clientY })
+    }
 
     // Listen for steps from backend
     const unlistenStep = listen('recording:step-added', (event: any) => {
-      const step = event.payload;
+      const step = event.payload
       if (step.data?.position) {
-        const { x, y } = step.data.position;
+        const { x, y } = step.data.position
         // Visual feedback
-        setRecentClicks(prev => [
-          ...prev.slice(-4),
-          { x, y, time: Date.now() }
-        ]);
+        setRecentClicks(prev => [...prev.slice(-4), { x, y, time: Date.now() }])
       }
-    });
+    })
 
     const handleKeyDown = async (e: KeyboardEvent) => {
       // NOTE: Key logging is handled by backend global listener now
-    };
+    }
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove)
     // window.addEventListener('click', handleClick); // Removed: Use backend event
     // window.addEventListener('keydown', handleKeyDown); // Removed: Use backend event
 
     // Promise handling for unlisten
-    let unlistener: () => void;
-    unlistenStep.then(f => unlistener = f);
+    let unlistener: () => void
+    unlistenStep.then(f => (unlistener = f))
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      if (unlistener) unlistener();
-    };
-  }, [isRecording]);
+      window.removeEventListener('mousemove', handleMouseMove)
+      if (unlistener) unlistener()
+    }
+  }, [isRecording])
 
   // Clear old clicks
   useEffect(() => {
     const interval = setInterval(() => {
-      setRecentClicks(prev => prev.filter(c => Date.now() - c.time < 2000));
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
+      setRecentClicks(prev => prev.filter(c => Date.now() - c.time < 2000))
+    }, 500)
+    return () => clearInterval(interval)
+  }, [])
 
   // Format duration
   const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
 
   const handlePauseResume = async () => {
     if (isPaused) {
-      await resumeRecording();
+      await resumeRecording()
     } else {
-      await pauseRecording();
+      await pauseRecording()
     }
-  };
+  }
 
   const handleStop = async () => {
-    console.log('🛑 InlineOverlay: handleStop called');
+    console.log('🛑 InlineOverlay: handleStop called')
     try {
-      await stopRecording();
-      console.log('🛑 InlineOverlay: stopRecording completed');
-      hideOverlay();
-      console.log('🛑 InlineOverlay: hideOverlay completed');
-      onStop();
-      console.log('🛑 InlineOverlay: onStop callback completed');
+      await stopRecording()
+      console.log('🛑 InlineOverlay: stopRecording completed')
+      hideOverlay()
+      console.log('🛑 InlineOverlay: hideOverlay completed')
+      onStop()
+      console.log('🛑 InlineOverlay: onStop callback completed')
     } catch (error) {
-      console.error('❌ InlineOverlay: Error in handleStop:', error);
+      console.error('❌ InlineOverlay: Error in handleStop:', error)
     }
-  };
+  }
 
   // Safety mechanism: ESC key to stop recording
   useEffect(() => {
-    if (!isRecording) return;
+    if (!isRecording) return
 
-    let escPressCount = 0;
-    let escTimeout: ReturnType<typeof setTimeout>;
+    let escPressCount = 0
+    let escTimeout: ReturnType<typeof setTimeout>
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        escPressCount++;
-        console.log(`🛑 ESC pressed ${escPressCount}/3`);
-        
+        escPressCount++
+        console.log(`🛑 ESC pressed ${escPressCount}/3`)
+
         if (escPressCount >= 3) {
-          console.log('🛑 Triple ESC detected - forcing stop');
-          handleStop();
-          escPressCount = 0;
+          console.log('🛑 Triple ESC detected - forcing stop')
+          handleStop()
+          escPressCount = 0
         } else {
           // Reset count after 2 seconds
-          clearTimeout(escTimeout);
+          clearTimeout(escTimeout)
           escTimeout = setTimeout(() => {
-            escPressCount = 0;
-          }, 2000);
+            escPressCount = 0
+          }, 2000)
         }
       }
-    };
+    }
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown)
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      clearTimeout(escTimeout);
-    };
-  }, [isRecording]);
+      window.removeEventListener('keydown', handleKeyDown)
+      clearTimeout(escTimeout)
+    }
+  }, [isRecording])
 
   // Don't render if not recording
-  if (!isRecording) return null;
+  if (!isRecording) return null
 
   return (
     <div
@@ -178,7 +174,7 @@ export function InlineOverlay({ onStop }: InlineOverlayProps) {
             left: click.x,
             top: click.y,
             animationDuration: '1s',
-            animationIterationCount: '1'
+            animationIterationCount: '1',
           }}
         />
       ))}
@@ -189,7 +185,7 @@ export function InlineOverlay({ onStop }: InlineOverlayProps) {
         style={{
           left: mousePos.x,
           top: mousePos.y,
-          transform: `scale(${recentClicks.some(c => Date.now() - c.time < 100) ? 1.5 : 1})`
+          transform: `scale(${recentClicks.some(c => Date.now() - c.time < 100) ? 1.5 : 1})`,
         }}
       />
 
@@ -197,12 +193,14 @@ export function InlineOverlay({ onStop }: InlineOverlayProps) {
       <div className="absolute top-0 left-0 right-0 bg-gray-900/90 text-white p-3 flex items-center justify-between pointer-events-auto">
         <div className="flex items-center gap-4">
           {/* Recording Indicator - Click to stop */}
-          <button 
+          <button
             onClick={handleStop}
             className="flex items-center gap-2 hover:bg-white/10 px-3 py-1 rounded transition-colors cursor-pointer"
             title="Clique para parar a gravação"
           >
-            <div className={`w-3 h-3 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-red-500 animate-pulse'}`} />
+            <div
+              className={`w-3 h-3 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-red-500 animate-pulse'}`}
+            />
             <span className="font-medium">
               {isPaused ? 'PAUSED (Clique para parar)' : 'REC (Clique para parar)'}
             </span>
@@ -258,11 +256,7 @@ export function InlineOverlay({ onStop }: InlineOverlayProps) {
           onClick={handlePauseResume}
           className="w-12 h-12 rounded-full hover:bg-white/10"
         >
-          {isPaused ? (
-            <Play className="w-6 h-6 fill-white" />
-          ) : (
-            <Pause className="w-6 h-6" />
-          )}
+          {isPaused ? <Play className="w-6 h-6 fill-white" /> : <Pause className="w-6 h-6" />}
         </Button>
 
         {/* Divider */}
@@ -304,5 +298,5 @@ export function InlineOverlay({ onStop }: InlineOverlayProps) {
         🛑 PARAR
       </button>
     </div>
-  );
+  )
 }

@@ -1,14 +1,14 @@
 /**
  * Few-Shot Examples for Skill Generation
- * 
+ *
  * These examples follow the "Tool to X. Use when Y." pattern
  * and demonstrate best practices for SKILL.md creation.
- * 
+ *
  * Research shows that 2-3 well-chosen examples can reduce
  * errors by up to 10x compared to zero-shot prompting.
  */
 
-import type { FewShotExample } from './types';
+import type { FewShotExample } from './types'
 
 /**
  * Example 1: Simple Login Task (Minimal Template)
@@ -24,9 +24,9 @@ export const simpleLoginExample: FewShotExample = {
       'Enter username in username field',
       'Enter password in password field',
       'Click login button',
-      'Wait for dashboard to load'
+      'Wait for dashboard to load',
     ],
-    variables: ['username', 'password']
+    variables: ['username', 'password'],
   },
   output: `---
 name: dashboard-login
@@ -108,8 +108,8 @@ Automated login to the admin dashboard.
 
 - [ ] Never hardcode credentials
 - [ ] Never share password in chat
-- [ ] Never disable 2FA`
-};
+- [ ] Never disable 2FA`,
+}
 
 /**
  * Example 2: Complex API Integration (Standard Template)
@@ -127,9 +127,9 @@ export const apiIntegrationExample: FewShotExample = {
       'Check if pagination needed',
       'If has more pages, loop through all pages',
       'Save data to file',
-      'Verify export completed'
+      'Verify export completed',
     ],
-    variables: ['api_key', 'endpoint', 'output_format']
+    variables: ['api_key', 'endpoint', 'output_format'],
   },
   output: `---
 name: api-data-export
@@ -250,8 +250,8 @@ Export data from REST APIs with automatic pagination, rate limiting, and retry l
 
 - [ ] Never expose API key in logs
 - [ ] Never ignore rate limits
-- [ ] Never skip data validation`
-};
+- [ ] Never skip data validation`,
+}
 
 /**
  * Example 3: File Processing (Complex Template)
@@ -268,9 +268,9 @@ export const fileProcessingExample: FewShotExample = {
       'If validation fails, show errors and exit',
       'Process each row',
       'Generate summary report',
-      'Save report to output folder'
+      'Save report to output folder',
     ],
-    variables: ['input_file', 'output_folder', 'report_format']
+    variables: ['input_file', 'output_folder', 'report_format'],
   },
   output: `---
 name: csv-report-generator
@@ -402,8 +402,8 @@ Generate text summary:
 
 - [ ] Never modify original input file
 - [ ] Never ignore validation errors
-- [ ] Never output to same folder as input without backup`
-};
+- [ ] Never output to same folder as input without backup`,
+}
 
 /**
  * All available examples
@@ -411,8 +411,8 @@ Generate text summary:
 export const allExamples: FewShotExample[] = [
   simpleLoginExample,
   apiIntegrationExample,
-  fileProcessingExample
-];
+  fileProcessingExample,
+]
 
 /**
  * Get examples by task complexity
@@ -423,13 +423,13 @@ export function getExamplesByComplexity(
 ): FewShotExample[] {
   if (stepCount <= 3 && variableCount <= 2) {
     // Simple task - use login example
-    return [simpleLoginExample];
+    return [simpleLoginExample]
   } else if (stepCount <= 6 && variableCount <= 4) {
     // Medium complexity - use API example
-    return [apiIntegrationExample];
+    return [apiIntegrationExample]
   } else {
     // Complex task - use all examples
-    return allExamples;
+    return allExamples
   }
 }
 
@@ -441,12 +441,12 @@ export function getExamplesByTemplate(
 ): FewShotExample[] {
   switch (templateType) {
     case 'minimal':
-      return [simpleLoginExample];
+      return [simpleLoginExample]
     case 'standard':
-      return [simpleLoginExample, apiIntegrationExample];
+      return [simpleLoginExample, apiIntegrationExample]
     case 'complex':
-      return allExamples;
+      return allExamples
     default:
-      return [simpleLoginExample];
+      return [simpleLoginExample]
   }
 }

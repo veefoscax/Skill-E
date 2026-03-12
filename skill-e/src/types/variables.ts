@@ -1,9 +1,9 @@
 /**
  * Variable Detection Type Definitions
- * 
+ *
  * Defines types for intelligent variable detection from demonstration recordings.
  * Correlates speech patterns with user actions to identify parametric inputs.
- * 
+ *
  * @module types/variables
  */
 
@@ -21,12 +21,12 @@ export enum VariableType {
 /**
  * Variable detection status
  */
-export type VariableStatus = 'detected' | 'confirmed' | 'rejected' | 'manual';
+export type VariableStatus = 'detected' | 'confirmed' | 'rejected' | 'manual'
 
 /**
  * Variable origin source
  */
-export type VariableSource = 'speech' | 'action' | 'correlation' | 'llm' | 'manual';
+export type VariableSource = 'speech' | 'action' | 'correlation' | 'llm' | 'manual'
 
 /**
  * Origin information for a detected variable
@@ -34,22 +34,22 @@ export type VariableSource = 'speech' | 'action' | 'correlation' | 'llm' | 'manu
  */
 export interface VariableOrigin {
   /** Source of the variable detection */
-  source: VariableSource;
-  
+  source: VariableSource
+
   /** Speech snippet that mentioned the variable (if from speech) */
-  speechSnippet?: string;
-  
+  speechSnippet?: string
+
   /** Timestamp of speech mention in milliseconds (if from speech) */
-  speechTimestamp?: number;
-  
+  speechTimestamp?: number
+
   /** Type of action that suggested the variable (e.g., 'text_input', 'dropdown') */
-  actionType?: string;
-  
+  actionType?: string
+
   /** Value entered/selected in the action (if from action) */
-  actionValue?: string;
-  
+  actionValue?: string
+
   /** Timestamp of action in milliseconds (if from action) */
-  actionTimestamp?: number;
+  actionTimestamp?: number
 }
 
 /**
@@ -58,31 +58,31 @@ export interface VariableOrigin {
  */
 export interface VariableHint {
   /** Unique identifier for this variable hint */
-  id: string;
-  
+  id: string
+
   /** Suggested variable name (e.g., 'customerName', 'email') */
-  name: string;
-  
+  name: string
+
   /** Variable type classification */
-  type: VariableType;
-  
+  type: VariableType
+
   /** Default value from the demonstration (optional) */
-  defaultValue?: string;
-  
+  defaultValue?: string
+
   /** Available options for selection type variables */
-  options?: string[];
-  
+  options?: string[]
+
   /** Human-readable description of the variable */
-  description: string;
-  
+  description: string
+
   /** Confidence score (0-1) indicating detection certainty */
-  confidence: number;
-  
+  confidence: number
+
   /** Origin information tracking how this variable was detected */
-  origin: VariableOrigin;
-  
+  origin: VariableOrigin
+
   /** Current status of the variable hint */
-  status: VariableStatus;
+  status: VariableStatus
 }
 
 /**
@@ -91,22 +91,22 @@ export interface VariableHint {
  */
 export interface ConditionalHint {
   /** Unique identifier for this conditional hint */
-  id: string;
-  
+  id: string
+
   /** The condition expression (e.g., "user is admin", "file exists") */
-  condition: string;
-  
+  condition: string
+
   /** Action to take when condition is true */
-  thenAction: string;
-  
+  thenAction: string
+
   /** Action to take when condition is false (optional) */
-  elseAction?: string;
-  
+  elseAction?: string
+
   /** Confidence score (0-1) indicating detection certainty */
-  confidence: number;
-  
+  confidence: number
+
   /** Timestamp in milliseconds when this was mentioned */
-  sourceTimestamp: number;
+  sourceTimestamp: number
 }
 
 /**
@@ -114,14 +114,14 @@ export interface ConditionalHint {
  */
 export interface VariableDetectionResult {
   /** Detected variable hints */
-  variables: VariableHint[];
-  
+  variables: VariableHint[]
+
   /** Detected conditional patterns */
-  conditionals: ConditionalHint[];
-  
+  conditionals: ConditionalHint[]
+
   /** Processing time in milliseconds */
-  processingTime: number;
-  
+  processingTime: number
+
   /** Any warnings or issues during detection */
-  warnings?: string[];
+  warnings?: string[]
 }

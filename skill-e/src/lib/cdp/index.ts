@@ -1,13 +1,13 @@
 /**
  * Chrome DevTools Protocol (CDP) Integration Module
- * 
+ *
  * Provides CDP-based browser automation for Skill-E
  * Based on Claude extension architecture analysis
- * 
+ *
  * @example
  * ```typescript
  * import { createCDPExecutor, isChromeAvailable } from '@/lib/cdp';
- * 
+ *
  * // Check if Chrome is available
  * if (await isChromeAvailable()) {
  *   const executor = createCDPExecutor();
@@ -30,7 +30,7 @@ export {
   type CDPMouseButton,
   type CDPKeyEventType,
   type CDPMouseEventType,
-} from './client';
+} from './client'
 
 // Accessibility Tree
 export {
@@ -39,7 +39,7 @@ export {
   getAccessibilityText,
   type AccessibilityTreeNode,
   type AccessibilityTreeText,
-} from './accessibility-tree';
+} from './accessibility-tree'
 
 // Screenshot Scaling
 export {
@@ -56,7 +56,7 @@ export {
   type ScreenshotScaleOptions,
   type ScaledScreenshot,
   type CoordinateMapping,
-} from './screenshot-scale';
+} from './screenshot-scale'
 
 // Executor
 export {
@@ -64,4 +64,4 @@ export {
   createCDPExecutor,
   type CDPExecutionResult,
   type CDPExecutorOptions,
-} from './executor';
+} from './executor'

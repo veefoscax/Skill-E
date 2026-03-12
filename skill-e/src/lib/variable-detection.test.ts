@@ -1,21 +1,21 @@
 /**
  * Tests for Variable Detection - Correlation Engine
- * 
+ *
  * Requirements: FR-7.3
  */
 
-import { describe, it, expect } from 'vitest';
-import { correlateVariables, deduplicateHints, type TranscriptSegment } from './variable-detection';
-import { type ActionEvent } from './action-variables';
-import { VariableType } from '../types/variables';
+import { describe, it, expect } from 'vitest'
+import { correlateVariables, deduplicateHints, type TranscriptSegment } from './variable-detection'
+import { type ActionEvent } from './action-variables'
+import { VariableType } from '../types/variables'
 
 describe('Variable Detection - Correlation Engine', () => {
   describe('correlateVariables', () => {
     it('should correlate speech mention with text input action', () => {
       const segments: TranscriptSegment[] = [
         { text: 'Digite o nome do cliente aqui', start: 1000, end: 3000 },
-      ];
-      
+      ]
+
       const actions: ActionEvent[] = [
         {
           type: 'keyboard',
@@ -27,22 +27,22 @@ describe('Variable Detection - Correlation Engine', () => {
             modifiers: { ctrl: false, shift: false, alt: false, meta: false },
           },
         },
-      ];
-      
-      const result = correlateVariables(segments, actions);
-      
-      expect(result.variables).toHaveLength(1);
-      expect(result.variables[0].name).toBe('cliente');
-      expect(result.variables[0].type).toBe(VariableType.TEXT);
-      expect(result.variables[0].origin.source).toBe('correlation');
-      expect(result.variables[0].confidence).toBeGreaterThan(0.8);
-    });
+      ]
+
+      const result = correlateVariables(segments, actions)
+
+      expect(result.variables).toHaveLength(1)
+      expect(result.variables[0].name).toBe('cliente')
+      expect(result.variables[0].type).toBe(VariableType.TEXT)
+      expect(result.variables[0].origin.source).toBe('correlation')
+      expect(result.variables[0].confidence).toBeGreaterThan(0.8)
+    })
 
     it('should correlate selection speech with dropdown action', () => {
       const segments: TranscriptSegment[] = [
         { text: 'Seleciona o país aqui', start: 2000, end: 4000 },
-      ];
-      
+      ]
+
       const actions: ActionEvent[] = [
         {
           type: 'element_selection',
@@ -54,22 +54,20 @@ describe('Variable Detection - Correlation Engine', () => {
             boundingBox: { x: 100, y: 100, width: 200, height: 30 },
           },
         },
-      ];
-      
-      const result = correlateVariables(segments, actions);
-      
-      expect(result.variables).toHaveLength(1);
+      ]
+
+      const result = correlateVariables(segments, actions)
+
+      expect(result.variables).toHaveLength(1)
       // Accept either speech name or action name (speech pattern may be truncated)
-      expect(['pa', 'pais', 'country']).toContain(result.variables[0].name);
-      expect(result.variables[0].type).toBe(VariableType.SELECTION);
-      expect(result.variables[0].defaultValue).toBe('Brazil');
-    });
+      expect(['pa', 'pais', 'country']).toContain(result.variables[0].name)
+      expect(result.variables[0].type).toBe(VariableType.SELECTION)
+      expect(result.variables[0].defaultValue).toBe('Brazil')
+    })
 
     it('should use 5-second correlation window', () => {
-      const segments: TranscriptSegment[] = [
-        { text: 'Digite o email', start: 1000, end: 2000 },
-      ];
-      
+      const segments: TranscriptSegment[] = [{ text: 'Digite o email', start: 1000, end: 2000 }]
+
       const actions: ActionEvent[] = [
         {
           type: 'keyboard',
@@ -81,22 +79,22 @@ describe('Variable Detection - Correlation Engine', () => {
             modifiers: { ctrl: false, shift: false, alt: false, meta: false },
           },
         },
-      ];
-      
-      const result = correlateVariables(segments, actions);
-      
+      ]
+
+      const result = correlateVariables(segments, actions)
+
       // Should create standalone hints, not correlated
-      expect(result.variables.length).toBeGreaterThan(0);
-      const correlatedHints = result.variables.filter(v => v.origin.source === 'correlation');
-      expect(correlatedHints).toHaveLength(0);
-    });
+      expect(result.variables.length).toBeGreaterThan(0)
+      const correlatedHints = result.variables.filter(v => v.origin.source === 'correlation')
+      expect(correlatedHints).toHaveLength(0)
+    })
 
     it('should handle multiple speech segments and actions', () => {
       const segments: TranscriptSegment[] = [
         { text: 'Digite o nome do cliente', start: 1000, end: 2000 }, // More specific pattern
         { text: 'Agora digite o email', start: 5000, end: 6000 },
-      ];
-      
+      ]
+
       const actions: ActionEvent[] = [
         {
           type: 'keyboard',
@@ -118,23 +116,23 @@ describe('Variable Detection - Correlation Engine', () => {
             modifiers: { ctrl: false, shift: false, alt: false, meta: false },
           },
         },
-      ];
-      
+      ]
+
       // Use lower confidence threshold to include more hints
-      const result = correlateVariables(segments, actions, { minConfidence: 0.4 });
-      
-      expect(result.variables.length).toBeGreaterThanOrEqual(2);
-      const names = result.variables.map(v => v.name);
+      const result = correlateVariables(segments, actions, { minConfidence: 0.4 })
+
+      expect(result.variables.length).toBeGreaterThanOrEqual(2)
+      const names = result.variables.map(v => v.name)
       // Should detect both variables
-      expect(names.some(n => ['cliente', 'name', 'textinput'].includes(n))).toBe(true);
-      expect(names).toContain('email');
-    });
+      expect(names.some(n => ['cliente', 'name', 'textinput'].includes(n))).toBe(true)
+      expect(names).toContain('email')
+    })
 
     it('should boost confidence for correlated hints', () => {
       const segments: TranscriptSegment[] = [
         { text: 'Digite o código do produto', start: 1000, end: 2000 }, // More specific
-      ];
-      
+      ]
+
       const actions: ActionEvent[] = [
         {
           type: 'keyboard',
@@ -146,38 +144,38 @@ describe('Variable Detection - Correlation Engine', () => {
             modifiers: { ctrl: false, shift: false, alt: false, meta: false },
           },
         },
-      ];
-      
-      const result = correlateVariables(segments, actions);
-      
-      const correlatedHint = result.variables.find(v => v.origin.source === 'correlation');
-      expect(correlatedHint).toBeDefined();
-      expect(correlatedHint!.confidence).toBeGreaterThan(0.8);
-    });
+      ]
+
+      const result = correlateVariables(segments, actions)
+
+      const correlatedHint = result.variables.find(v => v.origin.source === 'correlation')
+      expect(correlatedHint).toBeDefined()
+      expect(correlatedHint!.confidence).toBeGreaterThan(0.8)
+    })
 
     it('should filter hints below minimum confidence', () => {
       const segments: TranscriptSegment[] = [
         { text: 'isso pode mudar', start: 1000, end: 2000 }, // Low confidence pattern
-      ];
-      
-      const actions: ActionEvent[] = [];
-      
-      const result = correlateVariables(segments, actions, { minConfidence: 0.7 });
-      
+      ]
+
+      const actions: ActionEvent[] = []
+
+      const result = correlateVariables(segments, actions, { minConfidence: 0.7 })
+
       // Should filter out low confidence hints
-      expect(result.variables.every(v => v.confidence >= 0.7)).toBe(true);
-    });
+      expect(result.variables.every(v => v.confidence >= 0.7)).toBe(true)
+    })
 
     it('should include processing time in result', () => {
-      const segments: TranscriptSegment[] = [];
-      const actions: ActionEvent[] = [];
-      
-      const result = correlateVariables(segments, actions);
-      
-      expect(result.processingTime).toBeGreaterThanOrEqual(0);
-      expect(typeof result.processingTime).toBe('number');
-    });
-  });
+      const segments: TranscriptSegment[] = []
+      const actions: ActionEvent[] = []
+
+      const result = correlateVariables(segments, actions)
+
+      expect(result.processingTime).toBeGreaterThanOrEqual(0)
+      expect(typeof result.processingTime).toBe('number')
+    })
+  })
 
   describe('deduplicateHints', () => {
     it('should merge hints with same name and type', () => {
@@ -200,14 +198,14 @@ describe('Variable Detection - Correlation Engine', () => {
           origin: { source: 'action' as const, actionType: 'text_input' },
           status: 'detected' as const,
         },
-      ];
-      
-      const result = deduplicateHints(hints);
-      
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('email');
-      expect(result[0].confidence).toBe(0.8); // Keeps highest confidence
-    });
+      ]
+
+      const result = deduplicateHints(hints)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].name).toBe('email')
+      expect(result[0].confidence).toBe(0.8) // Keeps highest confidence
+    })
 
     it('should keep hints with different types separate', () => {
       const hints = [
@@ -229,12 +227,12 @@ describe('Variable Detection - Correlation Engine', () => {
           origin: { source: 'action' as const },
           status: 'detected' as const,
         },
-      ];
-      
-      const result = deduplicateHints(hints);
-      
-      expect(result).toHaveLength(2);
-    });
+      ]
+
+      const result = deduplicateHints(hints)
+
+      expect(result).toHaveLength(2)
+    })
 
     it('should sort by confidence descending', () => {
       const hints = [
@@ -265,14 +263,14 @@ describe('Variable Detection - Correlation Engine', () => {
           origin: { source: 'action' as const },
           status: 'detected' as const,
         },
-      ];
-      
-      const result = deduplicateHints(hints);
-      
-      expect(result[0].name).toBe('high');
-      expect(result[1].name).toBe('medium');
-      expect(result[2].name).toBe('low');
-    });
+      ]
+
+      const result = deduplicateHints(hints)
+
+      expect(result[0].name).toBe('high')
+      expect(result[1].name).toBe('medium')
+      expect(result[2].name).toBe('low')
+    })
 
     it('should prefer correlated hints over standalone', () => {
       const hints = [
@@ -294,12 +292,12 @@ describe('Variable Detection - Correlation Engine', () => {
           origin: { source: 'correlation' as const },
           status: 'detected' as const,
         },
-      ];
-      
-      const result = deduplicateHints(hints);
-      
-      expect(result).toHaveLength(1);
-      expect(result[0].origin.source).toBe('correlation');
-    });
-  });
-});
+      ]
+
+      const result = deduplicateHints(hints)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].origin.source).toBe('correlation')
+    })
+  })
+})

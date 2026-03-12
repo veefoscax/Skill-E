@@ -1,76 +1,76 @@
 /**
  * Browser Capture Injector
- * 
+ *
  * Injects the content script into web pages for capture during recording.
  * Works with Tauri's webview or external browser windows.
- * 
+ *
  * Requirements: FR-2.6, FR-2.7, FR-2.10
- * 
+ *
  * @example
  * ```typescript
  * const injector = new BrowserCaptureInjector();
- * 
+ *
  * // Inject into webview
  * await injector.inject(webview);
- * 
+ *
  * // Start capturing
  * await injector.startCapture({ sessionId: 'abc123' });
- * 
+ *
  * // Later, get data
  * const data = await injector.getCaptureData();
- * 
+ *
  * // Stop and cleanup
  * await injector.stopCapture();
  * ```
  */
 
-import type { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import type { BrowserCaptureData } from '../browser-capture';
+import type { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import type { BrowserCaptureData } from '../browser-capture'
 
 /**
  * Injector configuration
  */
 interface InjectorConfig {
   /** Session identifier */
-  sessionId: string;
+  sessionId: string
   /** Capture console logs */
-  captureConsole?: boolean;
+  captureConsole?: boolean
   /** Capture network requests */
-  captureNetwork?: boolean;
+  captureNetwork?: boolean
   /** Capture DOM events */
-  captureDOM?: boolean;
+  captureDOM?: boolean
   /** Max body size for network */
-  maxBodySize?: number;
+  maxBodySize?: number
 }
 
 /**
  * Browser Capture Injector
- * 
+ *
  * Manages injection of content script and communication.
  */
 export class BrowserCaptureInjector {
-  private webview: WebviewWindow | null = null;
-  private config: InjectorConfig | null = null;
-  private isCapturing = false;
+  private webview: WebviewWindow | null = null
+  private config: InjectorConfig | null = null
+  private isCapturing = false
 
   /**
    * Inject content script into webview
-   * 
+   *
    * @param webview - Tauri webview window
    */
   async inject(webview: WebviewWindow): Promise<void> {
-    this.webview = webview;
+    this.webview = webview
 
     // Get the content script code
-    const scriptContent = await this.loadContentScript();
+    const scriptContent = await this.loadContentScript()
 
     // Inject into webview
-    await webview.eval(scriptContent);
+    await webview.eval(scriptContent)
 
     // Wait for script to initialize
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 100))
 
-    console.log('[BrowserCapture] Content script injected');
+    console.log('[BrowserCapture] Content script injected')
   }
 
   /**
@@ -83,7 +83,7 @@ export class BrowserCaptureInjector {
       (function() {
         ${CONTENT_SCRIPT_MINIFIED}
       })();
-    `;
+    `
   }
 
   /**
@@ -91,11 +91,11 @@ export class BrowserCaptureInjector {
    */
   async startCapture(config: InjectorConfig): Promise<void> {
     if (!this.webview) {
-      throw new Error('Content script not injected. Call inject() first.');
+      throw new Error('Content script not injected. Call inject() first.')
     }
 
-    this.config = config;
-    this.isCapturing = true;
+    this.config = config
+    this.isCapturing = true
 
     // Send start command to content script
     await this.sendMessage({
@@ -108,9 +108,9 @@ export class BrowserCaptureInjector {
         captureDOM: config.captureDOM ?? true,
         maxBodySize: config.maxBodySize ?? 10 * 1024,
       },
-    });
+    })
 
-    console.log('[BrowserCapture] Capture started:', config.sessionId);
+    console.log('[BrowserCapture] Capture started:', config.sessionId)
   }
 
   /**
@@ -118,23 +118,23 @@ export class BrowserCaptureInjector {
    */
   async stopCapture(): Promise<BrowserCaptureData> {
     if (!this.webview) {
-      throw new Error('Content script not injected');
+      throw new Error('Content script not injected')
     }
 
-    this.isCapturing = false;
+    this.isCapturing = false
 
     // Send stop command
     await this.sendMessage({
       source: 'skill-e-parent',
       command: 'stop',
-    });
+    })
 
     // Get final data
-    const data = await this.getCaptureData();
+    const data = await this.getCaptureData()
 
-    console.log('[BrowserCapture] Capture stopped');
+    console.log('[BrowserCapture] Capture stopped')
 
-    return data;
+    return data
   }
 
   /**
@@ -142,65 +142,62 @@ export class BrowserCaptureInjector {
    */
   async getCaptureData(): Promise<BrowserCaptureData> {
     if (!this.webview) {
-      throw new Error('Content script not injected');
+      throw new Error('Content script not injected')
     }
 
     // Send getData command and wait for response
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error('Timeout getting capture data'));
-      }, 5000);
+        reject(new Error('Timeout getting capture data'))
+      }, 5000)
 
       // Set up one-time listener
       const handleMessage = (event: MessageEvent) => {
-        if (
-          event.data?.source === 'skill-e-content-script' &&
-          event.data?.type === 'data'
-        ) {
-          clearTimeout(timeout);
-          window.removeEventListener('message', handleMessage);
-          resolve(event.data.payload as BrowserCaptureData);
+        if (event.data?.source === 'skill-e-content-script' && event.data?.type === 'data') {
+          clearTimeout(timeout)
+          window.removeEventListener('message', handleMessage)
+          resolve(event.data.payload as BrowserCaptureData)
         }
-      };
+      }
 
-      window.addEventListener('message', handleMessage);
+      window.addEventListener('message', handleMessage)
 
       // Send command
       this.sendMessage({
         source: 'skill-e-parent',
         command: 'getData',
-      });
-    });
+      })
+    })
   }
 
   /**
    * Send message to content script via webview
    */
   private async sendMessage(message: unknown): Promise<void> {
-    if (!this.webview) return;
+    if (!this.webview) return
 
     const script = `
       window.postMessage(${JSON.stringify(message)}, '*');
-    `;
+    `
 
-    await this.webview.eval(script);
+    await this.webview.eval(script)
   }
 
   /**
    * Check if content script is alive
    */
   async ping(): Promise<boolean> {
-    if (!this.webview) return false;
+    if (!this.webview) return false
 
     try {
       await this.sendMessage({
         source: 'skill-e-parent',
         command: 'ping',
-      });
+      })
 
-      return true;
+      return true
     } catch {
-      return false;
+      return false
     }
   }
 
@@ -209,11 +206,11 @@ export class BrowserCaptureInjector {
    */
   async dispose(): Promise<void> {
     if (this.isCapturing) {
-      await this.stopCapture();
+      await this.stopCapture()
     }
 
-    this.webview = null;
-    this.config = null;
+    this.webview = null
+    this.config = null
   }
 }
 
@@ -257,11 +254,11 @@ function stopCapture(){return isActive=!1,buffer.endTime=Date.now(),originals.co
 window.addEventListener("message",e=>{if(e.source===window.parent){const{data:o}=e;if(o&&"skill-e-parent"===o.source)switch(o.command){case"start":startCapture(o.config);break;case"stop":stopCapture();break;case"getData":e.source.postMessage({source:"skill-e-content-script",type:"data",payload:{...buffer}},e.origin);break;case"ping":sendToParent({type:"ping",payload:{active:isActive},timestamp:Date.now(),sessionId:config.sessionId})}}}),
 window.self!==window.top&&sendToParent({type:"init",payload:{status:"loaded",url:window.location.href},timestamp:Date.now(),sessionId:config.sessionId}),
 window.__SKILL_E_CAPTURE__={start:startCapture,stop:stopCapture,getData:()=>({...buffer})};
-`;
+`
 
 /**
  * Convenience function for quick capture
- * 
+ *
  * @param webview - Tauri webview
  * @param sessionId - Session identifier
  * @param durationMs - Capture duration in milliseconds
@@ -272,17 +269,17 @@ export async function captureForDuration(
   sessionId: string,
   durationMs: number
 ): Promise<BrowserCaptureData> {
-  const injector = new BrowserCaptureInjector();
+  const injector = new BrowserCaptureInjector()
 
   try {
-    await injector.inject(webview);
-    await injector.startCapture({ sessionId });
+    await injector.inject(webview)
+    await injector.startCapture({ sessionId })
 
     // Wait for duration
-    await new Promise((resolve) => setTimeout(resolve, durationMs));
+    await new Promise(resolve => setTimeout(resolve, durationMs))
 
-    return await injector.stopCapture();
+    return await injector.stopCapture()
   } finally {
-    await injector.dispose();
+    await injector.dispose()
   }
 }

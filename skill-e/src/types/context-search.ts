@@ -1,22 +1,22 @@
 /**
  * Context Search Type Definitions
- * 
+ *
  * Defines types for automatic documentation lookup and library detection.
  * Integrates with Context7 MCP and web search to fetch relevant documentation
  * for libraries, APIs, and tools mentioned during demonstration.
- * 
+ *
  * @module types/context-search
  */
 
 /**
  * Library/API type classification
  */
-export type LibraryType = 'python' | 'javascript' | 'tool' | 'database' | 'api';
+export type LibraryType = 'python' | 'javascript' | 'tool' | 'database' | 'api'
 
 /**
  * Documentation source classification
  */
-export type DocSource = 'context7' | 'github' | 'official' | 'manual';
+export type DocSource = 'context7' | 'github' | 'official' | 'manual'
 
 /**
  * A detected library, API, or tool from transcription or OCR
@@ -24,19 +24,19 @@ export type DocSource = 'context7' | 'github' | 'official' | 'manual';
  */
 export interface DetectedLibrary {
   /** Library/API name (e.g., 'pandas', 'react', 'docker') */
-  name: string;
-  
+  name: string
+
   /** Type classification of the detected library */
-  type: LibraryType;
-  
+  type: LibraryType
+
   /** Confidence score (0-1) indicating detection certainty */
-  confidence: number;
-  
+  confidence: number
+
   /** Surrounding text where the library was detected */
-  context: string;
-  
+  context: string
+
   /** Optional hint about what the user was trying to do with this library */
-  usageHint?: string;
+  usageHint?: string
 }
 
 /**
@@ -45,28 +45,28 @@ export interface DetectedLibrary {
  */
 export interface DocReference {
   /** Unique identifier for this reference */
-  id: string;
-  
+  id: string
+
   /** Library/API name this reference is for */
-  library: string;
-  
+  library: string
+
   /** Title of the documentation section */
-  title: string;
-  
+  title: string
+
   /** URL to the full documentation */
-  url: string;
-  
+  url: string
+
   /** Relevant excerpt from the documentation (max 500 tokens) */
-  snippet: string;
-  
+  snippet: string
+
   /** Optional code example from the documentation */
-  codeExample?: string;
-  
+  codeExample?: string
+
   /** Source where this documentation was fetched from */
-  source: DocSource;
-  
+  source: DocSource
+
   /** Relevance score (0-1) indicating how relevant this is to the usage context */
-  relevance: number;
+  relevance: number
 }
 
 /**
@@ -75,14 +75,14 @@ export interface DocReference {
  */
 export interface DocSearchResult {
   /** Library name that was searched */
-  library: string;
-  
+  library: string
+
   /** Array of documentation references found */
-  references: DocReference[];
-  
+  references: DocReference[]
+
   /** The search query that was used */
-  searchQuery: string;
-  
+  searchQuery: string
+
   /** Timestamp when this search was performed (milliseconds since epoch) */
-  timestamp: number;
+  timestamp: number
 }

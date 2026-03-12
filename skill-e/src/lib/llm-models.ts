@@ -1,9 +1,9 @@
-import { fetch } from '@tauri-apps/plugin-http';
-import { OPENCLAW_PROVIDERS, ProviderConfig } from './models-config.providers';
+import { fetch } from '@tauri-apps/plugin-http'
+import { OPENCLAW_PROVIDERS } from './models-config.providers'
 
 export interface ModelOption {
-    id: string;
-    name?: string;
+  id: string
+  name?: string
 }
 
 /**
@@ -11,89 +11,87 @@ export interface ModelOption {
  * Tries API first, falls back to static config
  */
 export async function fetchProviderModels(
-    providerId: string,
-    baseUrl: string,
-    apiKey?: string
+  providerId: string,
+  baseUrl: string,
+  apiKey?: string
 ): Promise<ModelOption[]> {
-    const config = OPENCLAW_PROVIDERS[providerId];
-    const staticModels = config?.models?.map(m => ({ id: m.id, name: m.name })) || [];
+  const config = OPENCLAW_PROVIDERS[providerId]
+  const staticModels = config?.models?.map(m => ({ id: m.id, name: m.name })) || []
 
-    // 1. Ollama (No Auth usually)
-    if (providerId === 'ollama') {
-        return fetchOllamaModels(baseUrl);
+  // 1. Ollama (No Auth usually)
+  if (providerId === 'ollama') {
+    return fetchOllamaModels(baseUrl)
+  }
+
+  // 2. OpenAI Compatible (Requires Auth)
+  if (config?.api === 'openai-completions') {
+    try {
+      const models = await fetchOpenAIModels(baseUrl, apiKey)
+      if (models.length > 0) return models
+    } catch (e) {
+      console.warn(`Failed to fetch models for ${providerId}:`, e)
     }
+  }
 
-    // 2. OpenAI Compatible (Requires Auth)
-    if (config?.api === 'openai-completions') {
-        try {
-            const models = await fetchOpenAIModels(baseUrl, apiKey);
-            if (models.length > 0) return models;
-        } catch (e) {
-            console.warn(`Failed to fetch models for ${providerId}:`, e);
-        }
-    }
+  // 3. Fallback to static list
+  if (staticModels.length > 0) {
+    return staticModels
+  }
 
-    // 3. Fallback to static list
-    if (staticModels.length > 0) {
-        return staticModels;
-    }
+  // 4. Fallback to default model if nothing else
+  if (config?.defaultModel) {
+    return [{ id: config.defaultModel, name: config.defaultModel }]
+  }
 
-    // 4. Fallback to default model if nothing else
-    if (config?.defaultModel) {
-        return [{ id: config.defaultModel, name: config.defaultModel }];
-    }
-
-    return [];
+  return []
 }
 
 async function fetchOllamaModels(baseUrl: string): Promise<ModelOption[]> {
+  try {
+    // Try standard Ollama API
+    const response = await fetch(`${baseUrl}/api/tags`, { method: 'GET' })
+    if (!response.ok) throw new Error('Failed /api/tags')
+    const data = (await response.json()) as { models: { name: string }[] }
+    return data.models.map(m => ({ id: m.name, name: m.name }))
+  } catch (e) {
+    // Fallback v1/models
     try {
-        // Try standard Ollama API
-        const response = await fetch(`${baseUrl}/api/tags`, { method: 'GET' });
-        if (!response.ok) throw new Error('Failed /api/tags');
-        const data = await response.json() as { models: { name: string }[] };
-        return data.models.map(m => ({ id: m.name, name: m.name }));
-    } catch (e) {
-        // Fallback v1/models
-        try {
-            const response = await fetch(`${baseUrl}/v1/models`, { method: 'GET' });
-            if (!response.ok) throw new Error('Failed /v1/models');
-            const data = await response.json() as { data: { id: string }[] };
-            return data.data.map(m => ({ id: m.id, name: m.id }));
-        } catch (err) {
-            console.error('Ollama fetch failed', err);
-            return [];
-        }
+      const response = await fetch(`${baseUrl}/v1/models`, { method: 'GET' })
+      if (!response.ok) throw new Error('Failed /v1/models')
+      const data = (await response.json()) as { data: { id: string }[] }
+      return data.data.map(m => ({ id: m.id, name: m.id }))
+    } catch (err) {
+      console.error('Ollama fetch failed', err)
+      return []
     }
+  }
 }
 
 async function fetchOpenAIModels(baseUrl: string, apiKey?: string): Promise<ModelOption[]> {
-    if (!apiKey) throw new Error('API Key required for model fetching');
+  if (!apiKey) throw new Error('API Key required for model fetching')
 
-    // Clean URL (remove /chat/completions if present, ensure /v1/models)
-    let modelsUrl = baseUrl;
-    if (modelsUrl.endsWith('/chat/completions')) {
-        modelsUrl = modelsUrl.replace('/chat/completions', '/models');
-    } else if (!modelsUrl.endsWith('/models')) {
-        modelsUrl = `${modelsUrl}/models`;
-    }
+  // Clean URL (remove /chat/completions if present, ensure /v1/models)
+  let modelsUrl = baseUrl
+  if (modelsUrl.endsWith('/chat/completions')) {
+    modelsUrl = modelsUrl.replace('/chat/completions', '/models')
+  } else if (!modelsUrl.endsWith('/models')) {
+    modelsUrl = `${modelsUrl}/models`
+  }
 
-    const response = await fetch(modelsUrl, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-        }
-    });
+  const response = await fetch(modelsUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+  })
 
-    if (!response.ok) {
-        throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`);
-    }
+  if (!response.ok) {
+    throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`)
+  }
 
-    const data = await response.json() as { data: { id: string, object: string }[] };
+  const data = (await response.json()) as { data: { id: string; object: string }[] }
 
-    // Filter for likely chat models if possible, or just return all
-    return data.data
-        .map(m => ({ id: m.id, name: m.id }))
-        .sort((a, b) => a.id.localeCompare(b.id));
+  // Filter for likely chat models if possible, or just return all
+  return data.data.map(m => ({ id: m.id, name: m.id })).sort((a, b) => a.id.localeCompare(b.id))
 }

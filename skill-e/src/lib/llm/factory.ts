@@ -1,25 +1,21 @@
 /**
  * LLM Provider Factory
- * 
+ *
  * Creates provider instances based on configuration.
  * Supports: Anthropic, OpenAI, OpenRouter, Zifu AI, Kimi, Google, Ollama
  */
 
-import { AnthropicProvider } from './providers/anthropic';
+import { AnthropicProvider } from './providers/anthropic'
 import {
   OpenAIProvider,
   OpenRouterProvider,
   ZhipuProvider,
   MoonshotProvider,
-} from './providers/openai-compatible';
-import { GoogleProvider } from './providers/google';
-import { OllamaProvider } from './providers/ollama';
-import type { ILLMProvider, ProviderConfig, LLMProvider } from './types';
-import {
-  PROVIDER_BASE_URLS,
-  DEFAULT_MODELS,
-  PROVIDER_DISPLAY_NAMES,
-} from './types';
+} from './providers/openai-compatible'
+import { GoogleProvider } from './providers/google'
+import { OllamaProvider } from './providers/ollama'
+import type { ILLMProvider, ProviderConfig, LLMProvider } from './types'
+import { PROVIDER_BASE_URLS, DEFAULT_MODELS, PROVIDER_DISPLAY_NAMES } from './types'
 
 /**
  * Create a provider instance
@@ -27,21 +23,21 @@ import {
 export function createProvider(config: ProviderConfig): ILLMProvider {
   switch (config.name) {
     case 'anthropic':
-      return new AnthropicProvider(config);
+      return new AnthropicProvider(config)
     case 'openai':
-      return new OpenAIProvider(config);
+      return new OpenAIProvider(config)
     case 'openrouter':
-      return new OpenRouterProvider(config);
+      return new OpenRouterProvider(config)
     case 'zhipu':
-      return new ZhipuProvider(config);
+      return new ZhipuProvider(config)
     case 'moonshot':
-      return new MoonshotProvider(config);
+      return new MoonshotProvider(config)
     case 'google':
-      return new GoogleProvider(config);
+      return new GoogleProvider(config)
     case 'ollama':
-      return new OllamaProvider(config);
+      return new OllamaProvider(config)
     default:
-      throw new Error(`Unknown provider: ${config.name}`);
+      throw new Error(`Unknown provider: ${config.name}`)
   }
 }
 
@@ -63,9 +59,9 @@ export function createProviderSimple(
     supportsStreaming: true,
     responsePath: getDefaultResponsePath(provider),
     usagePath: getDefaultUsagePath(provider),
-  };
-  
-  return createProvider(config);
+  }
+
+  return createProvider(config)
 }
 
 /**
@@ -79,14 +75,9 @@ function getDefaultModels(provider: LLMProvider): string[] {
         'claude-3-opus-20240229',
         'claude-3-sonnet-20240229',
         'claude-3-haiku-20240307',
-      ];
+      ]
     case 'openai':
-      return [
-        'gpt-4o',
-        'gpt-4o-mini',
-        'gpt-4-turbo',
-        'gpt-3.5-turbo',
-      ];
+      return ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo']
     case 'openrouter':
       return [
         'anthropic/claude-3.5-sonnet',
@@ -94,39 +85,17 @@ function getDefaultModels(provider: LLMProvider): string[] {
         'meta-llama/llama-3.1-70b-instruct',
         'google/gemini-pro',
         'deepseek/deepseek-chat',
-      ];
+      ]
     case 'zhipu':
-      return [
-        'glm-4',
-        'glm-4v',
-        'glm-4-air',
-        'glm-3-turbo',
-        'chatglm_pro',
-        'chatglm_std',
-      ];
+      return ['glm-4', 'glm-4v', 'glm-4-air', 'glm-3-turbo', 'chatglm_pro', 'chatglm_std']
     case 'moonshot':
-      return [
-        'moonshot-v1-8k',
-        'moonshot-v1-32k',
-        'moonshot-v1-128k',
-        'kimi-k2-0711-preview',
-      ];
+      return ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k', 'kimi-k2-0711-preview']
     case 'google':
-      return [
-        'gemini-1.5-pro',
-        'gemini-1.5-flash',
-        'gemini-pro',
-      ];
+      return ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro']
     case 'ollama':
-      return [
-        'llama3.1',
-        'llama3',
-        'mistral',
-        'codellama',
-        'qwen2',
-      ];
+      return ['llama3.1', 'llama3', 'mistral', 'codellama', 'qwen2']
     default:
-      return [];
+      return []
   }
 }
 
@@ -136,18 +105,18 @@ function getDefaultModels(provider: LLMProvider): string[] {
 function getDefaultResponsePath(provider: LLMProvider): string {
   switch (provider) {
     case 'anthropic':
-      return 'content.0.text';
+      return 'content.0.text'
     case 'openai':
     case 'openrouter':
     case 'zhipu':
     case 'moonshot':
-      return 'choices.0.message.content';
+      return 'choices.0.message.content'
     case 'google':
-      return 'candidates.0.content.parts.0.text';
+      return 'candidates.0.content.parts.0.text'
     case 'ollama':
-      return 'message.content';
+      return 'message.content'
     default:
-      return 'choices.0.message.content';
+      return 'choices.0.message.content'
   }
 }
 
@@ -157,14 +126,14 @@ function getDefaultResponsePath(provider: LLMProvider): string {
 function getDefaultUsagePath(provider: LLMProvider): string | undefined {
   switch (provider) {
     case 'anthropic':
-      return 'usage';
+      return 'usage'
     case 'openai':
     case 'openrouter':
     case 'zhipu':
     case 'moonshot':
-      return 'usage';
+      return 'usage'
     default:
-      return undefined;
+      return undefined
   }
 }
 
@@ -172,7 +141,7 @@ function getDefaultUsagePath(provider: LLMProvider): string | undefined {
  * Get all available providers
  */
 export function getAvailableProviders(): LLMProvider[] {
-  return ['anthropic', 'openai', 'openrouter', 'zhipu', 'moonshot', 'google', 'ollama'];
+  return ['anthropic', 'openai', 'openrouter', 'zhipu', 'moonshot', 'google', 'ollama']
 }
 
 /**
@@ -185,7 +154,7 @@ export function getProviderInfo(provider: LLMProvider) {
     baseUrl: PROVIDER_BASE_URLS[provider],
     defaultModel: DEFAULT_MODELS[provider],
     models: getDefaultModels(provider),
-  };
+  }
 }
 
 /**
@@ -197,10 +166,10 @@ export async function validateProvider(
   customBaseUrl?: string
 ): Promise<boolean> {
   try {
-    const instance = createProviderSimple(provider, apiKey, customBaseUrl);
-    return await instance.validate();
+    const instance = createProviderSimple(provider, apiKey, customBaseUrl)
+    return await instance.validate()
   } catch (error) {
-    console.error(`Provider validation failed for ${provider}:`, error);
-    return false;
+    console.error(`Provider validation failed for ${provider}:`, error)
+    return false
   }
 }

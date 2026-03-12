@@ -1,24 +1,28 @@
 /**
  * Variable Detection - Correlation Engine
- * 
+ *
  * Main correlation algorithm that brings together speech pattern matching
  * and action variable extraction to identify variables with high confidence
  * by correlating speech mentions with user actions within a time window.
- * 
+ *
  * Requirements: FR-7.3
- * 
+ *
  * @module lib/variable-detection
  */
 
-import { extractSpeechVariables, type SpeechVariableHint } from './speech-patterns';
-import { extractActionVariables, type ActionVariableHint, type ActionEvent } from './action-variables';
-import { VariableHint, VariableType, VariableDetectionResult } from '../types/variables';
+import { extractSpeechVariables, type SpeechVariableHint } from './speech-patterns'
+import {
+  extractActionVariables,
+  type ActionVariableHint,
+  type ActionEvent,
+} from './action-variables'
+import { VariableHint, VariableType, VariableDetectionResult } from '../types/variables'
 
 /**
  * Generates a unique ID for variable hints
  */
 function generateId(): string {
-  return crypto.randomUUID();
+  return crypto.randomUUID()
 }
 
 /**
@@ -26,13 +30,13 @@ function generateId(): string {
  */
 export interface TranscriptSegment {
   /** The transcribed text */
-  text: string;
-  
+  text: string
+
   /** Start time in milliseconds */
-  start: number;
-  
+  start: number
+
   /** End time in milliseconds */
-  end: number;
+  end: number
 }
 
 /**
@@ -40,36 +44,36 @@ export interface TranscriptSegment {
  */
 export interface CorrelationConfig {
   /** Time window in milliseconds for correlating speech with actions (default: 5000ms) */
-  correlationWindowMs?: number;
-  
+  correlationWindowMs?: number
+
   /** Minimum confidence threshold for including hints (default: 0.5) */
-  minConfidence?: number;
-  
+  minConfidence?: number
+
   /** Boost factor for correlated hints (default: 0.2) */
-  correlationBoost?: number;
+  correlationBoost?: number
 }
 
 const DEFAULT_CONFIG: Required<CorrelationConfig> = {
   correlationWindowMs: 5000,
   minConfidence: 0.5,
   correlationBoost: 0.2,
-};
+}
 
 /**
  * Main correlation function that detects variables by correlating speech and actions
- * 
+ *
  * This is the core algorithm that:
  * 1. Extracts variable hints from speech patterns
  * 2. Extracts variable hints from user actions
  * 3. Correlates speech and actions within a time window
  * 4. Calculates combined confidence scores
  * 5. Deduplicates and returns the best hints
- * 
+ *
  * @param speechSegments - Array of transcript segments with timestamps
  * @param actions - Array of action events to analyze
  * @param config - Optional configuration for correlation behavior
  * @returns Detection result with correlated variable hints
- * 
+ *
  * @example
  * ```typescript
  * const result = correlateVariables(
@@ -84,57 +88,49 @@ export function correlateVariables(
   actions: ActionEvent[],
   config: CorrelationConfig = {}
 ): VariableDetectionResult {
-  const startTime = Date.now();
-  const cfg = { ...DEFAULT_CONFIG, ...config };
-  
-  const hints: VariableHint[] = [];
-  const warnings: string[] = [];
-  
+  const startTime = Date.now()
+  const cfg = { ...DEFAULT_CONFIG, ...config }
+
+  const hints: VariableHint[] = []
+  const warnings: string[] = []
+
   // Extract hints from speech patterns
-  const speechHints = extractAllSpeechHints(speechSegments);
-  
+  const speechHints = extractAllSpeechHints(speechSegments)
+
   // Extract hints from actions
-  const actionHints = extractActionVariables(actions);
-  
+  const actionHints = extractActionVariables(actions)
+
   // Correlate speech hints with action hints
   const { correlatedHints, usedSpeechIndices, usedActionIndices } = performCorrelation(
     speechHints,
     actionHints,
     speechSegments,
     cfg
-  );
-  
+  )
+
   // Add standalone speech hints (no matching action)
-  const standaloneSpeechHints = createStandaloneSpeechHints(
-    speechHints,
-    usedSpeechIndices,
-    cfg
-  );
-  
+  const standaloneSpeechHints = createStandaloneSpeechHints(speechHints, usedSpeechIndices, cfg)
+
   // Add standalone action hints (no matching speech)
-  const standaloneActionHints = createStandaloneActionHints(
-    actionHints,
-    usedActionIndices,
-    cfg
-  );
-  
+  const standaloneActionHints = createStandaloneActionHints(actionHints, usedActionIndices, cfg)
+
   // Combine all hints
-  hints.push(...correlatedHints, ...standaloneSpeechHints, ...standaloneActionHints);
-  
+  hints.push(...correlatedHints, ...standaloneSpeechHints, ...standaloneActionHints)
+
   // Deduplicate hints
-  const deduplicatedHints = deduplicateHints(hints);
-  
+  const deduplicatedHints = deduplicateHints(hints)
+
   // Filter by minimum confidence
-  const filteredHints = deduplicatedHints.filter(h => h.confidence >= cfg.minConfidence);
-  
-  const processingTime = Date.now() - startTime;
-  
+  const filteredHints = deduplicatedHints.filter(h => h.confidence >= cfg.minConfidence)
+
+  const processingTime = Date.now() - startTime
+
   return {
     variables: filteredHints,
     conditionals: [], // TODO: Implement conditional detection in future task
     processingTime,
     warnings: warnings.length > 0 ? warnings : undefined,
-  };
+  }
 }
 
 /**
@@ -143,28 +139,28 @@ export function correlateVariables(
 function extractAllSpeechHints(
   segments: TranscriptSegment[]
 ): Array<SpeechVariableHint & { segment: TranscriptSegment }> {
-  const hints: Array<SpeechVariableHint & { segment: TranscriptSegment }> = [];
-  
+  const hints: Array<SpeechVariableHint & { segment: TranscriptSegment }> = []
+
   for (const segment of segments) {
-    const segmentHints = extractSpeechVariables(segment.text);
-    
+    const segmentHints = extractSpeechVariables(segment.text)
+
     // Attach segment info to each hint
     for (const hint of segmentHints) {
-      hints.push({ ...hint, segment });
+      hints.push({ ...hint, segment })
     }
   }
-  
-  return hints;
+
+  return hints
 }
 
 /**
  * Performs correlation between speech hints and action hints
- * 
+ *
  * Correlation logic:
  * - Speech mention followed by action within window = high confidence correlation
  * - Type compatibility check (e.g., "seleciona" speech + dropdown action)
  * - Prefer closer actions in time
- * 
+ *
  * Returns both the correlated hints and the sets of used indices
  */
 function performCorrelation(
@@ -173,63 +169,59 @@ function performCorrelation(
   _segments: TranscriptSegment[],
   config: Required<CorrelationConfig>
 ): {
-  correlatedHints: VariableHint[];
-  usedSpeechIndices: Set<number>;
-  usedActionIndices: Set<number>;
+  correlatedHints: VariableHint[]
+  usedSpeechIndices: Set<number>
+  usedActionIndices: Set<number>
 } {
-  const correlatedHints: VariableHint[] = [];
-  const usedSpeechIndices = new Set<number>();
-  const usedActionIndices = new Set<number>();
-  
+  const correlatedHints: VariableHint[] = []
+  const usedSpeechIndices = new Set<number>()
+  const usedActionIndices = new Set<number>()
+
   for (let i = 0; i < speechHints.length; i++) {
-    const speechHint = speechHints[i];
-    const speechEndTime = speechHint.segment.end;
-    
+    const speechHint = speechHints[i]
+    const speechEndTime = speechHint.segment.end
+
     // Find all candidate actions within correlation window
-    const candidates: Array<{ index: number; hint: ActionVariableHint; timeDiff: number }> = [];
-    
+    const candidates: Array<{ index: number; hint: ActionVariableHint; timeDiff: number }> = []
+
     for (let j = 0; j < actionHints.length; j++) {
       // Skip if action already used
       if (usedActionIndices.has(j)) {
-        continue;
+        continue
       }
-      
-      const actionHint = actionHints[j];
-      const timeDiff = actionHint.timestamp - speechEndTime;
-      
+
+      const actionHint = actionHints[j]
+      const timeDiff = actionHint.timestamp - speechEndTime
+
       // Check if action is within correlation window
       if (timeDiff >= 0 && timeDiff <= config.correlationWindowMs) {
         // Check if this is a likely correlation
         if (isLikelyCorrelated(speechHint, actionHint)) {
-          candidates.push({ index: j, hint: actionHint, timeDiff });
+          candidates.push({ index: j, hint: actionHint, timeDiff })
         }
       }
     }
-    
+
     // If we have candidates, choose the closest one in time
     if (candidates.length > 0) {
-      candidates.sort((a, b) => a.timeDiff - b.timeDiff);
-      const best = candidates[0];
-      
+      candidates.sort((a, b) => a.timeDiff - b.timeDiff)
+      const best = candidates[0]
+
       // Create correlated hint
-      const correlatedHint = createCorrelatedHint(
-        speechHint,
-        best.hint,
-        config.correlationBoost
-      );
-      
-      correlatedHints.push(correlatedHint);
-      usedSpeechIndices.add(i);
-      usedActionIndices.add(best.index);
+      const correlatedHint = createCorrelatedHint(speechHint, best.hint, config.correlationBoost)
+
+      correlatedHints.push(correlatedHint)
+      usedSpeechIndices.add(i)
+      usedActionIndices.add(best.index)
     }
   }
-  
-  return { correlatedHints, usedSpeechIndices, usedActionIndices };
+
+  return { correlatedHints, usedSpeechIndices, usedActionIndices }
 }
 
 /**
  * Checks if a speech hint and action hint are likely correlated
- * 
+ *
  * Correlation indicators:
  * - Type compatibility (e.g., selection speech + dropdown action)
  * - Name similarity
@@ -241,48 +233,49 @@ function isLikelyCorrelated(
   actionHint: ActionVariableHint
 ): boolean {
   // Check type compatibility
-  const typesCompatible = areTypesCompatible(speechHint.type, actionHint.type);
+  const typesCompatible = areTypesCompatible(speechHint.type, actionHint.type)
   if (!typesCompatible) {
-    return false;
+    return false
   }
-  
+
   // For TEXT types with generic action names, assume correlation
   // (e.g., Portuguese speech "cliente" + English action "name")
   if (speechHint.type === VariableType.TEXT && actionHint.type === VariableType.TEXT) {
     // If action has a generic name, likely correlated
     if (isGenericName(actionHint.suggestedName)) {
-      return true;
+      return true
     }
-    
+
     // If speech has a specific name and action has a specific name, check similarity
     if (!isGenericName(speechHint.suggestedName) && !isGenericName(actionHint.suggestedName)) {
       const nameSimilarity = calculateNameSimilarity(
         speechHint.suggestedName,
         actionHint.suggestedName
-      );
-      return nameSimilarity > 0.5;
+      )
+      return nameSimilarity > 0.5
     }
-    
+
     // If speech is generic, likely correlated
     if (isGenericName(speechHint.suggestedName)) {
-      return true;
+      return true
     }
   }
-  
+
   // For SELECTION types, check name similarity
   if (speechHint.type === VariableType.SELECTION || actionHint.type === VariableType.SELECTION) {
     // For selections, be very lenient - if types match, likely correlated
     // (e.g., Portuguese "país" + English "country" should correlate)
-    return true;
+    return true
   }
-  
+
   // For other types, check name similarity
-  const nameSimilarity = calculateNameSimilarity(
-    speechHint.suggestedName,
-    actionHint.suggestedName
-  );
-  
-  return nameSimilarity > 0.5 || isGenericName(speechHint.suggestedName) || isGenericName(actionHint.suggestedName);
+  const nameSimilarity = calculateNameSimilarity(speechHint.suggestedName, actionHint.suggestedName)
+
+  return (
+    nameSimilarity > 0.5 ||
+    isGenericName(speechHint.suggestedName) ||
+    isGenericName(actionHint.suggestedName)
+  )
 }
 
 /**
@@ -291,20 +284,20 @@ function isLikelyCorrelated(
 function areTypesCompatible(speechType: VariableType, actionType: VariableType): boolean {
   // Exact match
   if (speechType === actionType) {
-    return true;
+    return true
   }
-  
+
   // TEXT type is compatible with most types (generic)
   if (speechType === VariableType.TEXT || actionType === VariableType.TEXT) {
-    return true;
+    return true
   }
-  
+
   // NUMBER can be compatible with other numeric-like types
   if (speechType === VariableType.NUMBER && actionType === VariableType.NUMBER) {
-    return true;
+    return true
   }
-  
-  return false;
+
+  return false
 }
 
 /**
@@ -312,62 +305,62 @@ function areTypesCompatible(speechType: VariableType, actionType: VariableType):
  * Uses simple string similarity metrics
  */
 function calculateNameSimilarity(name1: string, name2: string): number {
-  const n1 = name1.toLowerCase();
-  const n2 = name2.toLowerCase();
-  
+  const n1 = name1.toLowerCase()
+  const n2 = name2.toLowerCase()
+
   // Exact match
   if (n1 === n2) {
-    return 1.0;
+    return 1.0
   }
-  
+
   // One contains the other
   if (n1.includes(n2) || n2.includes(n1)) {
-    return 0.8;
+    return 0.8
   }
-  
+
   // Calculate Levenshtein distance ratio
-  const maxLen = Math.max(n1.length, n2.length);
+  const maxLen = Math.max(n1.length, n2.length)
   if (maxLen === 0) {
-    return 1.0;
+    return 1.0
   }
-  
-  const distance = levenshteinDistance(n1, n2);
-  return 1 - distance / maxLen;
+
+  const distance = levenshteinDistance(n1, n2)
+  return 1 - distance / maxLen
 }
 
 /**
  * Calculates Levenshtein distance between two strings
  */
 function levenshteinDistance(str1: string, str2: string): number {
-  const m = str1.length;
-  const n = str2.length;
+  const m = str1.length
+  const n = str2.length
   const dp: number[][] = Array(m + 1)
     .fill(null)
-    .map(() => Array(n + 1).fill(0));
-  
+    .map(() => Array(n + 1).fill(0))
+
   for (let i = 0; i <= m; i++) {
-    dp[i][0] = i;
+    dp[i][0] = i
   }
-  
+
   for (let j = 0; j <= n; j++) {
-    dp[0][j] = j;
+    dp[0][j] = j
   }
-  
+
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
       if (str1[i - 1] === str2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1];
+        dp[i][j] = dp[i - 1][j - 1]
       } else {
         dp[i][j] = Math.min(
-          dp[i - 1][j] + 1,    // deletion
-          dp[i][j - 1] + 1,    // insertion
+          dp[i - 1][j] + 1, // deletion
+          dp[i][j - 1] + 1, // insertion
           dp[i - 1][j - 1] + 1 // substitution
-        );
+        )
       }
     }
   }
-  
-  return dp[m][n];
+
+  return dp[m][n]
 }
 
 /**
@@ -375,12 +368,28 @@ function levenshteinDistance(str1: string, str2: string): number {
  */
 function isGenericName(name: string): boolean {
   const genericNames = [
-    'textvalue', 'numbervalue', 'selection', 'file', 'date', 'value',
-    'textinput', 'input', 'textarea', 'dynamicvalue', 'name', 'email',
-    'phone', 'number', 'text', 'country', 'city', 'state', 'address'
-  ];
-  
-  return genericNames.includes(name.toLowerCase());
+    'textvalue',
+    'numbervalue',
+    'selection',
+    'file',
+    'date',
+    'value',
+    'textinput',
+    'input',
+    'textarea',
+    'dynamicvalue',
+    'name',
+    'email',
+    'phone',
+    'number',
+    'text',
+    'country',
+    'city',
+    'state',
+    'address',
+  ]
+
+  return genericNames.includes(name.toLowerCase())
 }
 
 /**
@@ -392,35 +401,35 @@ function createCorrelatedHint(
   correlationBoost: number
 ): VariableHint {
   // Choose the better name
-  let name: string;
-  
+  let name: string
+
   // Prefer action name if speech name is too short (likely truncated by accent removal)
   if (speechHint.suggestedName.length < 3 && actionHint.suggestedName.length >= 3) {
-    name = actionHint.suggestedName;
+    name = actionHint.suggestedName
   }
   // Prefer non-generic names
   else if (isGenericName(speechHint.suggestedName) && !isGenericName(actionHint.suggestedName)) {
-    name = actionHint.suggestedName;
+    name = actionHint.suggestedName
   }
   // Prefer longer, more descriptive names
   else if (actionHint.suggestedName.length > speechHint.suggestedName.length + 3) {
-    name = actionHint.suggestedName;
+    name = actionHint.suggestedName
   }
   // Default to speech name
   else {
-    name = speechHint.suggestedName;
+    name = speechHint.suggestedName
   }
-  
+
   // Choose the more specific type
-  const type = speechHint.type === VariableType.TEXT ? actionHint.type : speechHint.type;
-  
+  const type = speechHint.type === VariableType.TEXT ? actionHint.type : speechHint.type
+
   // Calculate combined confidence (average + correlation boost)
-  const baseConfidence = (speechHint.confidence + actionHint.confidence) / 2;
-  const confidence = Math.min(1.0, baseConfidence + correlationBoost);
-  
+  const baseConfidence = (speechHint.confidence + actionHint.confidence) / 2
+  const confidence = Math.min(1.0, baseConfidence + correlationBoost)
+
   // Create description from both sources
-  const description = `From speech: "${speechHint.matchedText}" + Action: ${actionHint.actionType}`;
-  
+  const description = `From speech: "${speechHint.matchedText}" + Action: ${actionHint.actionType}`
+
   return {
     id: generateId(),
     name,
@@ -437,7 +446,7 @@ function createCorrelatedHint(
       actionTimestamp: actionHint.timestamp,
     },
     status: 'detected',
-  };
+  }
 }
 
 /**
@@ -448,21 +457,21 @@ function createStandaloneSpeechHints(
   usedSpeechIndices: Set<number>,
   _config: Required<CorrelationConfig>
 ): VariableHint[] {
-  const hints: VariableHint[] = [];
-  
+  const hints: VariableHint[] = []
+
   for (let i = 0; i < speechHints.length; i++) {
     // Skip if already correlated
     if (usedSpeechIndices.has(i)) {
-      continue;
+      continue
     }
-    
-    const speechHint = speechHints[i];
-    
+
+    const speechHint = speechHints[i]
+
     // Skip generic names with low confidence
     if (isGenericName(speechHint.suggestedName) && speechHint.confidence < 0.7) {
-      continue;
+      continue
     }
-    
+
     hints.push({
       id: generateId(),
       name: speechHint.suggestedName,
@@ -475,10 +484,10 @@ function createStandaloneSpeechHints(
         speechTimestamp: speechHint.segment.start,
       },
       status: 'detected',
-    });
+    })
   }
-  
-  return hints;
+
+  return hints
 }
 
 /**
@@ -489,21 +498,21 @@ function createStandaloneActionHints(
   usedActionIndices: Set<number>,
   _config: Required<CorrelationConfig>
 ): VariableHint[] {
-  const hints: VariableHint[] = [];
-  
+  const hints: VariableHint[] = []
+
   for (let j = 0; j < actionHints.length; j++) {
     // Skip if already correlated
     if (usedActionIndices.has(j)) {
-      continue;
+      continue
     }
-    
-    const actionHint = actionHints[j];
-    
+
+    const actionHint = actionHints[j]
+
     // Skip generic names with low confidence
     if (isGenericName(actionHint.suggestedName) && actionHint.confidence < 0.7) {
-      continue;
+      continue
     }
-    
+
     hints.push({
       id: generateId(),
       name: actionHint.suggestedName,
@@ -518,15 +527,15 @@ function createStandaloneActionHints(
         actionTimestamp: actionHint.timestamp,
       },
       status: 'detected',
-    });
+    })
   }
-  
-  return hints;
+
+  return hints
 }
 
 /**
  * Deduplicates variable hints, keeping the highest confidence version
- * 
+ *
  * Deduplication strategy:
  * - Merge hints with same name and type
  * - Keep the highest confidence version
@@ -534,24 +543,23 @@ function createStandaloneActionHints(
  * - Prefer correlated hints over standalone hints
  */
 export function deduplicateHints(hints: VariableHint[]): VariableHint[] {
-  const hintMap = new Map<string, VariableHint>();
-  
+  const hintMap = new Map<string, VariableHint>()
+
   for (const hint of hints) {
-    const key = `${hint.name.toLowerCase()}_${hint.type}`;
-    const existing = hintMap.get(key);
-    
+    const key = `${hint.name.toLowerCase()}_${hint.type}`
+    const existing = hintMap.get(key)
+
     if (!existing) {
       // First hint with this name/type
-      hintMap.set(key, hint);
+      hintMap.set(key, hint)
     } else {
       // Merge with existing hint
-      const merged = mergeHints(existing, hint);
-      hintMap.set(key, merged);
+      const merged = mergeHints(existing, hint)
+      hintMap.set(key, merged)
     }
   }
-  
-  return Array.from(hintMap.values())
-    .sort((a, b) => b.confidence - a.confidence); // Sort by confidence descending
+
+  return Array.from(hintMap.values()).sort((a, b) => b.confidence - a.confidence) // Sort by confidence descending
 }
 
 /**
@@ -559,44 +567,44 @@ export function deduplicateHints(hints: VariableHint[]): VariableHint[] {
  */
 function mergeHints(hint1: VariableHint, hint2: VariableHint): VariableHint {
   // Prefer correlated hints over standalone
-  const hint1IsCorrelated = hint1.origin.source === 'correlation';
-  const hint2IsCorrelated = hint2.origin.source === 'correlation';
-  
-  let primary: VariableHint;
-  let secondary: VariableHint;
-  
+  const hint1IsCorrelated = hint1.origin.source === 'correlation'
+  const hint2IsCorrelated = hint2.origin.source === 'correlation'
+
+  let primary: VariableHint
+  let secondary: VariableHint
+
   if (hint1IsCorrelated && !hint2IsCorrelated) {
-    primary = hint1;
-    secondary = hint2;
+    primary = hint1
+    secondary = hint2
   } else if (hint2IsCorrelated && !hint1IsCorrelated) {
-    primary = hint2;
-    secondary = hint1;
+    primary = hint2
+    secondary = hint1
   } else {
     // Both correlated or both standalone - use confidence
-    primary = hint1.confidence >= hint2.confidence ? hint1 : hint2;
-    secondary = hint1.confidence >= hint2.confidence ? hint2 : hint1;
+    primary = hint1.confidence >= hint2.confidence ? hint1 : hint2
+    secondary = hint1.confidence >= hint2.confidence ? hint2 : hint1
   }
-  
+
   // Merge descriptions
-  const descriptions = [primary.description];
+  const descriptions = [primary.description]
   if (secondary.description && !primary.description.includes(secondary.description)) {
-    descriptions.push(secondary.description);
+    descriptions.push(secondary.description)
   }
-  
+
   // Use the highest confidence
-  const confidence = Math.max(hint1.confidence, hint2.confidence);
-  
+  const confidence = Math.max(hint1.confidence, hint2.confidence)
+
   // Prefer non-empty default values
-  const defaultValue = primary.defaultValue || secondary.defaultValue;
-  
+  const defaultValue = primary.defaultValue || secondary.defaultValue
+
   // Merge options for selection types
-  const options = primary.options || secondary.options;
-  
+  const options = primary.options || secondary.options
+
   return {
     ...primary,
     confidence,
     defaultValue,
     options,
     description: descriptions.join(' | '),
-  };
+  }
 }

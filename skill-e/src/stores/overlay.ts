@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from 'zustand'
 
 /**
  * Fixed color palette for overlay annotations
@@ -7,104 +7,104 @@ export const COLORS = {
   COLOR_1: '#FF4444', // Red
   COLOR_2: '#4488FF', // Blue
   COLOR_3: '#44CC44', // Green
-} as const;
+} as const
 
-export type ColorKey = keyof typeof COLORS;
+export type ColorKey = keyof typeof COLORS
 
 /**
  * Fade state for animated elements
  */
-export type FadeState = 'visible' | 'fading' | 'hidden';
+export type FadeState = 'visible' | 'fading' | 'hidden'
 
 /**
  * Click indicator with numbered sequence
  */
 export interface ClickIndicator {
-  id: string;
-  number: number; // 1, 2, 3...
-  position: { x: number; y: number };
-  color: ColorKey; // Cycles through COLOR_1 → COLOR_2 → COLOR_3
-  timestamp: number;
-  fadeState: FadeState;
+  id: string
+  number: number // 1, 2, 3...
+  position: { x: number; y: number }
+  color: ColorKey // Cycles through COLOR_1 → COLOR_2 → COLOR_3
+  timestamp: number
+  fadeState: FadeState
 }
 
 /**
  * Drawing element types
  */
-export type DrawingType = 'dot' | 'arrow' | 'rectangle';
+export type DrawingType = 'dot' | 'arrow' | 'rectangle'
 
 /**
  * Drawing element with fade/pin support
  */
 export interface DrawingElement {
-  id: string;
-  type: DrawingType;
-  color: ColorKey;
-  startPoint: { x: number; y: number };
-  endPoint?: { x: number; y: number }; // For arrow/rectangle
-  timestamp: number;
-  isPinned: boolean;
-  fadeState: FadeState;
+  id: string
+  type: DrawingType
+  color: ColorKey
+  startPoint: { x: number; y: number }
+  endPoint?: { x: number; y: number } // For arrow/rectangle
+  timestamp: number
+  isPinned: boolean
+  fadeState: FadeState
 }
 
 /**
  * Keyboard modifier keys state
  */
 export interface KeyboardModifiers {
-  shift: boolean;
-  ctrl: boolean;
-  alt: boolean;
-  meta: boolean; // Cmd on Mac
+  shift: boolean
+  ctrl: boolean
+  alt: boolean
+  meta: boolean // Cmd on Mac
 }
 
 /**
  * Keyboard display position options
  */
-export type KeyboardPosition = 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
+export type KeyboardPosition = 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right'
 
 /**
  * Keyboard input state
  */
 export interface KeyboardState {
-  modifiers: KeyboardModifiers;
-  currentText: string;
-  isPasswordField: boolean;
-  displayPosition: KeyboardPosition;
-  isVisible: boolean;
+  modifiers: KeyboardModifiers
+  currentText: string
+  isPasswordField: boolean
+  displayPosition: KeyboardPosition
+  isVisible: boolean
 }
 
 /**
  * Selected browser element information
  */
 export interface SelectedElement {
-  cssSelector: string;
-  xpath: string;
-  tagName: string;
-  textContent: string;
-  boundingBox: { x: number; y: number; width: number; height: number };
-  screenshot?: string; // Base64 of element only
-  timestamp: number;
+  cssSelector: string
+  xpath: string
+  tagName: string
+  textContent: string
+  boundingBox: { x: number; y: number; width: number; height: number }
+  screenshot?: string // Base64 of element only
+  timestamp: number
 }
 
 /**
  * Recording status for status indicator
  */
-export type RecordingStatus = 'recording' | 'paused' | 'stopped';
+export type RecordingStatus = 'recording' | 'paused' | 'stopped'
 
 /**
  * Status indicator position
  */
-export type StatusIndicatorPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+export type StatusIndicatorPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
 
 /**
  * Cursor highlight configuration
  */
 export interface CursorHighlightConfig {
-  enabled: boolean;
-  size: number;
-  color: string;
-  thickness: number;
-  showClickEffect: boolean;
+  enabled: boolean
+  size: number
+  color: string
+  thickness: number
+  showClickEffect: boolean
 }
 
 /**
@@ -112,38 +112,38 @@ export interface CursorHighlightConfig {
  */
 export interface OverlayState {
   // Overlay visibility for inline overlay
-  isVisible: boolean;
-  mode: 'select' | 'draw' | 'annotate';
-  
+  isVisible: boolean
+  mode: 'select' | 'draw' | 'annotate'
+
   // Overlay status
-  isActive: boolean;
-  
+  isActive: boolean
+
   // Recording status indicator
-  recordingStatus: RecordingStatus;
-  statusIndicatorVisible: boolean;
-  statusIndicatorPosition: StatusIndicatorPosition;
-  
+  recordingStatus: RecordingStatus
+  statusIndicatorVisible: boolean
+  statusIndicatorPosition: StatusIndicatorPosition
+
   // Cursor highlight (Requirements: FR-4.5)
-  cursorHighlight: CursorHighlightConfig;
-  
+  cursorHighlight: CursorHighlightConfig
+
   // Drawing mode
-  isPinMode: boolean;
-  currentColor: ColorKey;
-  
+  isPinMode: boolean
+  currentColor: ColorKey
+
   // Click tracking
-  clicks: ClickIndicator[];
-  clickCounter: number; // Total clicks for numbering
-  
+  clicks: ClickIndicator[]
+  clickCounter: number // Total clicks for numbering
+
   // Drawing annotations
-  drawings: DrawingElement[];
-  
+  drawings: DrawingElement[]
+
   // Keyboard display
-  keyboard: KeyboardState;
-  
+  keyboard: KeyboardState
+
   // Element picker
-  elementPickerEnabled: boolean;
-  hoveredElement?: SelectedElement;
-  selectedElements: SelectedElement[];
+  elementPickerEnabled: boolean
+  hoveredElement?: SelectedElement
+  selectedElements: SelectedElement[]
 }
 
 /**
@@ -151,59 +151,59 @@ export interface OverlayState {
  */
 export interface OverlayActions {
   // Overlay control (inline)
-  showOverlay: () => void;
-  hideOverlay: () => void;
-  setMode: (mode: 'select' | 'draw' | 'annotate') => void;
-  
+  showOverlay: () => void
+  hideOverlay: () => void
+  setMode: (mode: 'select' | 'draw' | 'annotate') => void
+
   // Overlay control (legacy)
-  activate: () => void;
-  deactivate: () => void;
-  reset: () => void;
-  
+  activate: () => void
+  deactivate: () => void
+  reset: () => void
+
   // Recording status
-  setRecordingStatus: (status: RecordingStatus) => void;
-  toggleStatusIndicator: () => void;
-  setStatusIndicatorPosition: (position: StatusIndicatorPosition) => void;
-  
+  setRecordingStatus: (status: RecordingStatus) => void
+  toggleStatusIndicator: () => void
+  setStatusIndicatorPosition: (position: StatusIndicatorPosition) => void
+
   // Cursor highlight actions (Requirements: FR-4.5)
-  toggleCursorHighlight: () => void;
-  setCursorHighlightConfig: (config: Partial<CursorHighlightConfig>) => void;
-  
+  toggleCursorHighlight: () => void
+  setCursorHighlightConfig: (config: Partial<CursorHighlightConfig>) => void
+
   // Click actions
-  addClick: (position: { x: number; y: number }) => void;
-  updateClickFadeState: (id: string, fadeState: FadeState) => void;
-  removeClick: (id: string) => void;
-  clearClicks: () => void;
-  
+  addClick: (position: { x: number; y: number }) => void
+  updateClickFadeState: (id: string, fadeState: FadeState) => void
+  removeClick: (id: string) => void
+  clearClicks: () => void
+
   // Drawing actions
-  addDrawing: (drawing: Omit<DrawingElement, 'id' | 'timestamp' | 'fadeState'>) => void;
-  updateDrawingFadeState: (id: string, fadeState: FadeState) => void;
-  removeDrawing: (id: string) => void;
-  clearDrawings: () => void;
-  togglePinMode: () => void;
-  setColor: (color: ColorKey) => void;
-  cycleColor: () => void;
-  
+  addDrawing: (drawing: Omit<DrawingElement, 'id' | 'timestamp' | 'fadeState'>) => void
+  updateDrawingFadeState: (id: string, fadeState: FadeState) => void
+  removeDrawing: (id: string) => void
+  clearDrawings: () => void
+  togglePinMode: () => void
+  setColor: (color: ColorKey) => void
+  cycleColor: () => void
+
   // Keyboard actions
-  updateKeyboard: (state: Partial<KeyboardState>) => void;
-  setKeyboardModifiers: (modifiers: Partial<KeyboardModifiers>) => void;
-  setKeyboardText: (text: string, isPasswordField?: boolean) => void;
-  clearKeyboardText: () => void;
-  toggleKeyboardDisplay: () => void;
-  setKeyboardPosition: (position: KeyboardPosition) => void;
-  
+  updateKeyboard: (state: Partial<KeyboardState>) => void
+  setKeyboardModifiers: (modifiers: Partial<KeyboardModifiers>) => void
+  setKeyboardText: (text: string, isPasswordField?: boolean) => void
+  clearKeyboardText: () => void
+  toggleKeyboardDisplay: () => void
+  setKeyboardPosition: (position: KeyboardPosition) => void
+
   // Element picker actions
-  toggleElementPicker: () => void;
-  setHoveredElement: (element: SelectedElement | undefined) => void;
-  selectElement: (element: SelectedElement) => void;
-  removeSelectedElement: (timestamp: number) => void;
-  clearSelectedElements: () => void;
+  toggleElementPicker: () => void
+  setHoveredElement: (element: SelectedElement | undefined) => void
+  selectElement: (element: SelectedElement) => void
+  removeSelectedElement: (timestamp: number) => void
+  clearSelectedElements: () => void
 }
 
 /**
  * Complete overlay store type
  */
-export type OverlayStore = OverlayState & OverlayActions;
+export type OverlayStore = OverlayState & OverlayActions
 
 /**
  * Initial keyboard state
@@ -219,7 +219,7 @@ const initialKeyboardState: KeyboardState = {
   isPasswordField: false,
   displayPosition: 'bottom-left',
   isVisible: true,
-};
+}
 
 /**
  * Initial overlay state
@@ -247,15 +247,15 @@ const initialState: OverlayState = {
   elementPickerEnabled: false,
   hoveredElement: undefined,
   selectedElements: [],
-};
+}
 
 /**
  * Get color for click based on sequence number
  * Cycles through COLOR_1 → COLOR_2 → COLOR_3
  */
 function getColorForClick(clickNumber: number): ColorKey {
-  const colors: ColorKey[] = ['COLOR_1', 'COLOR_2', 'COLOR_3'];
-  return colors[(clickNumber - 1) % 3];
+  const colors: ColorKey[] = ['COLOR_1', 'COLOR_2', 'COLOR_3']
+  return colors[(clickNumber - 1) % 3]
 }
 
 /**
@@ -276,7 +276,7 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
       isVisible: false,
     }),
 
-  setMode: (mode) =>
+  setMode: mode =>
     set({
       mode,
     }),
@@ -299,32 +299,32 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
     }),
 
   // Recording status
-  setRecordingStatus: (status) =>
+  setRecordingStatus: status =>
     set({
       recordingStatus: status,
     }),
 
   toggleStatusIndicator: () =>
-    set((state) => ({
+    set(state => ({
       statusIndicatorVisible: !state.statusIndicatorVisible,
     })),
 
-  setStatusIndicatorPosition: (position) =>
+  setStatusIndicatorPosition: position =>
     set({
       statusIndicatorPosition: position,
     }),
 
   // Cursor highlight actions (Requirements: FR-4.5)
   toggleCursorHighlight: () =>
-    set((state) => ({
+    set(state => ({
       cursorHighlight: {
         ...state.cursorHighlight,
         enabled: !state.cursorHighlight.enabled,
       },
     })),
 
-  setCursorHighlightConfig: (config) =>
-    set((state) => ({
+  setCursorHighlightConfig: config =>
+    set(state => ({
       cursorHighlight: {
         ...state.cursorHighlight,
         ...config,
@@ -332,10 +332,10 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
     })),
 
   // Click actions
-  addClick: (position) => {
-    const state = get();
-    const number = state.clickCounter + 1;
-    const color = getColorForClick(number);
+  addClick: position => {
+    const state = get()
+    const number = state.clickCounter + 1
+    const color = getColorForClick(number)
 
     set({
       clicks: [
@@ -350,19 +350,17 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
         },
       ],
       clickCounter: number,
-    });
+    })
   },
 
   updateClickFadeState: (id, fadeState) =>
-    set((state) => ({
-      clicks: state.clicks.map((click) =>
-        click.id === id ? { ...click, fadeState } : click
-      ),
+    set(state => ({
+      clicks: state.clicks.map(click => (click.id === id ? { ...click, fadeState } : click)),
     })),
 
-  removeClick: (id) =>
-    set((state) => ({
-      clicks: state.clicks.filter((click) => click.id !== id),
+  removeClick: id =>
+    set(state => ({
+      clicks: state.clicks.filter(click => click.id !== id),
     })),
 
   clearClicks: () =>
@@ -372,31 +370,31 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
     }),
 
   // Drawing actions
-  addDrawing: (drawing) => {
-    const state = get();
+  addDrawing: drawing => {
+    const state = get()
     const newDrawing: DrawingElement = {
       ...drawing,
       id: crypto.randomUUID(),
       timestamp: Date.now(),
       fadeState: 'visible',
       isPinned: state.isPinMode, // Use current pin mode
-    };
+    }
 
     set({
       drawings: [...state.drawings, newDrawing],
-    });
+    })
   },
 
   updateDrawingFadeState: (id, fadeState) =>
-    set((state) => ({
-      drawings: state.drawings.map((drawing) =>
+    set(state => ({
+      drawings: state.drawings.map(drawing =>
         drawing.id === id ? { ...drawing, fadeState } : drawing
       ),
     })),
 
-  removeDrawing: (id) =>
-    set((state) => ({
-      drawings: state.drawings.filter((drawing) => drawing.id !== id),
+  removeDrawing: id =>
+    set(state => ({
+      drawings: state.drawings.filter(drawing => drawing.id !== id),
     })),
 
   clearDrawings: () =>
@@ -405,36 +403,36 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
     }),
 
   togglePinMode: () =>
-    set((state) => ({
+    set(state => ({
       isPinMode: !state.isPinMode,
     })),
 
-  setColor: (color) =>
+  setColor: color =>
     set({
       currentColor: color,
     }),
 
   cycleColor: () =>
-    set((state) => {
-      const colors: ColorKey[] = ['COLOR_1', 'COLOR_2', 'COLOR_3'];
-      const currentIndex = colors.indexOf(state.currentColor);
-      const nextIndex = (currentIndex + 1) % colors.length;
+    set(state => {
+      const colors: ColorKey[] = ['COLOR_1', 'COLOR_2', 'COLOR_3']
+      const currentIndex = colors.indexOf(state.currentColor)
+      const nextIndex = (currentIndex + 1) % colors.length
       return {
         currentColor: colors[nextIndex],
-      };
+      }
     }),
 
   // Keyboard actions
-  updateKeyboard: (updates) =>
-    set((state) => ({
+  updateKeyboard: updates =>
+    set(state => ({
       keyboard: {
         ...state.keyboard,
         ...updates,
       },
     })),
 
-  setKeyboardModifiers: (modifiers) =>
-    set((state) => ({
+  setKeyboardModifiers: modifiers =>
+    set(state => ({
       keyboard: {
         ...state.keyboard,
         modifiers: {
@@ -445,7 +443,7 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
     })),
 
   setKeyboardText: (text, isPasswordField = false) =>
-    set((state) => ({
+    set(state => ({
       keyboard: {
         ...state.keyboard,
         currentText: text,
@@ -454,7 +452,7 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
     })),
 
   clearKeyboardText: () =>
-    set((state) => ({
+    set(state => ({
       keyboard: {
         ...state.keyboard,
         currentText: '',
@@ -463,15 +461,15 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
     })),
 
   toggleKeyboardDisplay: () =>
-    set((state) => ({
+    set(state => ({
       keyboard: {
         ...state.keyboard,
         isVisible: !state.keyboard.isVisible,
       },
     })),
 
-  setKeyboardPosition: (position) =>
-    set((state) => ({
+  setKeyboardPosition: position =>
+    set(state => ({
       keyboard: {
         ...state.keyboard,
         displayPosition: position,
@@ -480,52 +478,50 @@ export const useOverlayStore = create<OverlayStore>((set, get) => ({
 
   // Element picker actions
   toggleElementPicker: () =>
-    set((state) => ({
+    set(state => ({
       elementPickerEnabled: !state.elementPickerEnabled,
       hoveredElement: undefined, // Clear hovered element when toggling
     })),
 
-  setHoveredElement: (element) =>
+  setHoveredElement: element =>
     set({
       hoveredElement: element,
     }),
 
-  selectElement: (element) =>
-    set((state) => ({
+  selectElement: element =>
+    set(state => ({
       selectedElements: [...state.selectedElements, element],
       hoveredElement: undefined, // Clear hover after selection
     })),
 
-  removeSelectedElement: (timestamp) =>
-    set((state) => ({
-      selectedElements: state.selectedElements.filter(
-        (el) => el.timestamp !== timestamp
-      ),
+  removeSelectedElement: timestamp =>
+    set(state => ({
+      selectedElements: state.selectedElements.filter(el => el.timestamp !== timestamp),
     })),
 
   clearSelectedElements: () =>
     set({
       selectedElements: [],
     }),
-}));
+}))
 
 /**
  * Helper function to get color hex value
  */
 export function getColorHex(colorKey: ColorKey): string {
-  return COLORS[colorKey];
+  return COLORS[colorKey]
 }
 
 /**
  * Helper function to redact password text
  */
 export function redactPassword(text: string): string {
-  return '●'.repeat(text.length);
+  return '●'.repeat(text.length)
 }
 
 /**
  * Helper function to generate password placeholder for skill generation
  */
 export function getPasswordPlaceholder(fieldName: string): string {
-  return `\${env:${fieldName.toUpperCase()}_PASSWORD}`;
+  return `\${env:${fieldName.toUpperCase()}_PASSWORD}`
 }

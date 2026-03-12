@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -9,40 +9,40 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { FolderOpen, FileText, Image, CheckCircle2, AlertCircle } from 'lucide-react';
-import { open as openDialog } from '@tauri-apps/plugin-dialog';
-import { homeDir } from '@tauri-apps/api/path';
+} from '@/components/ui/dialog'
+import { FolderOpen, FileText, Image, CheckCircle2, AlertCircle } from 'lucide-react'
+import { open as openDialog } from '@tauri-apps/plugin-dialog'
+import { homeDir } from '@tauri-apps/api/path'
 
 /**
  * Export Dialog Component
- * 
+ *
  * Provides UI for selecting export location and options for skill export.
  * Requirements: FR-6.4, FR-6.8, FR-6.9
  */
 
 export interface ExportOptions {
   /** Export location path */
-  exportPath: string;
+  exportPath: string
   /** Include reference screenshots */
-  includeScreenshots: boolean;
+  includeScreenshots: boolean
   /** Include assets/templates */
-  includeAssets: boolean;
+  includeAssets: boolean
   /** Skill name (for folder creation) */
-  skillName: string;
+  skillName: string
 }
 
 export interface ExportDialogProps {
   /** Whether the dialog is open */
-  open: boolean;
+  open: boolean
   /** Callback when dialog should close */
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (open: boolean) => void
   /** Callback when export is confirmed */
-  onExport: (options: ExportOptions) => void;
+  onExport: (options: ExportOptions) => void
   /** Default skill name */
-  defaultSkillName?: string;
+  defaultSkillName?: string
   /** Whether export is in progress */
-  isExporting?: boolean;
+  isExporting?: boolean
 }
 
 /**
@@ -58,7 +58,7 @@ function sanitizeSkillName(name: string): string {
     .trim()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
-    .substring(0, 64);
+    .substring(0, 64)
 }
 
 export function ExportDialog({
@@ -68,38 +68,38 @@ export function ExportDialog({
   defaultSkillName = 'my-skill',
   isExporting = false,
 }: ExportDialogProps) {
-  const [exportPath, setExportPath] = useState<string>('');
-  const [skillName, setSkillName] = useState(sanitizeSkillName(defaultSkillName));
-  const [includeScreenshots, setIncludeScreenshots] = useState(true);
-  const [includeAssets, setIncludeAssets] = useState(false);
-  const [isLoadingDefaultPath, setIsLoadingDefaultPath] = useState(true);
+  const [exportPath, setExportPath] = useState<string>('')
+  const [skillName, setSkillName] = useState(sanitizeSkillName(defaultSkillName))
+  const [includeScreenshots, setIncludeScreenshots] = useState(true)
+  const [includeAssets, setIncludeAssets] = useState(false)
+  const [isLoadingDefaultPath, setIsLoadingDefaultPath] = useState(true)
 
   // Load default export path on mount
   useEffect(() => {
     const loadDefaultPath = async () => {
       try {
-        const home = await homeDir();
-        const defaultPath = `${home}workspace/skills`;
-        setExportPath(defaultPath);
+        const home = await homeDir()
+        const defaultPath = `${home}workspace/skills`
+        setExportPath(defaultPath)
       } catch (error) {
-        console.error('Failed to get home directory:', error);
-        setExportPath('workspace/skills');
+        console.error('Failed to get home directory:', error)
+        setExportPath('workspace/skills')
       } finally {
-        setIsLoadingDefaultPath(false);
+        setIsLoadingDefaultPath(false)
       }
-    };
+    }
 
     if (open) {
-      loadDefaultPath();
+      loadDefaultPath()
     }
-  }, [open]);
+  }, [open])
 
   // Update skill name when default changes
   useEffect(() => {
     if (defaultSkillName) {
-      setSkillName(sanitizeSkillName(defaultSkillName));
+      setSkillName(sanitizeSkillName(defaultSkillName))
     }
-  }, [defaultSkillName]);
+  }, [defaultSkillName])
 
   const handleBrowse = async () => {
     try {
@@ -107,30 +107,30 @@ export function ExportDialog({
         directory: true,
         multiple: false,
         defaultPath: exportPath,
-      });
-      
+      })
+
       if (selected && typeof selected === 'string') {
-        setExportPath(selected);
+        setExportPath(selected)
       }
     } catch (error) {
-      console.error('Failed to open directory picker:', error);
+      console.error('Failed to open directory picker:', error)
     }
-  };
+  }
 
   const handleExport = () => {
-    const sanitized = sanitizeSkillName(skillName);
-    
+    const sanitized = sanitizeSkillName(skillName)
+
     onExport({
       exportPath,
       includeScreenshots,
       includeAssets,
       skillName: sanitized,
-    });
-  };
+    })
+  }
 
-  const sanitizedName = sanitizeSkillName(skillName);
-  const isValidName = sanitizedName.length >= 3 && sanitizedName.length <= 64;
-  const fullPath = exportPath ? `${exportPath}/${sanitizedName}` : '';
+  const sanitizedName = sanitizeSkillName(skillName)
+  const isValidName = sanitizedName.length >= 3 && sanitizedName.length <= 64
+  const fullPath = exportPath ? `${exportPath}/${sanitizedName}` : ''
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -149,7 +149,7 @@ export function ExportDialog({
             <Input
               id="skill-name"
               value={skillName}
-              onChange={(e) => setSkillName(e.target.value)}
+              onChange={e => setSkillName(e.target.value)}
               placeholder="my-skill"
               className={!isValidName ? 'border-destructive' : ''}
             />
@@ -173,7 +173,7 @@ export function ExportDialog({
               <Input
                 id="export-path"
                 value={exportPath}
-                onChange={(e) => setExportPath(e.target.value)}
+                onChange={e => setExportPath(e.target.value)}
                 placeholder="Choose folder..."
                 readOnly={isLoadingDefaultPath}
                 className="flex-1"
@@ -195,7 +195,7 @@ export function ExportDialog({
           {/* Export Options */}
           <div className="space-y-3">
             <Label>Include</Label>
-            
+
             {/* Screenshots Option */}
             <div className="flex items-center justify-between p-3 rounded-md border bg-card">
               <div className="flex items-center gap-3">
@@ -281,21 +281,14 @@ export function ExportDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isExporting}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isExporting}>
             Cancel
           </Button>
-          <Button
-            onClick={handleExport}
-            disabled={!isValidName || !exportPath || isExporting}
-          >
+          <Button onClick={handleExport} disabled={!isValidName || !exportPath || isExporting}>
             {isExporting ? 'Exporting...' : 'Export'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

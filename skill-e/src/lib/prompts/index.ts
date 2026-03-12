@@ -1,13 +1,13 @@
 /**
  * Prompt System
- * 
+ *
  * Optimized prompt generation for skill creation.
  * Uses XML tag structure and few-shot examples for better results.
- * 
+ *
  * @example
  * ```typescript
  * import { PromptBuilder, getTemplate, getExamplesByComplexity } from '@/lib/prompts';
- * 
+ *
  * const prompt = PromptBuilder.build({
  *   optimizedContext,
  *   template: getTemplate('standard'),
@@ -16,23 +16,23 @@
  * ```
  */
 
-export { PromptBuilder, buildPrompt, buildMinimalPrompt } from './builder';
-export { 
-  getTemplate, 
-  autoSelectTemplate, 
+export { PromptBuilder, buildPrompt, buildMinimalPrompt } from './builder'
+export {
+  getTemplate,
+  autoSelectTemplate,
   getTemplateRecommendations,
   minimalTemplate,
   standardTemplate,
   complexTemplate,
   apiIntegrationTemplate,
-} from './templates';
+} from './templates'
 export {
   getExamplesByComplexity,
   getExamplesByTemplate,
   simpleLoginExample,
   apiIntegrationExample,
   fileProcessingExample,
-} from './examples';
+} from './examples'
 export type {
   PromptOptions,
   PromptSection,
@@ -41,4 +41,4 @@ export type {
   SkillTemplate,
   SkillTemplateType,
   PromptBuildContext,
-} from './types';
+} from './types'

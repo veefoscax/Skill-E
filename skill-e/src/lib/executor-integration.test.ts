@@ -1,18 +1,18 @@
 /**
  * Executor Integration Tests
- * 
+ *
  * Comprehensive integration tests for DOM, Image, and Hybrid executors.
  * Tests real-world scenarios with mock pages and template matching.
- * 
+ *
  * Requirements: FR-10.4, FR-10.5
  * Task: S10-21 Executor Testing
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DOMExecutor } from './browser-automation';
-import { ImageExecutor } from './image-executor';
-import { HybridExecutor } from './hybrid-executor';
-import type { SkillStep } from './skill-parser';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { DOMExecutor } from './browser-automation'
+import { ImageExecutor } from './image-executor'
+import { HybridExecutor } from './hybrid-executor'
+import type { SkillStep } from './skill-parser'
 
 /**
  * Create a mock page with various interactive elements
@@ -56,27 +56,27 @@ function createMockPage(): void {
         <p id="footer-text">© 2024 Test App</p>
       </footer>
     </div>
-  `;
+  `
 }
 
 /**
  * Clean up the mock page
  */
 function cleanupMockPage(): void {
-  document.body.innerHTML = '';
+  document.body.innerHTML = ''
 }
 
 describe('DOM Executor - Mock Page Integration', () => {
-  let executor: DOMExecutor;
+  let executor: DOMExecutor
 
   beforeEach(() => {
-    createMockPage();
-    executor = new DOMExecutor();
-  });
+    createMockPage()
+    executor = new DOMExecutor()
+  })
 
   afterEach(() => {
-    cleanupMockPage();
-  });
+    cleanupMockPage()
+  })
 
   describe('Form Interaction Workflow', () => {
     it('should complete a full login form workflow', async () => {
@@ -92,11 +92,16 @@ describe('DOM Executor - Mock Page Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result1 = await executor.executeStep(usernameStep, { timeout: 1000, waitForVisible: false });
-      expect(result1.success).toBe(true);
-      expect((document.getElementById('username') as HTMLInputElement).value).toBe('testuser@example.com');
+      const result1 = await executor.executeStep(usernameStep, {
+        timeout: 1000,
+        waitForVisible: false,
+      })
+      expect(result1.success).toBe(true)
+      expect((document.getElementById('username') as HTMLInputElement).value).toBe(
+        'testuser@example.com'
+      )
 
       // Step 2: Type password
       const passwordStep: SkillStep = {
@@ -110,11 +115,14 @@ describe('DOM Executor - Mock Page Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result2 = await executor.executeStep(passwordStep, { timeout: 1000, waitForVisible: false });
-      expect(result2.success).toBe(true);
-      expect((document.getElementById('password') as HTMLInputElement).value).toBe('SecurePass123!');
+      const result2 = await executor.executeStep(passwordStep, {
+        timeout: 1000,
+        waitForVisible: false,
+      })
+      expect(result2.success).toBe(true)
+      expect((document.getElementById('password') as HTMLInputElement).value).toBe('SecurePass123!')
 
       // Step 3: Click submit button
       const submitStep: SkillStep = {
@@ -127,15 +135,18 @@ describe('DOM Executor - Mock Page Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const submitSpy = vi.fn();
-      document.getElementById('submit-btn')!.addEventListener('click', submitSpy);
+      const submitSpy = vi.fn()
+      document.getElementById('submit-btn')!.addEventListener('click', submitSpy)
 
-      const result3 = await executor.executeStep(submitStep, { timeout: 1000, waitForVisible: false });
-      expect(result3.success).toBe(true);
-      expect(submitSpy).toHaveBeenCalled();
-    });
+      const result3 = await executor.executeStep(submitStep, {
+        timeout: 1000,
+        waitForVisible: false,
+      })
+      expect(result3.success).toBe(true)
+      expect(submitSpy).toHaveBeenCalled()
+    })
 
     it('should handle form validation errors', async () => {
       // Try to submit without filling fields
@@ -149,16 +160,19 @@ describe('DOM Executor - Mock Page Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(submitStep, { timeout: 1000, waitForVisible: false });
-      expect(result.success).toBe(true);
-      
+      const result = await executor.executeStep(submitStep, {
+        timeout: 1000,
+        waitForVisible: false,
+      })
+      expect(result.success).toBe(true)
+
       // Verify form fields are still empty
-      expect((document.getElementById('username') as HTMLInputElement).value).toBe('');
-      expect((document.getElementById('password') as HTMLInputElement).value).toBe('');
-    });
-  });
+      expect((document.getElementById('username') as HTMLInputElement).value).toBe('')
+      expect((document.getElementById('password') as HTMLInputElement).value).toBe('')
+    })
+  })
 
   describe('Navigation Workflow', () => {
     it('should click through navigation links', async () => {
@@ -190,15 +204,15 @@ describe('DOM Executor - Mock Page Integration', () => {
           requiresConfirmation: false,
           status: 'pending',
         },
-      ];
+      ]
 
       for (const step of navSteps) {
-        const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false });
-        expect(result.success).toBe(true);
-        expect(result.context?.elementFound).toBe(true);
+        const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false })
+        expect(result.success).toBe(true)
+        expect(result.context?.elementFound).toBe(true)
       }
-    });
-  });
+    })
+  })
 
   describe('Complex Selector Scenarios', () => {
     it('should handle class selectors', async () => {
@@ -210,11 +224,11 @@ describe('DOM Executor - Mock Page Integration', () => {
         target: { selector: '.action-button' },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false });
-      expect(result.success).toBe(true);
-    });
+      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false })
+      expect(result.success).toBe(true)
+    })
 
     it('should handle descendant selectors', async () => {
       const step: SkillStep = {
@@ -225,11 +239,11 @@ describe('DOM Executor - Mock Page Integration', () => {
         target: { selector: 'form button' },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false });
-      expect(result.success).toBe(true);
-    });
+      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false })
+      expect(result.success).toBe(true)
+    })
 
     it('should handle attribute selectors', async () => {
       const step: SkillStep = {
@@ -243,12 +257,14 @@ describe('DOM Executor - Mock Page Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false });
-      expect(result.success).toBe(true);
-      expect((document.querySelector('input[name="username"]') as HTMLInputElement).value).toBe('user123');
-    });
+      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false })
+      expect(result.success).toBe(true)
+      expect((document.querySelector('input[name="username"]') as HTMLInputElement).value).toBe(
+        'user123'
+      )
+    })
 
     it('should handle XPath selectors', async () => {
       const step: SkillStep = {
@@ -259,12 +275,12 @@ describe('DOM Executor - Mock Page Integration', () => {
         target: { selector: '//button[@id="action-btn"]' },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false });
-      expect(result.success).toBe(true);
-    });
-  });
+      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false })
+      expect(result.success).toBe(true)
+    })
+  })
 
   describe('Error Scenarios', () => {
     it('should fail gracefully when element not found', async () => {
@@ -276,13 +292,13 @@ describe('DOM Executor - Mock Page Integration', () => {
         target: { selector: '#does-not-exist' },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { timeout: 500 });
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Element not found');
-      expect(result.context?.elementFound).toBe(false);
-    });
+      const result = await executor.executeStep(step, { timeout: 500 })
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Element not found')
+      expect(result.context?.elementFound).toBe(false)
+    })
 
     it('should fail when trying to interact with disabled elements', async () => {
       const step: SkillStep = {
@@ -293,13 +309,13 @@ describe('DOM Executor - Mock Page Integration', () => {
         target: { selector: '#disabled-btn' },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { timeout: 500, waitForVisible: false });
+      const result = await executor.executeStep(step, { timeout: 500, waitForVisible: false })
       // In JSDOM, disabled elements can still be found and clicked
       // The test verifies the executor handles the scenario
-      expect(result).toBeDefined();
-    });
+      expect(result).toBeDefined()
+    })
 
     it('should fail when trying to type into disabled input', async () => {
       const step: SkillStep = {
@@ -313,14 +329,14 @@ describe('DOM Executor - Mock Page Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { timeout: 500 });
+      const result = await executor.executeStep(step, { timeout: 500 })
       // Should succeed in finding and typing, but element is disabled
       // The executor will still set the value, but the disabled state prevents user interaction
-      expect(result).toBeDefined();
-    });
-  });
+      expect(result).toBeDefined()
+    })
+  })
 
   describe('Verification Workflow', () => {
     it('should verify multiple elements exist', async () => {
@@ -352,14 +368,14 @@ describe('DOM Executor - Mock Page Integration', () => {
           requiresConfirmation: false,
           status: 'pending',
         },
-      ];
+      ]
 
       for (const step of verifySteps) {
-        const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false });
-        expect(result.success).toBe(true);
-        expect(result.context?.elementFound).toBe(true);
+        const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false })
+        expect(result.success).toBe(true)
+        expect(result.context?.elementFound).toBe(true)
       }
-    });
+    })
 
     it('should detect when verification fails', async () => {
       const step: SkillStep = {
@@ -370,46 +386,46 @@ describe('DOM Executor - Mock Page Integration', () => {
         target: { selector: '#missing-element' },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { timeout: 500 });
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Element not found');
-    });
-  });
-});
+      const result = await executor.executeStep(step, { timeout: 500 })
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Element not found')
+    })
+  })
+})
 
 describe('Image Executor - Template Matching Integration', () => {
-  let executor: ImageExecutor;
+  let executor: ImageExecutor
 
   beforeEach(() => {
-    createMockPage();
-    executor = new ImageExecutor();
-    
+    createMockPage()
+    executor = new ImageExecutor()
+
     // Mock document.elementFromPoint for image executor tests
     if (!document.elementFromPoint) {
-      document.elementFromPoint = vi.fn();
+      document.elementFromPoint = vi.fn()
     }
-  });
+  })
 
   afterEach(() => {
-    cleanupMockPage();
-    executor.clearCache();
-  });
+    cleanupMockPage()
+    executor.clearCache()
+  })
 
   describe('Coordinate-based Clicking', () => {
     it('should click at specific coordinates', async () => {
-      const button = document.getElementById('action-btn')!;
-      const rect = button.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+      const button = document.getElementById('action-btn')!
+      const rect = button.getBoundingClientRect()
+      const centerX = rect.left + rect.width / 2
+      const centerY = rect.top + rect.height / 2
 
       // Mock elementFromPoint to return our button
-      const mockFn = vi.fn().mockReturnValue(button);
-      document.elementFromPoint = mockFn;
-      
-      const clickSpy = vi.fn();
-      button.addEventListener('click', clickSpy);
+      const mockFn = vi.fn().mockReturnValue(button)
+      document.elementFromPoint = mockFn
+
+      const clickSpy = vi.fn()
+      button.addEventListener('click', clickSpy)
 
       const step: SkillStep = {
         id: 'step-1',
@@ -421,27 +437,27 @@ describe('Image Executor - Template Matching Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { captureOnError: false });
-      expect(result.success).toBe(true);
-      expect(mockFn).toHaveBeenCalledWith(centerX, centerY);
-    });
+      const result = await executor.executeStep(step, { captureOnError: false })
+      expect(result.success).toBe(true)
+      expect(mockFn).toHaveBeenCalledWith(centerX, centerY)
+    })
 
     it('should handle multiple coordinate clicks in sequence', async () => {
       const elements = [
         document.getElementById('nav-home')!,
         document.getElementById('nav-about')!,
         document.getElementById('nav-menu')!,
-      ];
+      ]
 
       for (let i = 0; i < elements.length; i++) {
-        const element = elements[i];
-        const mockFn = vi.fn().mockReturnValue(element);
-        document.elementFromPoint = mockFn;
-        
-        const clickSpy = vi.fn();
-        element.addEventListener('click', clickSpy);
+        const element = elements[i]
+        const mockFn = vi.fn().mockReturnValue(element)
+        document.elementFromPoint = mockFn
+
+        const clickSpy = vi.fn()
+        element.addEventListener('click', clickSpy)
 
         const step: SkillStep = {
           id: `step-${i + 1}`,
@@ -453,17 +469,17 @@ describe('Image Executor - Template Matching Integration', () => {
           },
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const result = await executor.executeStep(step, { captureOnError: false });
-        expect(result.success).toBe(true);
-        expect(clickSpy).toHaveBeenCalled();
+        const result = await executor.executeStep(step, { captureOnError: false })
+        expect(result.success).toBe(true)
+        expect(clickSpy).toHaveBeenCalled()
       }
-    });
+    })
 
     it('should fail when no element at coordinates', async () => {
-      const mockFn = vi.fn().mockReturnValue(null);
-      document.elementFromPoint = mockFn;
+      const mockFn = vi.fn().mockReturnValue(null)
+      document.elementFromPoint = mockFn
 
       const step: SkillStep = {
         id: 'step-1',
@@ -475,13 +491,13 @@ describe('Image Executor - Template Matching Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { captureOnError: false });
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('No element found at coordinates');
-    });
-  });
+      const result = await executor.executeStep(step, { captureOnError: false })
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('No element found at coordinates')
+    })
+  })
 
   describe('Wait Operations', () => {
     it('should wait for specified duration', async () => {
@@ -492,20 +508,20 @@ describe('Image Executor - Template Matching Integration', () => {
         actionType: 'wait',
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const startTime = Date.now();
-      const result = await executor.executeStep(step, { timeout: 200 });
-      const elapsed = Date.now() - startTime;
+      const startTime = Date.now()
+      const result = await executor.executeStep(step, { timeout: 200 })
+      const elapsed = Date.now() - startTime
 
-      expect(result.success).toBe(true);
-      expect(elapsed).toBeGreaterThanOrEqual(200);
-      expect(elapsed).toBeLessThan(300);
-    });
+      expect(result.success).toBe(true)
+      expect(elapsed).toBeGreaterThanOrEqual(200)
+      expect(elapsed).toBeLessThan(300)
+    })
 
     it('should handle multiple waits in workflow', async () => {
-      const waits = [50, 100, 150];
-      
+      const waits = [50, 100, 150]
+
       for (const duration of waits) {
         const step: SkillStep = {
           id: `wait-${duration}`,
@@ -514,17 +530,17 @@ describe('Image Executor - Template Matching Integration', () => {
           actionType: 'wait',
           requiresConfirmation: false,
           status: 'pending',
-        };
+        }
 
-        const startTime = Date.now();
-        const result = await executor.executeStep(step, { timeout: duration });
-        const elapsed = Date.now() - startTime;
+        const startTime = Date.now()
+        const result = await executor.executeStep(step, { timeout: duration })
+        const elapsed = Date.now() - startTime
 
-        expect(result.success).toBe(true);
-        expect(elapsed).toBeGreaterThanOrEqual(duration);
+        expect(result.success).toBe(true)
+        expect(elapsed).toBeGreaterThanOrEqual(duration)
       }
-    });
-  });
+    })
+  })
 
   describe('Error Handling', () => {
     it('should handle unsupported action types', async () => {
@@ -538,12 +554,12 @@ describe('Image Executor - Template Matching Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step);
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('does not support action type');
-    });
+      const result = await executor.executeStep(step)
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('does not support action type')
+    })
 
     it('should handle missing coordinates', async () => {
       const step: SkillStep = {
@@ -554,18 +570,18 @@ describe('Image Executor - Template Matching Integration', () => {
         target: {},
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step);
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('No coordinates or image reference');
-    });
+      const result = await executor.executeStep(step)
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('No coordinates or image reference')
+    })
 
     it('should include context in error results', async () => {
       const mockFn = vi.fn().mockImplementation(() => {
-        throw new Error('DOM error');
-      });
-      document.elementFromPoint = mockFn;
+        throw new Error('DOM error')
+      })
+      document.elementFromPoint = mockFn
 
       const step: SkillStep = {
         id: 'step-1',
@@ -577,43 +593,43 @@ describe('Image Executor - Template Matching Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { captureOnError: false });
-      expect(result.success).toBe(false);
-      expect(result.context?.duration).toBeGreaterThanOrEqual(0);
-    });
-  });
+      const result = await executor.executeStep(step, { captureOnError: false })
+      expect(result.success).toBe(false)
+      expect(result.context?.duration).toBeGreaterThanOrEqual(0)
+    })
+  })
 
   describe('Cache Management', () => {
     it('should clear cache without errors', () => {
-      expect(() => executor.clearCache()).not.toThrow();
-    });
+      expect(() => executor.clearCache()).not.toThrow()
+    })
 
     it('should return undefined for non-existent cached screenshots', () => {
-      const path = executor.getCachedScreenshot('nonexistent');
-      expect(path).toBeUndefined();
-    });
-  });
-});
+      const path = executor.getCachedScreenshot('nonexistent')
+      expect(path).toBeUndefined()
+    })
+  })
+})
 
 describe('Hybrid Executor - Fallback Logic Integration', () => {
-  let executor: HybridExecutor;
+  let executor: HybridExecutor
 
   beforeEach(() => {
-    createMockPage();
-    executor = new HybridExecutor();
-    
+    createMockPage()
+    executor = new HybridExecutor()
+
     // Mock document.elementFromPoint
     if (!document.elementFromPoint) {
-      document.elementFromPoint = vi.fn();
+      document.elementFromPoint = vi.fn()
     }
-  });
+  })
 
   afterEach(() => {
-    cleanupMockPage();
-    executor.clearCache();
-  });
+    cleanupMockPage()
+    executor.clearCache()
+  })
 
   describe('DOM-First Strategy', () => {
     it('should use DOM executor when selector is available', async () => {
@@ -628,20 +644,20 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const clickSpy = vi.fn();
-      document.getElementById('submit-btn')!.addEventListener('click', clickSpy);
+      const clickSpy = vi.fn()
+      document.getElementById('submit-btn')!.addEventListener('click', clickSpy)
 
-      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false });
+      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false })
 
-      expect(result.success).toBe(true);
-      expect(result.executorUsed).toBe('dom');
-      expect(clickSpy).toHaveBeenCalled();
-      expect(result.executionLog).toBeDefined();
-      expect(result.executionLog).toContain('Phase 1: Attempting DOM execution...');
-      expect(result.executionLog).toContain('✓ DOM execution succeeded');
-    });
+      expect(result.success).toBe(true)
+      expect(result.executorUsed).toBe('dom')
+      expect(clickSpy).toHaveBeenCalled()
+      expect(result.executionLog).toBeDefined()
+      expect(result.executionLog).toContain('Phase 1: Attempting DOM execution...')
+      expect(result.executionLog).toContain('✓ DOM execution succeeded')
+    })
 
     it('should complete full form workflow with DOM', async () => {
       const steps: SkillStep[] = [
@@ -680,31 +696,31 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
           requiresConfirmation: false,
           status: 'pending',
         },
-      ];
+      ]
 
       for (const step of steps) {
-        const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false });
-        expect(result.success).toBe(true);
-        expect(result.executorUsed).toBe('dom');
+        const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false })
+        expect(result.success).toBe(true)
+        expect(result.executorUsed).toBe('dom')
       }
 
       // Verify form was filled
-      expect((document.getElementById('username') as HTMLInputElement).value).toBe('testuser');
-      expect((document.getElementById('password') as HTMLInputElement).value).toBe('password123');
-    });
-  });
+      expect((document.getElementById('username') as HTMLInputElement).value).toBe('testuser')
+      expect((document.getElementById('password') as HTMLInputElement).value).toBe('password123')
+    })
+  })
 
   describe('Image Fallback Strategy', () => {
     it('should fall back to image executor when DOM fails', async () => {
-      const button = document.getElementById('action-btn')!;
-      const rect = button.getBoundingClientRect();
-      
+      const button = document.getElementById('action-btn')!
+      const rect = button.getBoundingClientRect()
+
       // Mock elementFromPoint to return the button
-      const mockFn = vi.fn().mockReturnValue(button);
-      document.elementFromPoint = mockFn;
-      
-      const clickSpy = vi.fn();
-      button.addEventListener('click', clickSpy);
+      const mockFn = vi.fn().mockReturnValue(button)
+      document.elementFromPoint = mockFn
+
+      const clickSpy = vi.fn()
+      button.addEventListener('click', clickSpy)
 
       const step: SkillStep = {
         id: 'step-1',
@@ -717,20 +733,20 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { 
+      const result = await executor.executeStep(step, {
         timeout: 500,
         captureOnError: false,
-      });
+      })
 
-      expect(result.success).toBe(true);
-      expect(result.executorUsed).toBe('image');
-      expect(result.executionLog).toContain('Phase 1: Attempting DOM execution...');
-      expect(result.executionLog!.some(log => log.includes('DOM execution failed'))).toBe(true);
-      expect(result.executionLog).toContain('Phase 2: Falling back to image-based execution...');
-      expect(result.executionLog).toContain('✓ Image execution succeeded');
-    });
+      expect(result.success).toBe(true)
+      expect(result.executorUsed).toBe('image')
+      expect(result.executionLog).toContain('Phase 1: Attempting DOM execution...')
+      expect(result.executionLog!.some(log => log.includes('DOM execution failed'))).toBe(true)
+      expect(result.executionLog).toContain('Phase 2: Falling back to image-based execution...')
+      expect(result.executionLog).toContain('✓ Image execution succeeded')
+    })
 
     it('should skip image fallback when coordinates not available', async () => {
       const step: SkillStep = {
@@ -744,17 +760,17 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { 
+      const result = await executor.executeStep(step, {
         timeout: 500,
         pauseOnFailure: false,
-      });
+      })
 
-      expect(result.success).toBe(false);
-      expect(result.executorUsed).toBe('none');
-      expect(result.executionLog!.some(log => log.includes('Skipping image execution'))).toBe(true);
-    });
+      expect(result.success).toBe(false)
+      expect(result.executorUsed).toBe('none')
+      expect(result.executionLog!.some(log => log.includes('Skipping image execution'))).toBe(true)
+    })
 
     it('should respect fallbackToImage option', async () => {
       const step: SkillStep = {
@@ -768,20 +784,20 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { 
+      const result = await executor.executeStep(step, {
         timeout: 500,
         fallbackToImage: false,
         pauseOnFailure: false,
-      });
+      })
 
-      expect(result.success).toBe(false);
-      expect(result.executorUsed).toBe('none');
+      expect(result.success).toBe(false)
+      expect(result.executorUsed).toBe('none')
       // Should not attempt image execution
-      expect(result.executionLog?.some(log => log.includes('image-based execution'))).toBe(false);
-    });
-  });
+      expect(result.executionLog?.some(log => log.includes('image-based execution'))).toBe(false)
+    })
+  })
 
   describe('Human Intervention Strategy', () => {
     it('should pause for human when both executors fail', async () => {
@@ -796,26 +812,26 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
       // Mock elementFromPoint to return null
-      const mockFn = vi.fn().mockReturnValue(null);
-      document.elementFromPoint = mockFn;
+      const mockFn = vi.fn().mockReturnValue(null)
+      document.elementFromPoint = mockFn
 
-      const result = await executor.executeStep(step, { 
+      const result = await executor.executeStep(step, {
         timeout: 500,
         captureOnError: false,
         pauseOnFailure: true,
-      });
+      })
 
-      expect(result.success).toBe(false);
-      expect(result.needsHuman).toBe(true);
-      expect(result.executorUsed).toBe('none');
-      expect(result.suggestions).toBeDefined();
-      expect(result.suggestions!.length).toBeGreaterThan(0);
-      expect(result.executionLog).toContain('Phase 3: Both DOM and image execution failed');
-      expect(result.executionLog).toContain('⏸ Pausing for human intervention');
-    });
+      expect(result.success).toBe(false)
+      expect(result.needsHuman).toBe(true)
+      expect(result.executorUsed).toBe('none')
+      expect(result.suggestions).toBeDefined()
+      expect(result.suggestions!.length).toBeGreaterThan(0)
+      expect(result.executionLog).toContain('Phase 3: Both DOM and image execution failed')
+      expect(result.executionLog).toContain('⏸ Pausing for human intervention')
+    })
 
     it('should provide helpful suggestions for click actions', async () => {
       const step: SkillStep = {
@@ -829,18 +845,18 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { 
+      const result = await executor.executeStep(step, {
         timeout: 500,
         pauseOnFailure: true,
-      });
+      })
 
-      expect(result.needsHuman).toBe(true);
-      expect(result.suggestions).toContain('Try clicking the element manually');
-      expect(result.suggestions).toContain('Look for: Submit button in the form');
-      expect(result.suggestions!.some(s => s.includes('selector'))).toBe(true);
-    });
+      expect(result.needsHuman).toBe(true)
+      expect(result.suggestions).toContain('Try clicking the element manually')
+      expect(result.suggestions).toContain('Look for: Submit button in the form')
+      expect(result.suggestions!.some(s => s.includes('selector'))).toBe(true)
+    })
 
     it('should provide suggestions for type actions', async () => {
       const step: SkillStep = {
@@ -854,17 +870,17 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { 
+      const result = await executor.executeStep(step, {
         timeout: 500,
         pauseOnFailure: true,
-      });
+      })
 
-      expect(result.needsHuman).toBe(true);
-      expect(result.suggestions).toContain('Try typing the text manually');
-      expect(result.suggestions).toContain('Text to type: test@example.com');
-    });
+      expect(result.needsHuman).toBe(true)
+      expect(result.suggestions).toContain('Try typing the text manually')
+      expect(result.suggestions).toContain('Text to type: test@example.com')
+    })
 
     it('should not pause when pauseOnFailure is false', async () => {
       const step: SkillStep = {
@@ -877,18 +893,18 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { 
+      const result = await executor.executeStep(step, {
         timeout: 500,
         pauseOnFailure: false,
-      });
+      })
 
-      expect(result.success).toBe(false);
-      expect(result.needsHuman).toBeUndefined();
-      expect(result.suggestions).toBeUndefined();
-    });
-  });
+      expect(result.success).toBe(false)
+      expect(result.needsHuman).toBeUndefined()
+      expect(result.suggestions).toBeUndefined()
+    })
+  })
 
   describe('Execution Mode Selection', () => {
     it('should use only DOM when mode is "dom"', async () => {
@@ -903,25 +919,25 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { 
+      const result = await executor.executeStep(step, {
         mode: 'dom',
         timeout: 1000,
         waitForVisible: false,
-      });
+      })
 
-      expect(result.success).toBe(true);
-      expect(result.executorUsed).toBe('dom');
-      expect(result.executionLog?.some(log => log.includes('image'))).toBe(false);
-    });
+      expect(result.success).toBe(true)
+      expect(result.executorUsed).toBe('dom')
+      expect(result.executionLog?.some(log => log.includes('image'))).toBe(false)
+    })
 
     it('should use only image when mode is "image"', async () => {
-      const button = document.getElementById('action-btn')!;
-      const rect = button.getBoundingClientRect();
-      
-      const mockFn = vi.fn().mockReturnValue(button);
-      document.elementFromPoint = mockFn;
+      const button = document.getElementById('action-btn')!
+      const rect = button.getBoundingClientRect()
+
+      const mockFn = vi.fn().mockReturnValue(button)
+      document.elementFromPoint = mockFn
 
       const step: SkillStep = {
         id: 'step-1',
@@ -933,24 +949,24 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { 
+      const result = await executor.executeStep(step, {
         mode: 'image',
         captureOnError: false,
-      });
+      })
 
-      expect(result.success).toBe(true);
-      expect(result.executorUsed).toBe('image');
-      expect(result.executionLog?.some(log => log.includes('DOM'))).toBe(false);
-    });
+      expect(result.success).toBe(true)
+      expect(result.executorUsed).toBe('image')
+      expect(result.executionLog?.some(log => log.includes('DOM'))).toBe(false)
+    })
 
     it('should try both when mode is "hybrid"', async () => {
-      const button = document.getElementById('action-btn')!;
-      const rect = button.getBoundingClientRect();
-      
-      const mockFn = vi.fn().mockReturnValue(button);
-      document.elementFromPoint = mockFn;
+      const button = document.getElementById('action-btn')!
+      const rect = button.getBoundingClientRect()
+
+      const mockFn = vi.fn().mockReturnValue(button)
+      document.elementFromPoint = mockFn
 
       const step: SkillStep = {
         id: 'step-1',
@@ -963,28 +979,28 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { 
+      const result = await executor.executeStep(step, {
         mode: 'hybrid',
         timeout: 500,
         captureOnError: false,
-      });
+      })
 
-      expect(result.success).toBe(true);
-      expect(result.executorUsed).toBe('image');
-      expect(result.executionLog).toContain('Phase 1: Attempting DOM execution...');
-      expect(result.executionLog).toContain('Phase 2: Falling back to image-based execution...');
-    });
-  });
+      expect(result.success).toBe(true)
+      expect(result.executorUsed).toBe('image')
+      expect(result.executionLog).toContain('Phase 1: Attempting DOM execution...')
+      expect(result.executionLog).toContain('Phase 2: Falling back to image-based execution...')
+    })
+  })
 
   describe('Complex Workflow Scenarios', () => {
     it('should handle mixed DOM and image steps', async () => {
-      const button = document.getElementById('action-btn')!;
-      const rect = button.getBoundingClientRect();
-      
-      const mockFn = vi.fn().mockReturnValue(button);
-      document.elementFromPoint = mockFn;
+      const button = document.getElementById('action-btn')!
+      const rect = button.getBoundingClientRect()
+
+      const mockFn = vi.fn().mockReturnValue(button)
+      document.elementFromPoint = mockFn
 
       const steps: SkillStep[] = [
         // DOM step
@@ -1025,27 +1041,27 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
           requiresConfirmation: false,
           status: 'pending',
         },
-      ];
+      ]
 
-      const results = [];
+      const results = []
       for (const step of steps) {
-        const result = await executor.executeStep(step, { 
+        const result = await executor.executeStep(step, {
           timeout: 1000,
           captureOnError: false,
           waitForVisible: false,
-        });
-        results.push(result);
+        })
+        results.push(result)
       }
 
-      expect(results[0].success).toBe(true);
-      expect(results[0].executorUsed).toBe('dom');
-      
-      expect(results[1].success).toBe(true);
-      expect(results[1].executorUsed).toBe('image');
-      
-      expect(results[2].success).toBe(true);
-      expect(results[2].executorUsed).toBe('dom');
-    });
+      expect(results[0].success).toBe(true)
+      expect(results[0].executorUsed).toBe('dom')
+
+      expect(results[1].success).toBe(true)
+      expect(results[1].executorUsed).toBe('image')
+
+      expect(results[2].success).toBe(true)
+      expect(results[2].executorUsed).toBe('dom')
+    })
 
     it('should handle wait steps in hybrid mode', async () => {
       const step: SkillStep = {
@@ -1055,22 +1071,22 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         actionType: 'wait',
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const startTime = Date.now();
-      const result = await executor.executeStep(step, { timeout: 100 });
-      const elapsed = Date.now() - startTime;
+      const startTime = Date.now()
+      const result = await executor.executeStep(step, { timeout: 100 })
+      const elapsed = Date.now() - startTime
 
-      expect(result.success).toBe(true);
-      expect(result.executorUsed).toBe('dom');
-      expect(elapsed).toBeGreaterThanOrEqual(100);
-    });
+      expect(result.success).toBe(true)
+      expect(result.executorUsed).toBe('dom')
+      expect(elapsed).toBeGreaterThanOrEqual(100)
+    })
 
     it('should handle navigation steps', async () => {
       // Mock window.location
-      const originalLocation = window.location;
-      delete (window as any).location;
-      window.location = { href: '' } as any;
+      const originalLocation = window.location
+      delete (window as any).location
+      window.location = { href: '' } as any
 
       const step: SkillStep = {
         id: 'step-1',
@@ -1082,17 +1098,17 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { timeout: 100 });
+      const result = await executor.executeStep(step, { timeout: 100 })
 
-      expect(result.success).toBe(true);
-      expect(result.executorUsed).toBe('dom');
+      expect(result.success).toBe(true)
+      expect(result.executorUsed).toBe('dom')
 
       // Restore
-      window.location = originalLocation;
-    });
-  });
+      window.location = originalLocation
+    })
+  })
 
   describe('Performance and Timing', () => {
     it('should respect timeout settings', async () => {
@@ -1106,19 +1122,19 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const startTime = Date.now();
-      const result = await executor.executeStep(step, { 
+      const startTime = Date.now()
+      const result = await executor.executeStep(step, {
         timeout: 300,
         pauseOnFailure: false,
-      });
-      const elapsed = Date.now() - startTime;
+      })
+      const elapsed = Date.now() - startTime
 
-      expect(result.success).toBe(false);
-      expect(elapsed).toBeGreaterThanOrEqual(300);
-      expect(elapsed).toBeLessThan(500);
-    });
+      expect(result.success).toBe(false)
+      expect(elapsed).toBeGreaterThanOrEqual(300)
+      expect(elapsed).toBeLessThan(500)
+    })
 
     it('should include duration in context', async () => {
       const step: SkillStep = {
@@ -1131,35 +1147,35 @@ describe('Hybrid Executor - Fallback Logic Integration', () => {
         },
         requiresConfirmation: false,
         status: 'pending',
-      };
+      }
 
-      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false });
+      const result = await executor.executeStep(step, { timeout: 1000, waitForVisible: false })
 
-      expect(result.success).toBe(true);
-      expect(result.context?.duration).toBeDefined();
-      expect(result.context?.duration).toBeGreaterThan(0);
-    });
-  });
+      expect(result.success).toBe(true)
+      expect(result.context?.duration).toBeDefined()
+      expect(result.context?.duration).toBeGreaterThan(0)
+    })
+  })
 
   describe('Utility Methods', () => {
     it('should set and get target window', () => {
-      const mockWindow = {} as Window;
-      executor.setTargetWindow(mockWindow);
-      
-      const domExecutor = executor.getDOMExecutor();
-      expect(domExecutor.getTargetWindow()).toBe(mockWindow);
-    });
+      const mockWindow = {} as Window
+      executor.setTargetWindow(mockWindow)
+
+      const domExecutor = executor.getDOMExecutor()
+      expect(domExecutor.getTargetWindow()).toBe(mockWindow)
+    })
 
     it('should provide access to sub-executors', () => {
-      const domExecutor = executor.getDOMExecutor();
-      const imageExecutor = executor.getImageExecutor();
+      const domExecutor = executor.getDOMExecutor()
+      const imageExecutor = executor.getImageExecutor()
 
-      expect(domExecutor).toBeDefined();
-      expect(imageExecutor).toBeDefined();
-    });
+      expect(domExecutor).toBeDefined()
+      expect(imageExecutor).toBeDefined()
+    })
 
     it('should clear cache', () => {
-      expect(() => executor.clearCache()).not.toThrow();
-    });
-  });
-});
+      expect(() => executor.clearCache()).not.toThrow()
+    })
+  })
+})

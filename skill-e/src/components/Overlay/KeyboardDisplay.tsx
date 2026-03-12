@@ -1,6 +1,6 @@
 /**
  * Keyboard Display Component
- * 
+ *
  * Displays keyboard input in the overlay during recording.
  * Features:
  * - Shows modifier key badges (Shift, Ctrl, Alt, Cmd)
@@ -8,43 +8,39 @@
  * - Configurable position (corners)
  * - Enhanced password redaction with 100% reliability
  * - Supports both bullet (●●●●●●) and variable (${PASSWORD}) modes
- * 
+ *
  * Requirements: FR-4.15, FR-4.16, FR-4.17, FR-4.18, FR-4.19, NFR-4.4
  */
 
-import { useEffect, useState } from 'react';
-import { KeyboardState, keyboardTracker } from '../../lib/overlay/keyboard-tracker';
-import { redactPassword, type RedactionMode } from '../../lib/overlay/password-redaction';
+import { useEffect, useState } from 'react'
+import { KeyboardState, keyboardTracker } from '../../lib/overlay/keyboard-tracker'
+import { redactPassword, type RedactionMode } from '../../lib/overlay/password-redaction'
 
 /**
  * Display position options
  */
-export type KeyboardDisplayPosition = 
-  | 'bottom-left' 
-  | 'bottom-right' 
-  | 'top-left' 
-  | 'top-right';
+export type KeyboardDisplayPosition = 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right'
 
 interface KeyboardDisplayProps {
   /** Position of the keyboard display */
-  position?: KeyboardDisplayPosition;
-  
+  position?: KeyboardDisplayPosition
+
   /** Whether to show the keyboard display */
-  visible?: boolean;
-  
+  visible?: boolean
+
   /** Redaction mode for password fields */
-  redactionMode?: RedactionMode;
-  
+  redactionMode?: RedactionMode
+
   /** Show variable name hint alongside bullets */
-  showVariableHint?: boolean;
-  
+  showVariableHint?: boolean
+
   /** Optional: Custom class name */
-  className?: string;
+  className?: string
 }
 
 /**
  * Keyboard Display Component
- * 
+ *
  * Shows modifier keys and typed text in a corner of the overlay.
  */
 export function KeyboardDisplay({
@@ -64,32 +60,32 @@ export function KeyboardDisplay({
     currentText: '',
     isPasswordField: false,
     lastKeyTimestamp: 0,
-  });
+  })
 
   // Subscribe to keyboard tracker updates
   useEffect(() => {
-    const unsubscribe = keyboardTracker.subscribe((state) => {
-      setKeyboardState(state);
-    });
+    const unsubscribe = keyboardTracker.subscribe(state => {
+      setKeyboardState(state)
+    })
 
-    return unsubscribe;
-  }, []);
+    return unsubscribe
+  }, [])
 
   // Don't render if not visible
   if (!visible) {
-    return null;
+    return null
   }
 
   // Don't render if no keyboard activity
-  const hasModifiers = Object.values(keyboardState.modifiers).some(v => v);
-  const hasText = keyboardState.currentText.length > 0;
-  
+  const hasModifiers = Object.values(keyboardState.modifiers).some(v => v)
+  const hasText = keyboardState.currentText.length > 0
+
   if (!hasModifiers && !hasText) {
-    return null;
+    return null
   }
 
   // Get position classes
-  const positionClasses = getPositionClasses(position);
+  const positionClasses = getPositionClasses(position)
 
   return (
     <div
@@ -135,32 +131,32 @@ export function KeyboardDisplay({
         )}
       </div>
     </div>
-  );
+  )
 }
 
 /**
  * Modifier Keys Display
- * 
+ *
  * Shows badges for active modifier keys
  */
 interface ModifierKeysProps {
-  modifiers: KeyboardState['modifiers'];
+  modifiers: KeyboardState['modifiers']
 }
 
 function ModifierKeys({ modifiers }: ModifierKeysProps) {
-  const activeModifiers: string[] = [];
+  const activeModifiers: string[] = []
 
-  if (modifiers.ctrl) activeModifiers.push('Ctrl');
-  if (modifiers.shift) activeModifiers.push('Shift');
-  if (modifiers.alt) activeModifiers.push('Alt');
+  if (modifiers.ctrl) activeModifiers.push('Ctrl')
+  if (modifiers.shift) activeModifiers.push('Shift')
+  if (modifiers.alt) activeModifiers.push('Alt')
   if (modifiers.meta) {
     // Show "Cmd" on Mac, "Win" on Windows
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    activeModifiers.push(isMac ? 'Cmd' : 'Win');
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+    activeModifiers.push(isMac ? 'Cmd' : 'Win')
   }
 
   if (activeModifiers.length === 0) {
-    return null;
+    return null
   }
 
   return (
@@ -190,16 +186,16 @@ function ModifierKeys({ modifiers }: ModifierKeysProps) {
         </span>
       ))}
     </div>
-  );
+  )
 }
 
 /**
  * Key Badge Component
- * 
+ *
  * Displays a single key as a badge
  */
 interface KeyBadgeProps {
-  label: string;
+  label: string
 }
 
 function KeyBadge({ label }: KeyBadgeProps) {
@@ -222,41 +218,42 @@ function KeyBadge({ label }: KeyBadgeProps) {
     >
       {label}
     </kbd>
-  );
+  )
 }
 
 /**
  * Typed Text Display
- * 
+ *
  * Shows the current typed text with enhanced password redaction
  */
 interface TypedTextProps {
-  text: string;
-  isPassword: boolean;
-  passwordFieldInfo?: KeyboardState['passwordFieldInfo'];
-  redactionMode?: RedactionMode;
-  showVariableHint?: boolean;
+  text: string
+  isPassword: boolean
+  passwordFieldInfo?: KeyboardState['passwordFieldInfo']
+  redactionMode?: RedactionMode
+  showVariableHint?: boolean
 }
 
-function TypedText({ 
-  text, 
-  isPassword, 
+function TypedText({
+  text,
+  isPassword,
   passwordFieldInfo,
   redactionMode = 'bullets',
   showVariableHint = false,
 }: TypedTextProps) {
   // Get variable name from detection result
-  const variableName = passwordFieldInfo?.suggestedVariableName || 'PASSWORD';
-  
+  const variableName = passwordFieldInfo?.suggestedVariableName || 'PASSWORD'
+
   // Redact password text using enhanced redaction
-  const displayText = isPassword 
+  const displayText = isPassword
     ? redactPassword(text, { mode: redactionMode, variableName })
-    : text;
-  
+    : text
+
   // Add variable hint if enabled and in bullets mode
-  const finalDisplayText = isPassword && showVariableHint && redactionMode === 'bullets'
-    ? `${displayText} (${variableName})`
-    : displayText;
+  const finalDisplayText =
+    isPassword && showVariableHint && redactionMode === 'bullets'
+      ? `${displayText} (${variableName})`
+      : displayText
 
   return (
     <div
@@ -283,11 +280,14 @@ function TypedText({
           🔒
         </span>
       )}
-      <span style={{ 
-        fontFamily: isPassword && redactionMode === 'bullets' 
-          ? 'monospace' 
-          : 'Nunito Sans, system-ui, sans-serif' 
-      }}>
+      <span
+        style={{
+          fontFamily:
+            isPassword && redactionMode === 'bullets'
+              ? 'monospace'
+              : 'Nunito Sans, system-ui, sans-serif',
+        }}
+      >
         {finalDisplayText}
       </span>
       {isPassword && passwordFieldInfo && (
@@ -304,59 +304,59 @@ function TypedText({
         </span>
       )}
     </div>
-  );
+  )
 }
 
 /**
  * Redact password text (legacy - kept for backwards compatibility)
- * 
+ *
  * @deprecated Use redactPassword from password-redaction.ts instead
  */
 // @ts-ignore - Kept for reference
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function _redactPasswordLegacy(text: string): string {
-  return '●'.repeat(text.length);
+  return '●'.repeat(text.length)
 }
 
 /**
  * Get position classes based on display position
  */
 function getPositionClasses(position: KeyboardDisplayPosition): string {
-  const baseSpacing = '24px';
-  
+  const baseSpacing = '24px'
+
   switch (position) {
     case 'bottom-left':
-      return `bottom-${baseSpacing} left-${baseSpacing}`;
+      return `bottom-${baseSpacing} left-${baseSpacing}`
     case 'bottom-right':
-      return `bottom-${baseSpacing} right-${baseSpacing}`;
+      return `bottom-${baseSpacing} right-${baseSpacing}`
     case 'top-left':
-      return `top-${baseSpacing} left-${baseSpacing}`;
+      return `top-${baseSpacing} left-${baseSpacing}`
     case 'top-right':
-      return `top-${baseSpacing} right-${baseSpacing}`;
+      return `top-${baseSpacing} right-${baseSpacing}`
     default:
-      return `bottom-${baseSpacing} left-${baseSpacing}`;
+      return `bottom-${baseSpacing} left-${baseSpacing}`
   }
 }
 
 /**
  * Hook to control keyboard display visibility
- * 
+ *
  * Usage:
  * ```tsx
  * const { visible, toggle, show, hide } = useKeyboardDisplay();
  * ```
  */
 export function useKeyboardDisplay(initialVisible = true) {
-  const [visible, setVisible] = useState(initialVisible);
+  const [visible, setVisible] = useState(initialVisible)
 
-  const toggle = () => setVisible(prev => !prev);
-  const show = () => setVisible(true);
-  const hide = () => setVisible(false);
+  const toggle = () => setVisible(prev => !prev)
+  const show = () => setVisible(true)
+  const hide = () => setVisible(false)
 
   return {
     visible,
     toggle,
     show,
     hide,
-  };
+  }
 }

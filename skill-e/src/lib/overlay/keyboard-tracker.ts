@@ -1,23 +1,23 @@
 /**
  * Keyboard Tracker for Overlay UI
- * 
+ *
  * Tracks global keyboard events during recording and manages keyboard display.
  * Tracks modifier keys (Shift, Ctrl, Alt, Cmd) and buffers typed text.
  * Integrates with enhanced password redaction for 100% reliable detection.
- * 
+ *
  * Requirements: FR-4.15, FR-4.16, FR-4.17, FR-4.18, NFR-4.4
  */
 
-import { detectPasswordField, type PasswordFieldInfo } from './password-redaction';
+import { detectPasswordField, type PasswordFieldInfo } from './password-redaction'
 
 /**
  * Modifier keys state
  */
 export interface ModifierKeys {
-  shift: boolean;
-  ctrl: boolean;
-  alt: boolean;
-  meta: boolean;  // Cmd on Mac, Windows key on Windows
+  shift: boolean
+  ctrl: boolean
+  alt: boolean
+  meta: boolean // Cmd on Mac, Windows key on Windows
 }
 
 /**
@@ -25,34 +25,34 @@ export interface ModifierKeys {
  */
 export interface KeyboardState {
   /** Current modifier keys pressed */
-  modifiers: ModifierKeys;
-  
+  modifiers: ModifierKeys
+
   /** Current text buffer (typed text) */
-  currentText: string;
-  
+  currentText: string
+
   /** Whether the current focused element is a password field */
-  isPasswordField: boolean;
-  
+  isPasswordField: boolean
+
   /** Password field detection info (for enhanced redaction) */
-  passwordFieldInfo?: PasswordFieldInfo;
-  
+  passwordFieldInfo?: PasswordFieldInfo
+
   /** Timestamp of last key event */
-  lastKeyTimestamp: number;
+  lastKeyTimestamp: number
 }
 
 /**
  * Keyboard event data
  */
 export interface KeyboardEvent {
-  key: string;
-  modifiers: ModifierKeys;
-  timestamp: number;
-  isPasswordField: boolean;
+  key: string
+  modifiers: ModifierKeys
+  timestamp: number
+  isPasswordField: boolean
 }
 
 /**
  * Keyboard Tracker class
- * 
+ *
  * Manages keyboard event tracking and text buffering.
  */
 export class KeyboardTracker {
@@ -66,34 +66,34 @@ export class KeyboardTracker {
     currentText: '',
     isPasswordField: false,
     lastKeyTimestamp: 0,
-  };
-  
-  private isTracking: boolean = false;
-  private listeners: Set<(state: KeyboardState) => void> = new Set();
-  private textBufferTimeout: number | null = null;
-  
+  }
+
+  private isTracking: boolean = false
+  private listeners: Set<(state: KeyboardState) => void> = new Set()
+  private textBufferTimeout: number | null = null
+
   // Configuration
-  private readonly TEXT_BUFFER_TIMEOUT = 2000; // Clear text buffer after 2 seconds of inactivity
-  private readonly MAX_TEXT_LENGTH = 100; // Maximum text buffer length
+  private readonly TEXT_BUFFER_TIMEOUT = 2000 // Clear text buffer after 2 seconds of inactivity
+  private readonly MAX_TEXT_LENGTH = 100 // Maximum text buffer length
 
   /**
    * Start tracking keyboard events
    */
   start(): void {
     if (this.isTracking) {
-      return;
+      return
     }
 
-    this.isTracking = true;
-    this.resetState();
-    
+    this.isTracking = true
+    this.resetState()
+
     // Listen for global keyboard events
-    window.addEventListener('keydown', this.handleKeyDown, true);
-    window.addEventListener('keyup', this.handleKeyUp, true);
-    
+    window.addEventListener('keydown', this.handleKeyDown, true)
+    window.addEventListener('keyup', this.handleKeyUp, true)
+
     // Listen for focus changes to detect password fields
-    window.addEventListener('focusin', this.handleFocusChange, true);
-    window.addEventListener('focusout', this.handleFocusChange, true);
+    window.addEventListener('focusin', this.handleFocusChange, true)
+    window.addEventListener('focusout', this.handleFocusChange, true)
   }
 
   /**
@@ -101,21 +101,21 @@ export class KeyboardTracker {
    */
   stop(): void {
     if (!this.isTracking) {
-      return;
+      return
     }
 
-    this.isTracking = false;
-    
+    this.isTracking = false
+
     // Remove event listeners
-    window.removeEventListener('keydown', this.handleKeyDown, true);
-    window.removeEventListener('keyup', this.handleKeyUp, true);
-    window.removeEventListener('focusin', this.handleFocusChange, true);
-    window.removeEventListener('focusout', this.handleFocusChange, true);
-    
+    window.removeEventListener('keydown', this.handleKeyDown, true)
+    window.removeEventListener('keyup', this.handleKeyUp, true)
+    window.removeEventListener('focusin', this.handleFocusChange, true)
+    window.removeEventListener('focusout', this.handleFocusChange, true)
+
     // Clear timeout
     if (this.textBufferTimeout !== null) {
-      window.clearTimeout(this.textBufferTimeout);
-      this.textBufferTimeout = null;
+      window.clearTimeout(this.textBufferTimeout)
+      this.textBufferTimeout = null
     }
   }
 
@@ -124,49 +124,49 @@ export class KeyboardTracker {
    */
   private handleKeyDown = (event: globalThis.KeyboardEvent): void => {
     if (!this.isTracking) {
-      return;
+      return
     }
 
     // Update modifier keys
-    this.updateModifiers(event);
+    this.updateModifiers(event)
 
     // Handle printable characters
     if (this.isPrintableKey(event.key)) {
-      this.addToTextBuffer(event.key);
+      this.addToTextBuffer(event.key)
     }
     // Handle special keys
     else if (event.key === 'Backspace') {
-      this.removeFromTextBuffer();
+      this.removeFromTextBuffer()
     } else if (event.key === 'Enter') {
-      this.addToTextBuffer('\n');
+      this.addToTextBuffer('\n')
     } else if (event.key === 'Space' || event.key === ' ') {
-      this.addToTextBuffer(' ');
+      this.addToTextBuffer(' ')
     }
 
     // Update timestamp
-    this.state.lastKeyTimestamp = Date.now();
-    
+    this.state.lastKeyTimestamp = Date.now()
+
     // Notify listeners
-    this.notifyListeners();
-    
+    this.notifyListeners()
+
     // Reset text buffer timeout
-    this.resetTextBufferTimeout();
-  };
+    this.resetTextBufferTimeout()
+  }
 
   /**
    * Handle keyup event
    */
   private handleKeyUp = (event: globalThis.KeyboardEvent): void => {
     if (!this.isTracking) {
-      return;
+      return
     }
 
     // Update modifier keys
-    this.updateModifiers(event);
-    
+    this.updateModifiers(event)
+
     // Notify listeners
-    this.notifyListeners();
-  };
+    this.notifyListeners()
+  }
 
   /**
    * Handle focus change to detect password fields
@@ -174,31 +174,31 @@ export class KeyboardTracker {
    */
   private handleFocusChange = (event: FocusEvent): void => {
     if (!this.isTracking) {
-      return;
+      return
     }
 
-    const target = event.target as HTMLElement;
-    
+    const target = event.target as HTMLElement
+
     if (event.type === 'focusin') {
       // Use enhanced password field detection
-      const detectionResult = detectPasswordField(target);
-      this.state.isPasswordField = detectionResult.isPasswordField;
-      this.state.passwordFieldInfo = detectionResult;
-      
+      const detectionResult = detectPasswordField(target)
+      this.state.isPasswordField = detectionResult.isPasswordField
+      this.state.passwordFieldInfo = detectionResult
+
       // Clear text buffer when switching fields
-      this.state.currentText = '';
+      this.state.currentText = ''
     } else if (event.type === 'focusout') {
       // Clear password field flag
-      this.state.isPasswordField = false;
-      this.state.passwordFieldInfo = undefined;
-      
+      this.state.isPasswordField = false
+      this.state.passwordFieldInfo = undefined
+
       // Clear text buffer
-      this.state.currentText = '';
+      this.state.currentText = ''
     }
-    
+
     // Notify listeners
-    this.notifyListeners();
-  };
+    this.notifyListeners()
+  }
 
   /**
    * Update modifier keys state from keyboard event
@@ -209,7 +209,7 @@ export class KeyboardTracker {
       ctrl: event.ctrlKey,
       alt: event.altKey,
       meta: event.metaKey,
-    };
+    }
   }
 
   /**
@@ -218,20 +218,45 @@ export class KeyboardTracker {
   private isPrintableKey(key: string): boolean {
     // Single character keys are printable
     if (key.length === 1) {
-      return true;
+      return true
     }
-    
+
     // Exclude modifier and special keys
     const nonPrintableKeys = [
-      'Shift', 'Control', 'Alt', 'Meta',
-      'CapsLock', 'Tab', 'Escape', 'Enter', 'Backspace',
-      'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-      'Home', 'End', 'PageUp', 'PageDown',
-      'Insert', 'Delete',
-      'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
-    ];
-    
-    return !nonPrintableKeys.includes(key);
+      'Shift',
+      'Control',
+      'Alt',
+      'Meta',
+      'CapsLock',
+      'Tab',
+      'Escape',
+      'Enter',
+      'Backspace',
+      'ArrowUp',
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
+      'Home',
+      'End',
+      'PageUp',
+      'PageDown',
+      'Insert',
+      'Delete',
+      'F1',
+      'F2',
+      'F3',
+      'F4',
+      'F5',
+      'F6',
+      'F7',
+      'F8',
+      'F9',
+      'F10',
+      'F11',
+      'F12',
+    ]
+
+    return !nonPrintableKeys.includes(key)
   }
 
   /**
@@ -241,10 +266,10 @@ export class KeyboardTracker {
     // Limit text buffer length
     if (this.state.currentText.length >= this.MAX_TEXT_LENGTH) {
       // Remove first character to make room
-      this.state.currentText = this.state.currentText.slice(1);
+      this.state.currentText = this.state.currentText.slice(1)
     }
-    
-    this.state.currentText += char;
+
+    this.state.currentText += char
   }
 
   /**
@@ -252,7 +277,7 @@ export class KeyboardTracker {
    */
   private removeFromTextBuffer(): void {
     if (this.state.currentText.length > 0) {
-      this.state.currentText = this.state.currentText.slice(0, -1);
+      this.state.currentText = this.state.currentText.slice(0, -1)
     }
   }
 
@@ -263,91 +288,97 @@ export class KeyboardTracker {
   private resetTextBufferTimeout(): void {
     // Clear existing timeout
     if (this.textBufferTimeout !== null) {
-      window.clearTimeout(this.textBufferTimeout);
+      window.clearTimeout(this.textBufferTimeout)
     }
-    
+
     // Set new timeout
     this.textBufferTimeout = window.setTimeout(() => {
-      this.state.currentText = '';
-      this.notifyListeners();
-    }, this.TEXT_BUFFER_TIMEOUT);
+      this.state.currentText = ''
+      this.notifyListeners()
+    }, this.TEXT_BUFFER_TIMEOUT)
   }
 
   /**
    * Check if an element is a password field (legacy method - kept for reference)
-   * 
+   *
    * @deprecated Use detectPasswordField from password-redaction.ts instead
    */
   // @ts-ignore - Kept for reference
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   private _isPasswordFieldLegacy(element: HTMLElement): boolean {
     if (!element) {
-      return false;
+      return false
     }
 
     // Check input type
     if (element instanceof HTMLInputElement && element.type === 'password') {
-      return true;
+      return true
     }
 
     // Check autocomplete attribute
-    const autocomplete = element.getAttribute('autocomplete');
-    if (autocomplete?.includes('password') || autocomplete?.includes('current-password') || autocomplete?.includes('new-password')) {
-      return true;
+    const autocomplete = element.getAttribute('autocomplete')
+    if (
+      autocomplete?.includes('password') ||
+      autocomplete?.includes('current-password') ||
+      autocomplete?.includes('new-password')
+    ) {
+      return true
     }
 
     // Check id and name attributes
-    const id = element.id?.toLowerCase() || '';
-    const name = element.getAttribute('name')?.toLowerCase() || '';
-    
+    const id = element.id?.toLowerCase() || ''
+    const name = element.getAttribute('name')?.toLowerCase() || ''
+
     if (id.includes('password') || id.includes('passwd') || id.includes('pwd')) {
-      return true;
-    }
-    
-    if (name.includes('password') || name.includes('passwd') || name.includes('pwd')) {
-      return true;
+      return true
     }
 
-    return false;
+    if (name.includes('password') || name.includes('passwd') || name.includes('pwd')) {
+      return true
+    }
+
+    return false
   }
 
   /**
    * Get current keyboard state
    */
   getState(): KeyboardState {
-    return { ...this.state };
+    return { ...this.state }
   }
 
   /**
    * Get current modifier keys
    */
   getModifiers(): ModifierKeys {
-    return { ...this.state.modifiers };
+    return { ...this.state.modifiers }
   }
 
   /**
    * Get current text buffer
    */
   getCurrentText(): string {
-    return this.state.currentText;
+    return this.state.currentText
   }
 
   /**
    * Check if any modifier key is pressed
    */
   hasModifiers(): boolean {
-    return this.state.modifiers.shift || 
-           this.state.modifiers.ctrl || 
-           this.state.modifiers.alt || 
-           this.state.modifiers.meta;
+    return (
+      this.state.modifiers.shift ||
+      this.state.modifiers.ctrl ||
+      this.state.modifiers.alt ||
+      this.state.modifiers.meta
+    )
   }
 
   /**
    * Clear text buffer
    */
   clearTextBuffer(): void {
-    this.state.currentText = '';
-    this.notifyListeners();
+    this.state.currentText = ''
+    this.notifyListeners()
   }
 
   /**
@@ -364,49 +395,49 @@ export class KeyboardTracker {
       currentText: '',
       isPasswordField: false,
       lastKeyTimestamp: 0,
-    };
+    }
   }
 
   /**
    * Subscribe to keyboard state updates
-   * 
+   *
    * @param listener - Callback function that receives the updated keyboard state
    * @returns Unsubscribe function
    */
   subscribe(listener: (state: KeyboardState) => void): () => void {
-    this.listeners.add(listener);
-    
+    this.listeners.add(listener)
+
     // Return unsubscribe function
     return () => {
-      this.listeners.delete(listener);
-    };
+      this.listeners.delete(listener)
+    }
   }
 
   /**
    * Notify all listeners of state updates
    */
   private notifyListeners(): void {
-    const state = this.getState();
-    this.listeners.forEach(listener => listener(state));
+    const state = this.getState()
+    this.listeners.forEach(listener => listener(state))
   }
 
   /**
    * Reset the tracker (clear state and stop tracking)
    */
   reset(): void {
-    this.stop();
-    this.resetState();
+    this.stop()
+    this.resetState()
   }
 
   /**
    * Check if tracking is active
    */
   isActive(): boolean {
-    return this.isTracking;
+    return this.isTracking
   }
 }
 
 /**
  * Singleton instance of the keyboard tracker
  */
-export const keyboardTracker = new KeyboardTracker();
+export const keyboardTracker = new KeyboardTracker()

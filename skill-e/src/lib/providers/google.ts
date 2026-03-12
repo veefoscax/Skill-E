@@ -1,14 +1,14 @@
 /**
  * S08: LLM Providers - Google Provider
- * 
+ *
  * Google (Gemini) provider with streaming support.
  * Supports Gemini 1.5 Pro, Flash, and other Gemini models.
- * 
+ *
  * Requirements: FR-8.1
  */
 
-import { BaseProvider } from './base-provider';
-import type { Message, ChatOptions, Model, ProviderType } from './types';
+import { BaseProvider } from './base-provider'
+import type { Message, ChatOptions, Model, ProviderType } from './types'
 
 /**
  * Available Gemini models
@@ -42,45 +42,45 @@ export const GOOGLE_MODELS: Model[] = [
     contextWindow: 32768,
     description: 'Previous generation model',
   },
-];
+]
 
 /**
  * Default model for Google (Gemini 1.5 Pro)
  */
-export const DEFAULT_GOOGLE_MODEL = GOOGLE_MODELS[0].id;
+export const DEFAULT_GOOGLE_MODEL = GOOGLE_MODELS[0].id
 
 /**
  * Google Provider
- * 
+ *
  * Features:
  * - Requires API key
  * - Supports streaming
  * - Gemini 1.5 Pro and Flash models
  * - Massive context windows (up to 2M tokens)
- * 
+ *
  * Note: Google's API format is different from OpenAI-compatible APIs.
  * It uses a different message format and streaming protocol.
  */
 export class GoogleProvider extends BaseProvider {
-  type: ProviderType = 'google';
-  name = 'Google (Gemini)';
-  requiresApiKey = true;
-  supportsStreaming = true;
+  type: ProviderType = 'google'
+  name = 'Google (Gemini)'
+  requiresApiKey = true
+  supportsStreaming = true
 
-  protected baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+  protected baseUrl = 'https://generativelanguage.googleapis.com/v1beta'
 
   constructor(config?: { apiKey?: string; baseUrl?: string }) {
-    super(config);
+    super(config)
     if (config?.baseUrl) {
-      this.baseUrl = config.baseUrl;
+      this.baseUrl = config.baseUrl
     }
   }
 
   /**
    * Send chat completion request
-   * 
+   *
    * Uses Google's Generative Language API with streaming support.
-   * 
+   *
    * Google's API is different from OpenAI:
    * - Uses "contents" instead of "messages"
    * - Uses "parts" for message content
@@ -89,12 +89,12 @@ export class GoogleProvider extends BaseProvider {
    */
   async *chat(messages: Message[], options?: ChatOptions): AsyncIterable<string> {
     // Validate API key
-    this.validateConfig();
+    this.validateConfig()
 
-    const model = options?.model || DEFAULT_GOOGLE_MODEL;
+    const model = options?.model || DEFAULT_GOOGLE_MODEL
 
     // Convert messages to Google format
-    const { systemInstruction, contents } = this.convertMessagesToGoogleFormat(messages);
+    const { systemInstruction, contents } = this.convertMessagesToGoogleFormat(messages)
 
     // Build request body
     const body: any = {
@@ -103,27 +103,28 @@ export class GoogleProvider extends BaseProvider {
         temperature: options?.temperature ?? 0.7,
         maxOutputTokens: options?.maxTokens || 8192,
       },
-    };
+    }
 
     // Add system instruction if present
     if (systemInstruction) {
       body.systemInstruction = {
         parts: [{ text: systemInstruction }],
-      };
+      }
     }
 
     // Add stop sequences if provided
     if (options?.stopSequences && options.stopSequences.length > 0) {
-      body.generationConfig.stopSequences = options.stopSequences;
+      body.generationConfig.stopSequences = options.stopSequences
     }
 
     // Determine endpoint based on streaming
-    const endpoint = options?.stream !== false
-      ? `${this.baseUrl}/models/${model}:streamGenerateContent`
-      : `${this.baseUrl}/models/${model}:generateContent`;
+    const endpoint =
+      options?.stream !== false
+        ? `${this.baseUrl}/models/${model}:streamGenerateContent`
+        : `${this.baseUrl}/models/${model}:generateContent`
 
     // Build URL with API key as query parameter (Google's approach)
-    const url = `${endpoint}?key=${this.apiKey}`;
+    const url = `${endpoint}?key=${this.apiKey}`
 
     // Make request
     const response = await this.makeRequest(url, {
@@ -132,51 +133,51 @@ export class GoogleProvider extends BaseProvider {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-    });
+    })
 
     // Handle streaming vs non-streaming
     if (options?.stream !== false) {
-      yield* this.parseGoogleStream(response);
+      yield* this.parseGoogleStream(response)
     } else {
       // Non-streaming response
-      const data = await response.json();
+      const data = await response.json()
       if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        yield data.candidates[0].content.parts[0].text;
+        yield data.candidates[0].content.parts[0].text
       }
     }
   }
 
   /**
    * Convert standard messages to Google's format
-   * 
+   *
    * Google uses:
    * - "contents" array with "role" and "parts"
    * - "user" and "model" roles (not "assistant")
    * - System instructions are separate
    */
   private convertMessagesToGoogleFormat(messages: Message[]): {
-    systemInstruction?: string;
-    contents: any[];
+    systemInstruction?: string
+    contents: any[]
   } {
     // Extract system message
-    const systemMessage = messages.find(m => m.role === 'system');
-    const conversationMessages = messages.filter(m => m.role !== 'system');
+    const systemMessage = messages.find(m => m.role === 'system')
+    const conversationMessages = messages.filter(m => m.role !== 'system')
 
     // Convert messages to Google format
     const contents = conversationMessages.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }],
-    }));
+    }))
 
     return {
       systemInstruction: systemMessage?.content,
       contents,
-    };
+    }
   }
 
   /**
    * Parse Google's streaming response format
-   * 
+   *
    * Google uses a different streaming format:
    * - Each chunk is a complete JSON object
    * - Chunks are separated by newlines
@@ -184,46 +185,46 @@ export class GoogleProvider extends BaseProvider {
    */
   private async *parseGoogleStream(response: Response): AsyncIterable<string> {
     if (!response.body) {
-      throw this.createError('No response body', 'STREAM_ERROR');
+      throw this.createError('No response body', 'STREAM_ERROR')
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
 
     try {
       while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) break;
+        const { done, value } = await reader.read()
+
+        if (done) break
 
         // Decode chunk and add to buffer
-        buffer += decoder.decode(value, { stream: true });
+        buffer += decoder.decode(value, { stream: true })
 
         // Process complete lines (Google sends one JSON per line)
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || '' // Keep incomplete line in buffer
 
         for (const line of lines) {
-          const trimmed = line.trim();
-          
+          const trimmed = line.trim()
+
           // Skip empty lines
-          if (!trimmed) continue;
+          if (!trimmed) continue
 
           // Skip lines that start with "data: " (some implementations use SSE format)
-          const jsonStr = trimmed.startsWith('data: ') ? trimmed.slice(6) : trimmed;
+          const jsonStr = trimmed.startsWith('data: ') ? trimmed.slice(6) : trimmed
 
           // Skip [DONE] markers
-          if (jsonStr === '[DONE]') continue;
+          if (jsonStr === '[DONE]') continue
 
           try {
-            const json = JSON.parse(jsonStr);
-            
+            const json = JSON.parse(jsonStr)
+
             // Extract text from Google's format
-            const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-            
+            const text = json.candidates?.[0]?.content?.parts?.[0]?.text
+
             if (text) {
-              yield text;
+              yield text
             }
 
             // Check for errors
@@ -231,46 +232,46 @@ export class GoogleProvider extends BaseProvider {
               throw this.createError(
                 json.error.message || 'Unknown error from Google',
                 'STREAM_ERROR'
-              );
+              )
             }
 
             // Check for finish reason (blocked content, etc.)
-            const finishReason = json.candidates?.[0]?.finishReason;
+            const finishReason = json.candidates?.[0]?.finishReason
             if (finishReason && finishReason !== 'STOP' && finishReason !== 'MAX_TOKENS') {
-              console.warn(`Google API finished with reason: ${finishReason}`);
+              console.warn(`Google API finished with reason: ${finishReason}`)
             }
           } catch (e) {
             // If it's already a ProviderError, re-throw it
             if (e instanceof Error && e.name === 'ProviderError') {
-              throw e;
+              throw e
             }
             // Skip invalid JSON lines
-            console.warn('Failed to parse Google response:', jsonStr);
+            console.warn('Failed to parse Google response:', jsonStr)
           }
         }
       }
     } finally {
-      reader.releaseLock();
+      reader.releaseLock()
     }
   }
 
   /**
    * List available models
-   * 
+   *
    * Returns the curated list of Gemini models.
    * Could optionally fetch from: GET /v1beta/models
    */
   async listModels(): Promise<Model[]> {
-    return GOOGLE_MODELS;
+    return GOOGLE_MODELS
   }
 
   /**
    * Test connection to Google
-   * 
+   *
    * Sends a minimal test request to verify API key and service availability.
    */
   async testConnection() {
-    const startTime = Date.now();
+    const startTime = Date.now()
 
     try {
       // Validate API key
@@ -278,26 +279,24 @@ export class GoogleProvider extends BaseProvider {
         return {
           success: false,
           error: 'API key is required for Google',
-        };
+        }
       }
 
       // Send a minimal test message
-      const testMessages: Message[] = [
-        { role: 'user', content: 'Hi' },
-      ];
+      const testMessages: Message[] = [{ role: 'user', content: 'Hi' }]
 
       // Try to get first response chunk
       const iterator = this.chat(testMessages, {
         model: DEFAULT_GOOGLE_MODEL,
         maxTokens: 10,
-      });
+      })
 
       // Get first chunk
-      let gotResponse = false;
+      let gotResponse = false
       for await (const chunk of iterator) {
         if (chunk) {
-          gotResponse = true;
-          break;
+          gotResponse = true
+          break
         }
       }
 
@@ -305,21 +304,21 @@ export class GoogleProvider extends BaseProvider {
         return {
           success: false,
           error: 'No response received from Google',
-        };
+        }
       }
 
-      const latency = Date.now() - startTime;
+      const latency = Date.now() - startTime
 
       return {
         success: true,
         latency,
-      };
+      }
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         latency: Date.now() - startTime,
-      };
+      }
     }
   }
 
@@ -327,7 +326,7 @@ export class GoogleProvider extends BaseProvider {
    * Get default model for Google
    */
   protected getDefaultModel(): string {
-    return DEFAULT_GOOGLE_MODEL;
+    return DEFAULT_GOOGLE_MODEL
   }
 
   /**
@@ -335,51 +334,54 @@ export class GoogleProvider extends BaseProvider {
    */
   protected async makeRequest(url: string, options: RequestInit): Promise<Response> {
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(url, options)
 
       // Handle HTTP errors
       if (!response.ok) {
-        let errorMessage = 'Unknown error';
-        
+        let errorMessage = 'Unknown error'
+
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.error?.message || errorData.error || errorMessage;
+          const errorData = await response.json()
+          errorMessage = errorData.error?.message || errorData.error || errorMessage
         } catch {
-          errorMessage = await response.text().catch(() => 'Unknown error');
-        }
-        
-        // Determine error code based on status
-        let code: 'INVALID_API_KEY' | 'RATE_LIMIT' | 'MODEL_NOT_FOUND' | 'INVALID_REQUEST' | 'NETWORK_ERROR' | 'UNKNOWN_ERROR' = 'UNKNOWN_ERROR';
-        
-        if (response.status === 401 || response.status === 403) {
-          code = 'INVALID_API_KEY';
-        } else if (response.status === 429) {
-          code = 'RATE_LIMIT';
-        } else if (response.status === 404) {
-          code = 'MODEL_NOT_FOUND';
-        } else if (response.status >= 400 && response.status < 500) {
-          code = 'INVALID_REQUEST';
-        } else if (response.status >= 500) {
-          code = 'NETWORK_ERROR';
+          errorMessage = await response.text().catch(() => 'Unknown error')
         }
 
-        throw this.createError(
-          `HTTP ${response.status}: ${errorMessage}`,
-          code,
-        );
+        // Determine error code based on status
+        let code:
+          | 'INVALID_API_KEY'
+          | 'RATE_LIMIT'
+          | 'MODEL_NOT_FOUND'
+          | 'INVALID_REQUEST'
+          | 'NETWORK_ERROR'
+          | 'UNKNOWN_ERROR' = 'UNKNOWN_ERROR'
+
+        if (response.status === 401 || response.status === 403) {
+          code = 'INVALID_API_KEY'
+        } else if (response.status === 429) {
+          code = 'RATE_LIMIT'
+        } else if (response.status === 404) {
+          code = 'MODEL_NOT_FOUND'
+        } else if (response.status >= 400 && response.status < 500) {
+          code = 'INVALID_REQUEST'
+        } else if (response.status >= 500) {
+          code = 'NETWORK_ERROR'
+        }
+
+        throw this.createError(`HTTP ${response.status}: ${errorMessage}`, code)
       }
 
-      return response;
+      return response
     } catch (error) {
       if (error instanceof Error && error.name === 'ProviderError') {
-        throw error;
+        throw error
       }
 
       // Network errors
       throw this.createError(
         error instanceof Error ? error.message : 'Network request failed',
-        'NETWORK_ERROR',
-      );
+        'NETWORK_ERROR'
+      )
     }
   }
 }

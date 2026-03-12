@@ -1,6 +1,6 @@
 /**
  * OnboardingScreen - First-time user guide
- * 
+ *
  * Shows step-by-step instructions for:
  * 1. Installing prerequisites
  * 2. Starting the app
@@ -8,36 +8,34 @@
  * 4. Processing and testing
  */
 
-import { useState } from 'react';
-import { 
-  CheckCircle2, 
-  Circle, 
-  Download, 
-  Terminal, 
-  Mic, 
-  Monitor, 
-  Play,
+import { useState } from 'react'
+import {
+  CheckCircle2,
+  Download,
+  Terminal,
+  Mic,
+  Monitor,
   Chrome,
   ArrowRight,
   ArrowLeft,
-  X
-} from 'lucide-react';
-import { Button } from './ui/button';
+  X,
+} from 'lucide-react'
+import { Button } from './ui/button'
 
 interface OnboardingScreenProps {
-  onClose: () => void;
+  onClose: () => void
 }
 
 type Step = {
-  id: number;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  content: React.ReactNode;
-};
+  id: number
+  title: string
+  description: string
+  icon: React.ReactNode
+  content: React.ReactNode
+}
 
 export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0)
 
   const steps: Step[] = [
     {
@@ -69,7 +67,7 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
             </li>
           </ul>
         </div>
-      )
+      ),
     },
     {
       id: 1,
@@ -79,48 +77,56 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
       content: (
         <div className="space-y-4">
           <p>Antes de começar, você precisa de:</p>
-          
+
           <div className="bg-gray-50 p-4 rounded-lg space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-mono text-sm">1</div>
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-mono text-sm">
+                  1
+                </div>
                 <div>
                   <div className="font-medium">Node.js</div>
                   <div className="text-sm text-gray-500">Versão 18 ou superior</div>
                 </div>
               </div>
-              <code className="text-xs bg-gray-200 px-2 py-1 rounded">winget install OpenJS.NodeJS.LTS</code>
+              <code className="text-xs bg-gray-200 px-2 py-1 rounded">
+                winget install OpenJS.NodeJS.LTS
+              </code>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-mono text-sm">2</div>
+                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-mono text-sm">
+                  2
+                </div>
                 <div>
                   <div className="font-medium">Rust</div>
                   <div className="text-sm text-gray-500">Inclui Cargo</div>
                 </div>
               </div>
-              <a 
-                href="https://win.rustup.rs/" 
-                target="_blank" 
+              <a
+                href="https://win.rustup.rs/"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
               >
                 Baixar rustup-init.exe
               </a>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-mono text-sm">3</div>
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-mono text-sm">
+                  3
+                </div>
                 <div>
                   <div className="font-medium">Visual Studio Build Tools</div>
                   <div className="text-sm text-gray-500">Para compilar Rust no Windows</div>
                 </div>
               </div>
-              <a 
-                href="https://visualstudio.microsoft.com/visual-cpp-build-tools/" 
-                target="_blank" 
+              <a
+                href="https://visualstudio.microsoft.com/visual-cpp-build-tools/"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
               >
@@ -128,12 +134,13 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
               </a>
             </div>
           </div>
-          
+
           <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-sm">
-            <strong>Dica:</strong> Execute <code>.\setup.ps1</code> no PowerShell para instalar automaticamente.
+            <strong>Dica:</strong> Execute <code>.\setup.ps1</code> no PowerShell para instalar
+            automaticamente.
           </div>
         </div>
-      )
+      ),
     },
     {
       id: 2,
@@ -144,39 +151,51 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
         <div className="space-y-4">
           <div className="space-y-3">
             <div className="flex gap-3">
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 flex-shrink-0">1</div>
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 flex-shrink-0">
+                1
+              </div>
               <div>
                 <div className="font-medium">Clique em &quot;Gravar&quot;</div>
                 <div className="text-sm text-gray-600">O overlay aparecerá mostrando o timer</div>
               </div>
             </div>
-            
+
             <div className="flex gap-3">
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 flex-shrink-0">2</div>
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 flex-shrink-0">
+                2
+              </div>
               <div>
                 <div className="font-medium">Execute a tarefa</div>
-                <div className="text-sm text-gray-600">Faça as ações na tela enquanto narra o que está fazendo</div>
+                <div className="text-sm text-gray-600">
+                  Faça as ações na tela enquanto narra o que está fazendo
+                </div>
               </div>
             </div>
-            
+
             <div className="flex gap-3">
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 flex-shrink-0">3</div>
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 flex-shrink-0">
+                3
+              </div>
               <div>
                 <div className="font-medium">Clique em &quot;Parar e Processar&quot;</div>
                 <div className="text-sm text-gray-600">A IA vai analisar sua gravação</div>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-blue-50 border border-blue-200 p-3 rounded text-sm">
             <strong>Atalhos:</strong>
             <ul className="mt-1 ml-4 list-disc">
-              <li><kbd className="bg-white px-1 rounded">Ctrl+Shift+R</kbd> - Iniciar/Parar</li>
-              <li><kbd className="bg-white px-1 rounded">Esc</kbd> - Parar gravação</li>
+              <li>
+                <kbd className="bg-white px-1 rounded">Ctrl+Shift+R</kbd> - Iniciar/Parar
+              </li>
+              <li>
+                <kbd className="bg-white px-1 rounded">Esc</kbd> - Parar gravação
+              </li>
             </ul>
           </div>
         </div>
-      )
+      ),
     },
     {
       id: 3,
@@ -186,7 +205,7 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
       content: (
         <div className="space-y-4">
           <p>Durante o processamento, o Skill-E:</p>
-          
+
           <div className="space-y-2">
             <div className="flex items-center gap-3 p-2 bg-gray-50 rounded">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
@@ -205,12 +224,13 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
               <span>Gera SKILL.md estruturado</span>
             </div>
           </div>
-          
+
           <div className="text-sm text-gray-600">
-            <strong>Nota:</strong> Na primeira execução, o modelo Whisper (~75MB) será baixado automaticamente.
+            <strong>Nota:</strong> Na primeira execução, o modelo Whisper (~75MB) será baixado
+            automaticamente.
           </div>
         </div>
-      )
+      ),
     },
     {
       id: 4,
@@ -220,7 +240,7 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
       content: (
         <div className="space-y-4">
           <p>Para testar o skill gerado:</p>
-          
+
           <div className="bg-gray-50 p-4 rounded-lg space-y-3">
             <div>
               <div className="font-medium mb-1">1. Abra o terminal e execute:</div>
@@ -228,27 +248,29 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
                 chrome --remote-debugging-port=9222
               </code>
             </div>
-            
+
             <div>
-              <div className="font-medium mb-1">2. No Skill-E, clique em &quot;Execute in Chrome&quot;</div>
+              <div className="font-medium mb-1">
+                2. No Skill-E, clique em &quot;Execute in Chrome&quot;
+              </div>
             </div>
-            
+
             <div>
               <div className="font-medium mb-1">3. Veja a automação rodar!</div>
             </div>
           </div>
-          
+
           <div className="bg-green-50 border border-green-200 p-3 rounded">
             <strong>🎉 Pronto!</strong> Você criou e executou sua primeira automação.
           </div>
         </div>
-      )
-    }
-  ];
+      ),
+    },
+  ]
 
-  const step = steps[currentStep];
-  const isFirst = currentStep === 0;
-  const isLast = currentStep === steps.length - 1;
+  const step = steps[currentStep]
+  const isFirst = currentStep === 0
+  const isLast = currentStep === steps.length - 1
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
@@ -256,26 +278,19 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-3">
-            <div className="text-blue-600">
-              {step.icon}
-            </div>
+            <div className="text-blue-600">{step.icon}</div>
             <div>
               <h2 className="text-xl font-bold">{step.title}</h2>
               <p className="text-gray-500">{step.description}</p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 min-h-[300px]">
-          {step.content}
-        </div>
+        <div className="p-6 min-h-[300px]">{step.content}</div>
 
         {/* Progress dots */}
         <div className="flex justify-center gap-2 pb-4">
@@ -284,10 +299,10 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
               key={s.id}
               onClick={() => setCurrentStep(idx)}
               className={`w-2 h-2 rounded-full transition-all ${
-                idx === currentStep 
-                  ? 'w-6 bg-blue-600' 
-                  : idx < currentStep 
-                    ? 'bg-green-500' 
+                idx === currentStep
+                  ? 'w-6 bg-blue-600'
+                  : idx < currentStep
+                    ? 'bg-green-500'
                     : 'bg-gray-300'
               }`}
             />
@@ -323,5 +338,5 @@ export function OnboardingScreen({ onClose }: OnboardingScreenProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }

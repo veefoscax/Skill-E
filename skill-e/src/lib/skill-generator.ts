@@ -1,94 +1,108 @@
-import { OPENCLAW_PROVIDERS, LLM_DEFAULTS } from './models-config.providers';
-import { useSettingsStore } from '../stores/settings';
-import { ProcessingProgress, LLMContext } from '../types/processing';
-import { createProgress } from './processing';
-import { fetch } from '@tauri-apps/plugin-http'; // UPDATED: Use Tauri HTTP client
+import { LLM_DEFAULTS } from './models-config.providers'
+import { useSettingsStore } from '../stores/settings'
+import { ProcessingProgress, LLMContext } from '../types/processing'
+import { createProgress } from './processing'
+import { fetch } from '@tauri-apps/plugin-http' // UPDATED: Use Tauri HTTP client
 
 // Export types for skill validation
 export interface ToolDefinition {
-  name: string;
-  description: string;
-  parameters?: Record<string, unknown>;
+  name: string
+  description: string
+  parameters?: Record<string, unknown>
   input_schema?: {
-    properties?: Record<string, unknown>;
-    required?: string[];
-    [key: string]: unknown;
-  };
+    properties?: Record<string, unknown>
+    required?: string[]
+    [key: string]: unknown
+  }
 }
 
 export interface SkillFrontmatter {
-  name: string;
-  description: string;
-  version?: string;
-  author?: string;
-  tools?: ToolDefinition[];
-  [key: string]: unknown;
+  name: string
+  description: string
+  version?: string
+  author?: string
+  tools?: ToolDefinition[]
+  [key: string]: unknown
 }
 
 export interface GeneratedSkill {
-  frontmatter: SkillFrontmatter;
-  content: string;
-  rawMarkdown: string;
-  markdown: string;
-  toolDefinition: unknown;
-  tokenCount: number;
+  frontmatter: SkillFrontmatter
+  content: string
+  rawMarkdown: string
+  markdown: string
+  toolDefinition: unknown
+  tokenCount: number
   metadata: {
-    generatedAt: number;
-    provider: string;
-    model: string;
-    generationTimeMs: number;
-  };
+    generatedAt: number
+    provider: string
+    model: string
+    generationTimeMs: number
+  }
 }
 
 interface GenerateSkillOptions {
-  onProgress?: (progress: ProcessingProgress) => void;
-  signal?: AbortSignal;
+  onProgress?: (progress: ProcessingProgress) => void
+  signal?: AbortSignal
 }
 
 /**
  * Generate a skill from processed session context
- * 
+ *
  * @param context - LLM context from processed session
  * @param options - Generation options
  * @returns Generated SKILL.md content
  */
 export async function generateSkill(
   context: LLMContext,
-  options?: GenerateSkillOptions & { provider?: string; apiKey?: string; model?: string; baseUrl?: string }
+  options?: GenerateSkillOptions & {
+    provider?: string
+    apiKey?: string
+    model?: string
+    baseUrl?: string
+  }
 ): Promise<string> {
-  const { onProgress, signal, provider: optProvider, apiKey: optApiKey, model: optModel, baseUrl: optBaseUrl } = options || {};
+  const {
+    onProgress,
+    signal,
+    provider: optProvider,
+    apiKey: optApiKey,
+    model: optModel,
+    baseUrl: optBaseUrl,
+  } = options || {}
 
   try {
     // 1. Prepare prompt
-    onProgress?.(createProgress('context_generation', 10, 'Preparing prompt...'));
-    const prompt = buildSkillGenerationPrompt(context);
+    onProgress?.(createProgress('context_generation', 10, 'Preparing prompt...'))
+    const prompt = buildSkillGenerationPrompt(context)
 
     // 2. Get LLM configuration
     // Use options first, fallback to settings store
-    const settings = useSettingsStore.getState();
-    const provider = optProvider || settings.llmProvider;
-    const model = optModel || settings.llmModel;
-    const apiKey = optApiKey !== undefined ? optApiKey : settings.llmApiKey;
-    const baseUrl = optBaseUrl || settings.llmBaseUrl || LLM_DEFAULTS[provider]?.baseUrl;
+    const settings = useSettingsStore.getState()
+    const provider = optProvider || settings.llmProvider
+    const model = optModel || settings.llmModel
+    const apiKey = optApiKey !== undefined ? optApiKey : settings.llmApiKey
+    const baseUrl = optBaseUrl || settings.llmBaseUrl || LLM_DEFAULTS[provider]?.baseUrl
 
     // Validate API key (unless Ollama which can work without one)
     if (!apiKey && provider !== 'ollama') {
-      throw new Error('LLM API key is required. Please check your settings.');
+      throw new Error('LLM API key is required. Please check your settings.')
     }
 
     // 3. Call LLM API
-    onProgress?.(createProgress('context_generation', 30, `Generating skill with ${provider}/${model}...`));
+    onProgress?.(
+      createProgress('context_generation', 30, `Generating skill with ${provider}/${model}...`)
+    )
 
     // Get custom headers from provider config
-    const providerConfig = LLM_DEFAULTS[provider];
-    const customHeaders = providerConfig?.headers || {};
+    const providerConfig = LLM_DEFAULTS[provider]
+    const customHeaders = providerConfig?.headers || {}
 
     // We'll use a simple fetch wrapper for now
     // In production, use a more robust client or the official SDKs if compatible
-    console.log('📝 Skill Generator: Prompt preview (first 500 chars):', prompt.substring(0, 500));
-    console.log('📝 Skill Generator: Total prompt length:', prompt.length);
-    console.log('📝 Skill Generator: Task description:', context.taskDescription);
-    console.log('📝 Skill Generator: Steps count:', context.steps?.length || 0);
+    console.log('📝 Skill Generator: Prompt preview (first 500 chars):', prompt.substring(0, 500))
+    console.log('📝 Skill Generator: Total prompt length:', prompt.length)
+    console.log('📝 Skill Generator: Task description:', context.taskDescription)
+    console.log('📝 Skill Generator: Steps count:', context.steps?.length || 0)
 
     const skillContent = await generateWithoutStreaming(
       prompt,
@@ -96,23 +110,29 @@ export async function generateSkill(
       apiKey,
       baseUrl,
       customHeaders
-    );
+    )
 
     // 4. Validate output (basic check) - accept various header formats
-    const hasValidHeader = skillContent.includes('# Skill:') ||
+    const hasValidHeader =
+      skillContent.includes('# Skill:') ||
       skillContent.includes('name:') ||
-      skillContent.includes('---\nname:');
+      skillContent.includes('---\nname:')
     if (!hasValidHeader) {
-      console.warn('Generated content might not be a valid skill (missing recognizable header)');
+      console.warn('Generated content might not be a valid skill (missing recognizable header)')
     }
 
-    onProgress?.(createProgress('complete', 100, 'Skill generation complete'));
-    return skillContent;
-
+    onProgress?.(createProgress('complete', 100, 'Skill generation complete'))
+    return skillContent
   } catch (error) {
-    console.error('Skill generation failed:', error);
-    onProgress?.(createProgress('error', 0, 'Generation failed: ' + (error instanceof Error ? error.message : String(error))));
-    throw error;
+    console.error('Skill generation failed:', error)
+    onProgress?.(
+      createProgress(
+        'error',
+        0,
+        'Generation failed: ' + (error instanceof Error ? error.message : String(error))
+      )
+    )
+    throw error
   }
 }
 
@@ -128,7 +148,7 @@ async function generateWithoutStreaming(
 ): Promise<string> {
   // Use callOpenAIAPI which now uses Tauri's fetch
   // We determine max_tokens based on model (simplified)
-  const maxTokens = 4000;
+  const maxTokens = 4000
 
   return callOpenAIAPI(
     prompt,
@@ -138,12 +158,12 @@ async function generateWithoutStreaming(
     0.2, // Low temperature for consistent code generation
     baseUrl,
     customHeaders
-  );
+  )
 }
 
 /**
  * Call OpenAI API using Tauri's HTTP plugin to bypass CORS
- * 
+ *
  * @param prompt - Generation prompt
  * @param model - Model name
  * @param apiKey - API key
@@ -162,38 +182,37 @@ async function callOpenAIAPI(
   baseUrl: string = 'https://api.openai.com/v1',
   customHeaders: Record<string, string> = {}
 ): Promise<string> {
-
-  let url = baseUrl;
+  let url = baseUrl
 
   // ---------------------------------------------------------------------------
   // CRITICAL FIX FOR OLLAMA 404 ERRORS
   // ---------------------------------------------------------------------------
   // If the user provided "http://localhost:11434" (no path), we MUST append "/v1"
   // because we are using the `chat/completions` endpoint which lives at `/v1/chat/completions`.
-  // 
+  //
   // We check specifically for port 11434 (Standard Ollama).
   // ---------------------------------------------------------------------------
 
-  const isOllamaPort = url.includes(':11434');
-  const hasV1 = url.includes('/v1');
-  const hasApi = url.includes('/api/'); // Some setups might use /api/chat
+  const isOllamaPort = url.includes(':11434')
+  const hasV1 = url.includes('/v1')
+  const hasApi = url.includes('/api/') // Some setups might use /api/chat
 
   if (isOllamaPort && !hasV1 && !hasApi) {
     // Remove trailing slash if present
-    if (url.endsWith('/')) url = url.slice(0, -1);
+    if (url.endsWith('/')) url = url.slice(0, -1)
 
     // Force append /v1
-    url = url + '/v1';
-    console.log('Skill Generator: Force-appended /v1 to Ollama URL for compatibility:', url);
+    url = url + '/v1'
+    console.log('Skill Generator: Force-appended /v1 to Ollama URL for compatibility:', url)
   }
 
   // Ensure trailing slash for endpoint appending
-  if (!url.endsWith('/')) url += '/';
+  if (!url.endsWith('/')) url += '/'
 
-  const endpoint = 'chat/completions';
-  const fullUrl = url.endsWith(endpoint) ? url : `${url}${endpoint}`;
+  const endpoint = 'chat/completions'
+  const fullUrl = url.endsWith(endpoint) ? url : `${url}${endpoint}`
 
-  console.log('Calling LLM API:', fullUrl, 'Model:', model);
+  console.log('Calling LLM API:', fullUrl, 'Model:', model)
 
   try {
     // Build headers - only add Authorization if apiKey is provided
@@ -201,15 +220,15 @@ async function callOpenAIAPI(
       'Content-Type': 'application/json',
       'User-Agent': 'Roo Code',
       'X-Client-Name': 'Roo Code',
-    };
+    }
 
     if (apiKey) {
-      headers['Authorization'] = `Bearer ${apiKey}`;
+      headers['Authorization'] = `Bearer ${apiKey}`
     }
 
     // Merge custom headers (e.g., for Kimi/Moonshot compatibility)
     // Custom headers take precedence over defaults
-    Object.assign(headers, customHeaders);
+    Object.assign(headers, customHeaders)
 
     const response = await fetch(fullUrl, {
       method: 'POST',
@@ -225,77 +244,87 @@ async function callOpenAIAPI(
           },
         ],
       }),
-    });
+    })
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API error (${response.status}): ${errorText}`);
+      const errorText = await response.text()
+      throw new Error(`API error (${response.status}): ${errorText}`)
     }
 
-    const data = await response.json();
+    const data = await response.json()
 
     // DEBUG: Log raw LLM response
-    console.log('LLM Raw Response:', JSON.stringify(data));
+    console.log('LLM Raw Response:', JSON.stringify(data))
 
     // Validate response structure
     if (!data.choices || !data.choices[0] || !data.choices[0].message?.content) {
-      console.error('Invalid API response structure:', data);
-      throw new Error('Invalid response from LLM API (missing choices/content)');
+      console.error('Invalid API response structure:', data)
+      throw new Error('Invalid response from LLM API (missing choices/content)')
     }
 
-    const content = data.choices[0].message.content;
+    const content = data.choices[0].message.content
 
     // CORREÇÃO: Validação de conteúdo vazio
     if (!content || content.trim() === '') {
-      console.warn('LLM returned empty content. Using fallback.');
-      return '# Skill Generated (Empty)\n\nThe model returned no content. Check logs for details.';
+      console.warn('LLM returned empty content. Using fallback.')
+      return '# Skill Generated (Empty)\n\nThe model returned no content. Check logs for details.'
     }
 
-    return content;
+    return content
   } catch (error) {
     if (String(error).includes('Failed to fetch')) {
-      throw new Error('Network error: Failed to connect to LLM provider. Please check your internet connection and Base URL.');
+      throw new Error(
+        'Network error: Failed to connect to LLM provider. Please check your internet connection and Base URL.'
+      )
     }
-    throw error;
+    throw error
   }
 }
 
 /**
  * Build a prompt for skill generation
- * 
+ *
  * Based on research from Anthropic, OpenAI, MCP, and best practices for agent skills.
  * Uses XML tags for structure, few-shot examples, and focuses on atomic actions.
  */
 function buildSkillGenerationPrompt(context: LLMContext): string {
   // Extract key info - USE FULL NARRATION, not truncated
-  const task = context.taskDescription || 'Automated task based on screen recording';
-  const fullNarration = context.fullNarration || task;
+  const task = context.taskDescription || 'Automated task based on screen recording'
+  const fullNarration = context.fullNarration || task
 
   // DEFENSIVE CHECKS added for steps, variables, and conditionals
-  const steps = (context.steps || []).map(s =>
-    `${s.number}. ${s.description} (Actions: ${s.actions?.clicks || 0} clicks, ${s.actions?.textInputs || 0} types)`
-  ).join('\n') || 'No specific steps recorded';
+  const steps =
+    (context.steps || [])
+      .map(
+        s =>
+          `${s.number}. ${s.description} (Actions: ${s.actions?.clicks || 0} clicks, ${s.actions?.textInputs || 0} types)`
+      )
+      .join('\n') || 'No specific steps recorded'
 
-  const variables = (context.variables || []).map(v => `- ${v.name}: ${v.description}`).join('\n') || 'None detected';
-  const conditionals = (context.conditionals || []).map(c => `- If ${c.condition} -> ${c.thenAction}`).join('\n') || 'None detected';
+  const variables =
+    (context.variables || []).map(v => `- ${v.name}: ${v.description}`).join('\n') ||
+    'None detected'
+  const conditionals =
+    (context.conditionals || []).map(c => `- If ${c.condition} -> ${c.thenAction}`).join('\n') ||
+    'None detected'
 
   // Extract OCR text from steps if available
   const ocrTexts = (context.steps || [])
     .filter(s => s.notes?.some(n => n.includes('Screen shows:')))
     .map(s => {
-      const ocrNote = s.notes?.find(n => n.includes('Screen shows:'));
-      return ocrNote ? ocrNote.replace('Screen shows: ', '') : '';
+      const ocrNote = s.notes?.find(n => n.includes('Screen shows:'))
+      return ocrNote ? ocrNote.replace('Screen shows: ', '') : ''
     })
     .filter(Boolean)
-    .slice(0, 3); // Limit to 3 OCR samples
+    .slice(0, 3) // Limit to 3 OCR samples
 
   // Calculate recording stats
-  const totalSteps = context.steps?.length || 0;
-  const totalClicks = context.steps?.reduce((acc, s) => acc + (s.actions?.clicks || 0), 0) || 0;
-  const totalInputs = context.steps?.reduce((acc, s) => acc + (s.actions?.textInputs || 0), 0) || 0;
+  const totalSteps = context.steps?.length || 0
+  const totalClicks = context.steps?.reduce((acc, s) => acc + (s.actions?.clicks || 0), 0) || 0
+  const totalInputs = context.steps?.reduce((acc, s) => acc + (s.actions?.textInputs || 0), 0) || 0
 
   // Get unique applications
-  const apps = [...new Set((context.steps || []).map(s => s.applicationName).filter(Boolean))];
+  const apps = [...new Set((context.steps || []).map(s => s.applicationName).filter(Boolean))]
 
   return `<role>
 You are an expert Agent Skill creator specializing in documenting software workflows for AI agents.
@@ -338,9 +367,13 @@ ${variables}
 ${conditionals}
 </detected_conditionals>
 
-${ocrTexts.length > 0 ? `<ocr_texts_from_screen>
+${
+  ocrTexts.length > 0
+    ? `<ocr_texts_from_screen>
 ${ocrTexts.join('\n')}
-</ocr_texts_from_screen>` : ''}
+</ocr_texts_from_screen>`
+    : ''
+}
 </recording_data>
 
 <skill_format>
@@ -509,5 +542,5 @@ Click the login/submit button.
 6. Maximum 500 lines (follow "Regra das 500 Linhas" from best practices)
 </output_requirements>
 
-Now create the SKILL.md based on the recording data provided above.`;
+Now create the SKILL.md based on the recording data provided above.`
 }

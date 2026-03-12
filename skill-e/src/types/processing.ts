@@ -3,14 +3,14 @@
  * Requirements: FR-5.1, FR-5.2, FR-5.3, FR-5.4, FR-5.10
  */
 
-import type { CaptureFrame, WindowInfo } from './capture';
-export type { TranscriptionSegment } from '../lib/whisper';
+import type { CaptureFrame, WindowInfo } from './capture'
+export type { TranscriptionSegment } from '../lib/whisper'
 import type {
   ClickIndicator,
   DrawingElement,
   SelectedElement,
   KeyboardState,
-} from '../stores/overlay';
+} from '../stores/overlay'
 
 /**
  * Types of events that can occur in a timeline
@@ -23,97 +23,97 @@ export type TimelineEventType =
   | 'keyboard'
   | 'element_selection'
   | 'window_change'
-  | 'pause';
+  | 'pause'
 
 /**
  * Base timeline event with common properties
  */
 export interface BaseTimelineEvent {
   /** Unique event identifier */
-  id: string;
+  id: string
   /** Event type */
-  type: TimelineEventType;
+  type: TimelineEventType
   /** Unix timestamp in milliseconds */
-  timestamp: number;
+  timestamp: number
 }
 
 /**
  * Screenshot event in timeline
  */
 export interface ScreenshotEvent extends BaseTimelineEvent {
-  type: 'screenshot';
+  type: 'screenshot'
   /** Reference to the capture frame */
-  frame: CaptureFrame;
+  frame: CaptureFrame
 }
 
 /**
  * Voice/transcription event in timeline
  */
 export interface VoiceEvent extends BaseTimelineEvent {
-  type: 'voice';
+  type: 'voice'
   /** Transcription segment */
   segment: {
-    text: string;
-    startTime: number;
-    endTime: number;
-    confidence?: number;
-  };
+    text: string
+    startTime: number
+    endTime: number
+    confidence?: number
+  }
   /** Classified speech type */
-  classification?: SpeechClassification;
+  classification?: SpeechClassification
 }
 
 /**
  * Click event in timeline
  */
 export interface ClickEvent extends BaseTimelineEvent {
-  type: 'click';
+  type: 'click'
   /** Click indicator data */
-  click: ClickIndicator;
+  click: ClickIndicator
 }
 
 /**
  * Drawing annotation event in timeline
  */
 export interface DrawingEvent extends BaseTimelineEvent {
-  type: 'drawing';
+  type: 'drawing'
   /** Drawing element data */
-  drawing: DrawingElement;
+  drawing: DrawingElement
 }
 
 /**
  * Keyboard input event in timeline
  */
 export interface KeyboardEvent extends BaseTimelineEvent {
-  type: 'keyboard';
+  type: 'keyboard'
   /** Keyboard state at this moment */
-  keyboard: KeyboardState;
+  keyboard: KeyboardState
 }
 
 /**
  * Element selection event in timeline
  */
 export interface ElementSelectionEvent extends BaseTimelineEvent {
-  type: 'element_selection';
+  type: 'element_selection'
   /** Selected element data */
-  element: SelectedElement;
+  element: SelectedElement
 }
 
 /**
  * Window focus change event in timeline
  */
 export interface WindowChangeEvent extends BaseTimelineEvent {
-  type: 'window_change';
+  type: 'window_change'
   /** New active window */
-  window: WindowInfo;
+  window: WindowInfo
 }
 
 /**
  * Voice pause event (used for step detection)
  */
 export interface PauseEvent extends BaseTimelineEvent {
-  type: 'pause';
+  type: 'pause'
   /** Duration of pause in milliseconds */
-  duration: number;
+  duration: number
 }
 
 /**
@@ -127,7 +127,7 @@ export type TimelineEvent =
   | KeyboardEvent
   | ElementSelectionEvent
   | WindowChangeEvent
-  | PauseEvent;
+  | PauseEvent
 
 /**
  * Speech classification types
@@ -138,7 +138,7 @@ export type SpeechClassification =
   | 'context' // Explanatory context ("This is the login page")
   | 'variable' // Variable mention ("Enter your email address")
   | 'conditional' // Conditional statement ("If you see an error...")
-  | 'unknown'; // Unable to classify
+  | 'unknown' // Unable to classify
 
 /**
  * Detected variable from speech
@@ -146,13 +146,13 @@ export type SpeechClassification =
  */
 export interface DetectedVariable {
   /** Variable name (e.g., "email", "password") */
-  name: string;
+  name: string
   /** Description from narration */
-  description: string;
+  description: string
   /** Timestamp when mentioned */
-  timestamp: number;
+  timestamp: number
   /** Associated transcript segment */
-  transcriptSegment: string;
+  transcriptSegment: string
 }
 
 /**
@@ -161,15 +161,15 @@ export interface DetectedVariable {
  */
 export interface DetectedConditional {
   /** Condition description */
-  condition: string;
+  condition: string
   /** Action to take if condition is true */
-  thenAction: string;
+  thenAction: string
   /** Optional else action */
-  elseAction?: string;
+  elseAction?: string
   /** Timestamp when mentioned */
-  timestamp: number;
+  timestamp: number
   /** Associated transcript segment */
-  transcriptSegment: string;
+  transcriptSegment: string
 }
 
 /**
@@ -178,39 +178,39 @@ export interface DetectedConditional {
  */
 export interface ProcessedStep {
   /** Step number (1-indexed) */
-  stepNumber: number;
+  stepNumber: number
   /** Time range for this step */
   timeRange: {
     /** Start time in milliseconds */
-    start: number;
+    start: number
     /** End time in milliseconds */
-    end: number;
-  };
+    end: number
+  }
   /** Path to representative screenshot for this step */
-  screenshotPath: string;
+  screenshotPath: string
   /** Transcript text for this step */
-  transcript: string;
+  transcript: string
   /** All annotations made during this step */
   annotations: {
-    clicks: ClickIndicator[];
-    drawings: DrawingElement[];
-    selectedElements: SelectedElement[];
-    keyboardInputs: KeyboardState[];
-  };
+    clicks: ClickIndicator[]
+    drawings: DrawingElement[]
+    selectedElements: SelectedElement[]
+    keyboardInputs: KeyboardState[]
+  }
   /** Active window title during this step */
-  windowTitle?: string;
+  windowTitle?: string
   /** Active application during this step */
-  applicationName?: string;
+  applicationName?: string
   /** All timeline events in this step */
-  events: TimelineEvent[];
+  events: TimelineEvent[]
   /** Detected variables in this step */
-  variables: DetectedVariable[];
+  variables: DetectedVariable[]
   /** Detected conditionals in this step */
-  conditionals: DetectedConditional[];
+  conditionals: DetectedConditional[]
   /** OCR-extracted text from screenshot */
-  ocrText?: string;
+  ocrText?: string
   /** OCR text regions with bounding boxes */
-  ocrRegions?: OCRRegion[];
+  ocrRegions?: OCRRegion[]
 }
 
 /**
@@ -219,32 +219,32 @@ export interface ProcessedStep {
  */
 export interface ProcessedSession {
   /** Unique session identifier */
-  sessionId: string;
+  sessionId: string
   /** Total duration in milliseconds */
-  duration: number;
+  duration: number
   /** All processed steps */
-  steps: ProcessedStep[];
+  steps: ProcessedStep[]
   /** Complete transcript text */
-  fullTranscript: string;
+  fullTranscript: string
   /** All annotations from the session */
   allAnnotations: {
-    clicks: ClickIndicator[];
-    drawings: DrawingElement[];
-    selectedElements: SelectedElement[];
-    keyboardInputs: KeyboardState[];
-  };
+    clicks: ClickIndicator[]
+    drawings: DrawingElement[]
+    selectedElements: SelectedElement[]
+    keyboardInputs: KeyboardState[]
+  }
   /** Complete timeline of all events */
-  timeline: TimelineEvent[];
+  timeline: TimelineEvent[]
   /** All detected variables */
-  allVariables: DetectedVariable[];
+  allVariables: DetectedVariable[]
   /** All detected conditionals */
-  allConditionals: DetectedConditional[];
+  allConditionals: DetectedConditional[]
   /** OCR results for key frames */
-  ocrResults?: OCRResult[];
+  ocrResults?: OCRResult[]
   /** Session start time */
-  startTime: number;
+  startTime: number
   /** Session end time */
-  endTime: number;
+  endTime: number
 }
 
 /**
@@ -253,35 +253,35 @@ export interface ProcessedSession {
  */
 export interface LLMContext {
   /** High-level task description */
-  taskDescription: string;
+  taskDescription: string
   /** Structured steps for the LLM */
-  steps: LLMStep[];
+  steps: LLMStep[]
   /** Complete narration/transcript */
-  fullNarration: string;
+  fullNarration: string
   /** Detected variables to parameterize */
-  variables: DetectedVariable[];
+  variables: DetectedVariable[]
   /** Detected conditional logic */
-  conditionals: DetectedConditional[];
+  conditionals: DetectedConditional[]
   /** Summary statistics */
   summary: {
     /** Total number of clicks */
-    totalClicks: number;
+    totalClicks: number
     /** Total number of text inputs */
-    totalTextInputs: number;
+    totalTextInputs: number
     /** Total number of page loads/window changes */
-    totalPageLoads: number;
+    totalPageLoads: number
     /** Total number of annotations */
-    totalAnnotations: number;
+    totalAnnotations: number
     /** Duration in seconds */
-    durationSeconds: number;
-  };
+    durationSeconds: number
+  }
   /** Reference to full data (not embedded in prompt) */
   references: {
     /** Path to full screenshot archive */
-    screenshotArchive: string;
+    screenshotArchive: string
     /** Path to complete session data */
-    sessionDataPath: string;
-  };
+    sessionDataPath: string
+  }
 }
 
 /**
@@ -290,28 +290,28 @@ export interface LLMContext {
  */
 export interface LLMStep {
   /** Step number */
-  number: number;
+  number: number
   /** Human-readable description of the step */
-  description: string;
+  description: string
   /** Base64-encoded screenshot (key frame only) */
-  screenshot?: string;
+  screenshot?: string
   /** Additional notes and context */
-  notes: string[];
+  notes: string[]
   /** Timestamp range */
   timeRange: {
-    start: number;
-    end: number;
-  };
+    start: number
+    end: number
+  }
   /** Actions performed in this step */
   actions: {
-    clicks: number;
-    textInputs: number;
-    annotations: number;
-  };
+    clicks: number
+    textInputs: number
+    annotations: number
+  }
   /** Application name where the step was performed */
-  applicationName?: string;
+  applicationName?: string
   /** Window title during the step */
-  windowTitle?: string;
+  windowTitle?: string
 }
 
 /**
@@ -328,15 +328,15 @@ export interface ProcessingProgress {
     | 'ocr'
     | 'context_generation'
     | 'complete'
-    | 'error';
+    | 'error'
   /** Progress percentage (0-100) */
-  percentage: number;
+  percentage: number
   /** Current step label */
-  currentStep: string;
+  currentStep: string
   /** Estimated time remaining in seconds */
-  estimatedTimeRemaining?: number;
+  estimatedTimeRemaining?: number
   /** Error message if stage is 'error' */
-  error?: string;
+  error?: string
 }
 
 /**
@@ -345,11 +345,11 @@ export interface ProcessingProgress {
  */
 export interface KeyFrameCandidate {
   /** Frame reference */
-  frame: CaptureFrame;
+  frame: CaptureFrame
   /** Importance score (0-1) */
-  importanceScore: number;
+  importanceScore: number
   /** Reasons for importance */
-  reasons: KeyFrameReason[];
+  reasons: KeyFrameReason[]
 }
 
 /**
@@ -362,7 +362,7 @@ export type KeyFrameReason =
   | 'page_load' // First frame after navigation
   | 'annotation' // Frame has user annotations
   | 'ocr_content' // Frame has important text content
-  | 'window_change'; // Active window changed
+  | 'window_change' // Active window changed
 
 /**
  * OCR result for a frame
@@ -370,13 +370,13 @@ export type KeyFrameReason =
  */
 export interface OCRResult {
   /** Frame identifier */
-  frameId: string;
+  frameId: string
   /** Extracted text */
-  text: string;
+  text: string
   /** Confidence score (0-1) */
-  confidence: number;
+  confidence: number
   /** Text regions with bounding boxes */
-  regions: OCRRegion[];
+  regions: OCRRegion[]
 }
 
 /**
@@ -384,14 +384,14 @@ export interface OCRResult {
  */
 export interface OCRRegion {
   /** Extracted text */
-  text: string;
+  text: string
   /** Bounding box */
   boundingBox: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
+    x: number
+    y: number
+    width: number
+    height: number
+  }
   /** Confidence score (0-1) */
-  confidence: number;
+  confidence: number
 }

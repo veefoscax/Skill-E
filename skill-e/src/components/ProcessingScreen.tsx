@@ -1,61 +1,81 @@
 /**
  * ProcessingScreen - Shows AI processing progress
- * 
+ *
  * Connects recording data to processing pipeline and generates SKILL.md
  */
 
-import { useEffect, useState } from 'react';
-import { Loader2, Mic, Brain, FileText, CheckCircle, X, AlertCircle, Clock, Settings, RefreshCw, MicOff, Cloud, HardDrive, Download, ExternalLink, FileText as FileTextIcon, FolderOpen } from 'lucide-react';
-import { Button } from './ui/button';
-import { Progress } from './ui/progress';
-import { processRecordingAndGenerateSkill, processRecordingMock, ProcessingResult, retryFailedSession, TranscriptionError } from '@/lib/processing-bridge';
-import type { ProcessingProgress } from '@/types/processing';
-import { useRecordingStore } from '@/stores/recording';
-import { useOverlayStore } from '@/stores/overlay';
-import { useSettingsStore, WHISPER_MODEL_INFO } from '@/stores/settings';
-import { ProviderSelector } from './shared/ProviderSelector';
-import { COLORS } from '@/stores/overlay';
-import { FailedSession, getErrorHelp } from '@/lib/failed-sessions';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { useEffect, useState } from 'react'
+import {
+  Loader2,
+  Mic,
+  Brain,
+  FileText,
+  CheckCircle,
+  X,
+  AlertCircle,
+  Clock,
+  Settings,
+  RefreshCw,
+  MicOff,
+  Cloud,
+  HardDrive,
+  ExternalLink,
+  FolderOpen,
+} from 'lucide-react'
+import { Button } from './ui/button'
+import { Progress } from './ui/progress'
+import {
+  processRecordingAndGenerateSkill,
+  ProcessingResult,
+  retryFailedSession,
+} from '@/lib/processing-bridge'
+import type { ProcessingProgress } from '@/types/processing'
+import { useRecordingStore } from '@/stores/recording'
+import { useOverlayStore } from '@/stores/overlay'
+import { useSettingsStore, WHISPER_MODEL_INFO } from '@/stores/settings'
+import { ProviderSelector } from './shared/ProviderSelector'
+import { COLORS } from '@/stores/overlay'
+import { FailedSession, getErrorHelp } from '@/lib/failed-sessions'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
 interface ProcessingScreenProps {
-  onComplete: (skillMarkdown: string) => void;
-  onCancel: () => void;
+  onComplete: (skillMarkdown: string) => void
+  onCancel: () => void
 }
 
 export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps) {
   const [progress, setProgress] = useState<ProcessingProgress>({
     stage: 'loading',
     percentage: 0,
-    currentStep: 'Initializing...'
-  });
-  const [isProcessing, setIsProcessing] = useState(true);
-  const [result, setResult] = useState<ProcessingResult | null>(null);
-  const [startTime] = useState(Date.now());
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [failedSession, setFailedSession] = useState<FailedSession | null>(null);
-  const [showProviderSelector, setShowProviderSelector] = useState(false);
+    currentStep: 'Initializing...',
+  })
+  const [isProcessing, setIsProcessing] = useState(true)
+  const [result, setResult] = useState<ProcessingResult | null>(null)
+  const [startTime] = useState(Date.now())
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [failedSession, setFailedSession] = useState<FailedSession | null>(null)
+  const [showProviderSelector, setShowProviderSelector] = useState(false)
 
   // Settings for retry
-  const settings = useSettingsStore();
+  const settings = useSettingsStore()
 
   // Update elapsed time
   useEffect(() => {
     const interval = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [startTime]);
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [startTime])
 
   // Start processing
   useEffect(() => {
-    if (!isProcessing) return;
+    if (!isProcessing) return
 
     const process = async () => {
       try {
         // Get annotations from stores
-        const recordingSteps = useRecordingStore.getState().steps;
-        const overlayState = useOverlayStore.getState();
+        const recordingSteps = useRecordingStore.getState().steps
+        const overlayState = useOverlayStore.getState()
 
         // Convert recording steps to click indicators
         const clicks = recordingSteps
@@ -66,160 +86,171 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
             position: s.data!.position!,
             color: COLORS.COLOR_1,
             timestamp: s.timestamp,
-            fadeState: 'visible' as const
-          }));
+            fadeState: 'visible' as const,
+          }))
 
         const annotations = {
           clicks: clicks,
           drawings: overlayState.drawings || [],
           selectedElements: overlayState.selectedElements || [],
-          keyboardInputs: []
-        };
+          keyboardInputs: [],
+        }
 
         // Try real processing
-        let processingResult: ProcessingResult;
+        let processingResult: ProcessingResult
 
-        processingResult = await processRecordingAndGenerateSkill(
-          { annotations },
-          setProgress
-        );
+        processingResult = await processRecordingAndGenerateSkill({ annotations }, setProgress)
 
-        setResult(processingResult);
-        setIsProcessing(false);
+        setResult(processingResult)
+        setIsProcessing(false)
 
         if (processingResult.failedSession) {
-          setFailedSession(processingResult.failedSession);
+          setFailedSession(processingResult.failedSession)
         }
 
         if (processingResult.success && processingResult.skillMarkdown) {
           setTimeout(() => {
-            onComplete(processingResult.skillMarkdown!);
-          }, 800);
+            onComplete(processingResult.skillMarkdown!)
+          }, 800)
         }
-
       } catch (error) {
-        console.error('Processing error:', error);
+        console.error('Processing error:', error)
         setProgress({
           stage: 'error',
           percentage: 0,
           currentStep: 'Processing failed',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-        setIsProcessing(false);
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+        setIsProcessing(false)
       }
-    };
+    }
 
-    process();
-  }, [isProcessing, onComplete]);
+    process()
+  }, [isProcessing, onComplete])
 
   const handleCancel = () => {
-    setIsProcessing(false);
-    onCancel();
-  };
+    setIsProcessing(false)
+    onCancel()
+  }
 
   const handleRetry = () => {
     setProgress({
       stage: 'loading',
       percentage: 0,
-      currentStep: 'Initializing...'
-    });
-    setResult(null);
-    setFailedSession(null);
-    setShowProviderSelector(false);
-    setIsProcessing(true);
-  };
+      currentStep: 'Initializing...',
+    })
+    setResult(null)
+    setFailedSession(null)
+    setShowProviderSelector(false)
+    setIsProcessing(true)
+  }
 
   const handleRetryFailedSession = async () => {
-    if (!failedSession) return;
-    
+    if (!failedSession) return
+
     setProgress({
       stage: 'loading',
       percentage: 0,
-      currentStep: 'Retrying with new settings...'
-    });
-    setIsProcessing(true);
+      currentStep: 'Retrying with new settings...',
+    })
+    setIsProcessing(true)
 
     try {
-      const result = await retryFailedSession(failedSession, setProgress);
-      setResult(result);
-      setIsProcessing(false);
+      const result = await retryFailedSession(failedSession, setProgress)
+      setResult(result)
+      setIsProcessing(false)
 
       if (result.success && result.skillMarkdown) {
         setTimeout(() => {
-          onComplete(result.skillMarkdown!);
-        }, 800);
+          onComplete(result.skillMarkdown!)
+        }, 800)
       } else if (result.failedSession) {
-        setFailedSession(result.failedSession);
+        setFailedSession(result.failedSession)
       }
     } catch (error) {
-      console.error('Retry failed:', error);
+      console.error('Retry failed:', error)
       setProgress({
         stage: 'error',
         percentage: 0,
         currentStep: 'Retry failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      setIsProcessing(false);
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+      setIsProcessing(false)
     }
-  };
+  }
 
   const handleOpenSettings = async () => {
-    const window = getCurrentWindow();
-    await window.emit('open-settings');
-  };
+    const window = getCurrentWindow()
+    await window.emit('open-settings')
+  }
 
   const handleOpenLogs = async () => {
     try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      const { tempDir, join } = await import('@tauri-apps/api/path');
-      const temp = await tempDir();
-      const logsDir = await join(temp, 'skill-e-logs');
-      await invoke('open_folder', { path: logsDir });
+      const { invoke } = await import('@tauri-apps/api/core')
+      const { tempDir, join } = await import('@tauri-apps/api/path')
+      const temp = await tempDir()
+      const logsDir = await join(temp, 'skill-e-logs')
+      await invoke('open_folder', { path: logsDir })
     } catch (e) {
-      console.error('Failed to open logs:', e);
+      console.error('Failed to open logs:', e)
       // Fallback: mostra o caminho
-      const { tempDir, join } = await import('@tauri-apps/api/path');
-      const temp = await tempDir();
-      const logsDir = await join(temp, 'skill-e-logs');
-      alert(`Logs location:\n${logsDir}\n\nCopy this path and open in File Explorer`);
+      const { tempDir, join } = await import('@tauri-apps/api/path')
+      const temp = await tempDir()
+      const logsDir = await join(temp, 'skill-e-logs')
+      alert(`Logs location:\n${logsDir}\n\nCopy this path and open in File Explorer`)
     }
-  };
+  }
 
   const getStageIcon = () => {
     switch (progress.stage) {
-      case 'timeline': return <Mic className="w-8 h-8 text-blue-500" />;
-      case 'step_detection': return <Brain className="w-8 h-8 text-purple-500" />;
+      case 'timeline':
+        return <Mic className="w-8 h-8 text-blue-500" />
+      case 'step_detection':
+        return <Brain className="w-8 h-8 text-purple-500" />
       case 'classification':
       case 'ocr':
-      case 'context_generation': return <FileText className="w-8 h-8 text-green-500" />;
-      case 'complete': return <CheckCircle className="w-8 h-8 text-green-500" />;
-      case 'error': return <AlertCircle className="w-8 h-8 text-red-500" />;
-      default: return <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />;
+      case 'context_generation':
+        return <FileText className="w-8 h-8 text-green-500" />
+      case 'complete':
+        return <CheckCircle className="w-8 h-8 text-green-500" />
+      case 'error':
+        return <AlertCircle className="w-8 h-8 text-red-500" />
+      default:
+        return <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
     }
-  };
+  }
 
   const getStageTitle = () => {
     switch (progress.stage) {
-      case 'loading': return 'Loading Recording...';
-      case 'classification': return 'Classifying Speech';
-      case 'timeline': return 'Building Timeline...';
-      case 'step_detection': return 'Detecting Steps';
-      case 'ocr': return 'Extracting Text';
-      case 'context_generation': return 'Generating SKILL.md';
-      case 'complete': return 'Complete!';
-      case 'error': return failedSession ? 'Transcription Failed' : 'Processing Error';
-      default: return 'Processing...';
+      case 'loading':
+        return 'Loading Recording...'
+      case 'classification':
+        return 'Classifying Speech'
+      case 'timeline':
+        return 'Building Timeline...'
+      case 'step_detection':
+        return 'Detecting Steps'
+      case 'ocr':
+        return 'Extracting Text'
+      case 'context_generation':
+        return 'Generating SKILL.md'
+      case 'complete':
+        return 'Complete!'
+      case 'error':
+        return failedSession ? 'Transcription Failed' : 'Processing Error'
+      default:
+        return 'Processing...'
     }
-  };
+  }
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
 
   // Get error help if we have a failed session
-  const errorHelp = failedSession ? getErrorHelp(failedSession.errorType) : null;
+  const errorHelp = failedSession ? getErrorHelp(failedSession.errorType) : null
 
   return (
     <div className="fixed inset-0 bg-gray-900 flex items-center justify-center p-8">
@@ -229,9 +260,7 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
           <div className="flex items-center gap-4">
             {getStageIcon()}
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {getStageTitle()}
-              </h1>
+              <h1 className="text-2xl font-bold text-gray-900">{getStageTitle()}</h1>
               <p className="text-gray-500">{progress.currentStep}</p>
             </div>
           </div>
@@ -257,12 +286,20 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-500">Stage:</span>
-              <span className="ml-2 font-medium capitalize">{progress.stage.replace('_', ' ')}</span>
+              <span className="ml-2 font-medium capitalize">
+                {progress.stage.replace('_', ' ')}
+              </span>
             </div>
             <div>
               <span className="text-gray-500">Status:</span>
-              <span className={`ml-2 font-medium ${progress.stage === 'error' ? 'text-red-600' : progress.stage === 'complete' ? 'text-green-600' : 'text-blue-600'}`}>
-                {progress.stage === 'error' ? 'Failed' : progress.stage === 'complete' ? 'Done' : 'In Progress'}
+              <span
+                className={`ml-2 font-medium ${progress.stage === 'error' ? 'text-red-600' : progress.stage === 'complete' ? 'text-green-600' : 'text-blue-600'}`}
+              >
+                {progress.stage === 'error'
+                  ? 'Failed'
+                  : progress.stage === 'complete'
+                    ? 'Done'
+                    : 'In Progress'}
               </span>
             </div>
           </div>
@@ -275,9 +312,9 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
               <MicOff className="w-5 h-5 text-red-600" />
               <h3 className="font-semibold text-red-800">{errorHelp.title}</h3>
             </div>
-            
+
             <p className="text-red-700 text-sm mb-4">{errorHelp.description}</p>
-            
+
             {failedSession.error && (
               <div className="bg-red-100 rounded p-2 mb-4">
                 <p className="text-red-800 text-xs font-mono">{failedSession.error}</p>
@@ -292,15 +329,14 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
                   variant={action.action === 'retry' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => {
-                    if (action.action === 'settings') handleOpenSettings();
-                    else if (action.action === 'retry') handleRetry();
+                    if (action.action === 'settings') handleOpenSettings()
+                    else if (action.action === 'retry') handleRetry()
                     else if (action.action === 'api') {
-                      settings.setTranscriptionMode('cloud_openai');
-                      handleRetry();
-                    }
-                    else if (action.action === 'model') {
-                      settings.setTranscriptionMode('local_whisper');
-                      handleRetry();
+                      settings.setTranscriptionMode('cloud_openai')
+                      handleRetry()
+                    } else if (action.action === 'model') {
+                      settings.setTranscriptionMode('local_whisper')
+                      handleRetry()
                     }
                   }}
                   className={action.action === 'retry' ? 'bg-red-600 hover:bg-red-700' : ''}
@@ -312,12 +348,7 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
                   {action.label}
                 </Button>
               ))}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleOpenLogs}
-                className="col-span-2"
-              >
+              <Button variant="outline" size="sm" onClick={handleOpenLogs} className="col-span-2">
                 <FolderOpen className="w-3 h-3 mr-1" />
                 View Logs for Details
               </Button>
@@ -336,9 +367,7 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
                   </span>
                 )}
                 {settings.whisperApiKey && (
-                  <span className="bg-red-100 px-2 py-1 rounded">
-                    API Key: Set
-                  </span>
+                  <span className="bg-red-100 px-2 py-1 rounded">API Key: Set</span>
                 )}
               </div>
             </div>
@@ -357,7 +386,7 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
               <AlertCircle className="w-5 h-5 text-red-600" />
               <h3 className="font-semibold text-red-800">Processing Error</h3>
             </div>
-            
+
             {/* Error Message */}
             <div className="bg-red-100 rounded p-3 mb-3">
               <p className="text-red-800 text-sm font-medium">{progress.error}</p>
@@ -376,19 +405,11 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
 
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-2 mb-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleOpenSettings}
-              >
+              <Button variant="outline" size="sm" onClick={handleOpenSettings}>
                 <Settings className="w-4 h-4 mr-2" />
                 Open Settings
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleOpenLogs}
-              >
+              <Button variant="outline" size="sm" onClick={handleOpenLogs}>
                 <FolderOpen className="w-4 h-4 mr-2" />
                 View Logs
               </Button>
@@ -407,10 +428,10 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
             {showProviderSelector && (
               <div className="mt-4 pt-4 border-t border-red-200">
                 <div className="flex items-center gap-2 mb-2 text-red-900 font-medium">
-                  <Settings className='w-4 h-4' />
+                  <Settings className="w-4 h-4" />
                   <span>Change LLM Provider Configuration</span>
                 </div>
-                
+
                 {/* Unified Provider Selector */}
                 <ProviderSelector compact />
               </div>
@@ -439,8 +460,8 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
               Cancel
             </Button>
             {failedSession ? (
-              <Button 
-                onClick={handleRetryFailedSession} 
+              <Button
+                onClick={handleRetryFailedSession}
                 className="bg-blue-600 hover:bg-blue-700"
                 disabled={isProcessing}
               >
@@ -475,5 +496,5 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
         )}
       </div>
     </div>
-  );
+  )
 }

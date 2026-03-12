@@ -3,13 +3,19 @@
  * Central export point for all Zustand stores
  */
 
-export { useRecordingStore } from './recording';
-export type { RecordingState, CaptureFrame, CaptureStep, StepType } from './recording';
+export { useRecordingStore } from './recording'
+export type { RecordingState, CaptureFrame, CaptureStep, StepType } from './recording'
 
-export { useSettingsStore } from './settings';
-export type { SettingsState, TranscriptionMode, WhisperModel } from './settings';
+export { useSettingsStore } from './settings'
+export type { SettingsState, TranscriptionMode, WhisperModel } from './settings'
 
-export { useOverlayStore, COLORS, getColorHex, redactPassword, getPasswordPlaceholder } from './overlay';
+export {
+  useOverlayStore,
+  COLORS,
+  getColorHex,
+  redactPassword,
+  getPasswordPlaceholder,
+} from './overlay'
 export type {
   OverlayState,
   OverlayActions,
@@ -25,15 +31,15 @@ export type {
   SelectedElement,
   RecordingStatus,
   StatusIndicatorPosition,
-  CursorHighlightConfig
-} from './overlay';
+  CursorHighlightConfig,
+} from './overlay'
 
-export { useProviderStore } from './provider';
-export type { ProviderState } from './provider';
+export { useProviderStore } from './provider'
+export type { ProviderState } from './provider'
 export {
   getProviderDisplayName,
   requiresApiKey,
   isFreeProvider,
   getProviderDescription,
-  validateApiKey
-} from './provider';
+  validateApiKey,
+} from './provider'

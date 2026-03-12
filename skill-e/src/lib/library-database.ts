@@ -1,47 +1,47 @@
 /**
  * Known Libraries Database
- * 
+ *
  * Maps library names to their official documentation URLs and provides
  * metadata for documentation fetching and context search.
- * 
+ *
  * This database is used by the documentation fetcher to know where to find
  * official documentation for detected libraries.
- * 
+ *
  * @module lib/library-database
  */
 
-import type { LibraryType } from '../types/context-search';
+import type { LibraryType } from '../types/context-search'
 
 /**
  * Library metadata including documentation URLs and search hints
  */
 export interface LibraryMetadata {
   /** Library name (lowercase, canonical) */
-  name: string;
-  
+  name: string
+
   /** Display name (proper capitalization) */
-  displayName: string;
-  
+  displayName: string
+
   /** Library type classification */
-  type: LibraryType;
-  
+  type: LibraryType
+
   /** Official documentation URL */
-  officialDocs: string;
-  
+  officialDocs: string
+
   /** GitHub repository URL (if available) */
-  githubRepo?: string;
-  
+  githubRepo?: string
+
   /** Alternative documentation sources */
-  altDocs?: string[];
-  
+  altDocs?: string[]
+
   /** Common usage patterns for detection (used by library-detector) */
-  usagePatterns: string[];
-  
+  usagePatterns: string[]
+
   /** Keywords for search query building */
-  searchKeywords: string[];
-  
+  searchKeywords: string[]
+
   /** Package manager name (if different from library name) */
-  packageName?: string;
+  packageName?: string
 }
 
 /**
@@ -51,22 +51,20 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
   // ============================================================================
   // PYTHON LIBRARIES
   // ============================================================================
-  
-  'pandas': {
+
+  pandas: {
     name: 'pandas',
     displayName: 'pandas',
     type: 'python',
     officialDocs: 'https://pandas.pydata.org/docs/',
     githubRepo: 'https://github.com/pandas-dev/pandas',
-    altDocs: [
-      'https://pandas.pydata.org/pandas-docs/stable/',
-    ],
+    altDocs: ['https://pandas.pydata.org/pandas-docs/stable/'],
     usagePatterns: ['pd.', 'DataFrame', 'read_csv', 'to_csv', 'read_excel', 'groupby'],
     searchKeywords: ['dataframe', 'data analysis', 'csv', 'excel', 'data manipulation'],
     packageName: 'pandas',
   },
-  
-  'numpy': {
+
+  numpy: {
     name: 'numpy',
     displayName: 'NumPy',
     type: 'python',
@@ -76,8 +74,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['array', 'numerical computing', 'matrix', 'linear algebra'],
     packageName: 'numpy',
   },
-  
-  'matplotlib': {
+
+  matplotlib: {
     name: 'matplotlib',
     displayName: 'Matplotlib',
     type: 'python',
@@ -87,8 +85,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['plotting', 'visualization', 'charts', 'graphs'],
     packageName: 'matplotlib',
   },
-  
-  'requests': {
+
+  requests: {
     name: 'requests',
     displayName: 'Requests',
     type: 'python',
@@ -98,8 +96,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['http', 'api', 'rest', 'web requests'],
     packageName: 'requests',
   },
-  
-  'flask': {
+
+  flask: {
     name: 'flask',
     displayName: 'Flask',
     type: 'python',
@@ -109,8 +107,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['web framework', 'api', 'routing', 'templates'],
     packageName: 'Flask',
   },
-  
-  'django': {
+
+  django: {
     name: 'django',
     displayName: 'Django',
     type: 'python',
@@ -120,8 +118,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['web framework', 'orm', 'models', 'views', 'templates'],
     packageName: 'Django',
   },
-  
-  'fastapi': {
+
+  fastapi: {
     name: 'fastapi',
     displayName: 'FastAPI',
     type: 'python',
@@ -131,8 +129,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['api', 'async', 'rest', 'openapi', 'swagger'],
     packageName: 'fastapi',
   },
-  
-  'sqlalchemy': {
+
+  sqlalchemy: {
     name: 'sqlalchemy',
     displayName: 'SQLAlchemy',
     type: 'python',
@@ -142,8 +140,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['orm', 'database', 'sql', 'models'],
     packageName: 'SQLAlchemy',
   },
-  
-  'pytest': {
+
+  pytest: {
     name: 'pytest',
     displayName: 'pytest',
     type: 'python',
@@ -153,8 +151,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['testing', 'unit tests', 'fixtures', 'assertions'],
     packageName: 'pytest',
   },
-  
-  'selenium': {
+
+  selenium: {
     name: 'selenium',
     displayName: 'Selenium',
     type: 'python',
@@ -164,8 +162,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['browser automation', 'web testing', 'webdriver'],
     packageName: 'selenium',
   },
-  
-  'beautifulsoup': {
+
+  beautifulsoup: {
     name: 'beautifulsoup',
     displayName: 'Beautiful Soup',
     type: 'python',
@@ -174,7 +172,7 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['web scraping', 'html parsing', 'xml'],
     packageName: 'beautifulsoup4',
   },
-  
+
   'scikit-learn': {
     name: 'scikit-learn',
     displayName: 'scikit-learn',
@@ -185,8 +183,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['machine learning', 'classification', 'regression', 'clustering'],
     packageName: 'scikit-learn',
   },
-  
-  'tensorflow': {
+
+  tensorflow: {
     name: 'tensorflow',
     displayName: 'TensorFlow',
     type: 'python',
@@ -196,8 +194,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['deep learning', 'neural networks', 'machine learning'],
     packageName: 'tensorflow',
   },
-  
-  'pytorch': {
+
+  pytorch: {
     name: 'pytorch',
     displayName: 'PyTorch',
     type: 'python',
@@ -207,26 +205,24 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['deep learning', 'neural networks', 'machine learning'],
     packageName: 'torch',
   },
-  
+
   // ============================================================================
   // JAVASCRIPT/TYPESCRIPT LIBRARIES
   // ============================================================================
-  
-  'react': {
+
+  react: {
     name: 'react',
     displayName: 'React',
     type: 'javascript',
     officialDocs: 'https://react.dev/',
     githubRepo: 'https://github.com/facebook/react',
-    altDocs: [
-      'https://legacy.reactjs.org/docs/getting-started.html',
-    ],
+    altDocs: ['https://legacy.reactjs.org/docs/getting-started.html'],
     usagePatterns: ['useState', 'useEffect', 'Component', 'jsx', 'React.', 'createContext'],
     searchKeywords: ['ui', 'components', 'hooks', 'jsx', 'frontend'],
     packageName: 'react',
   },
-  
-  'vue': {
+
+  vue: {
     name: 'vue',
     displayName: 'Vue.js',
     type: 'javascript',
@@ -236,8 +232,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['ui', 'components', 'reactive', 'frontend'],
     packageName: 'vue',
   },
-  
-  'angular': {
+
+  angular: {
     name: 'angular',
     displayName: 'Angular',
     type: 'javascript',
@@ -247,8 +243,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['ui', 'components', 'typescript', 'frontend'],
     packageName: '@angular/core',
   },
-  
-  'express': {
+
+  express: {
     name: 'express',
     displayName: 'Express',
     type: 'javascript',
@@ -258,8 +254,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['web framework', 'api', 'routing', 'middleware', 'node'],
     packageName: 'express',
   },
-  
-  'axios': {
+
+  axios: {
     name: 'axios',
     displayName: 'Axios',
     type: 'javascript',
@@ -269,8 +265,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['http', 'api', 'rest', 'requests'],
     packageName: 'axios',
   },
-  
-  'lodash': {
+
+  lodash: {
     name: 'lodash',
     displayName: 'Lodash',
     type: 'javascript',
@@ -280,8 +276,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['utility', 'functional', 'array', 'object'],
     packageName: 'lodash',
   },
-  
-  'moment': {
+
+  moment: {
     name: 'moment',
     displayName: 'Moment.js',
     type: 'javascript',
@@ -291,8 +287,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['date', 'time', 'formatting', 'parsing'],
     packageName: 'moment',
   },
-  
-  'tailwind': {
+
+  tailwind: {
     name: 'tailwind',
     displayName: 'Tailwind CSS',
     type: 'javascript',
@@ -302,8 +298,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['css', 'styling', 'utility classes', 'design'],
     packageName: 'tailwindcss',
   },
-  
-  'vite': {
+
+  vite: {
     name: 'vite',
     displayName: 'Vite',
     type: 'javascript',
@@ -313,8 +309,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['build tool', 'bundler', 'dev server', 'hmr'],
     packageName: 'vite',
   },
-  
-  'next': {
+
+  next: {
     name: 'next',
     displayName: 'Next.js',
     type: 'javascript',
@@ -324,8 +320,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['react', 'ssr', 'routing', 'framework'],
     packageName: 'next',
   },
-  
-  'jest': {
+
+  jest: {
     name: 'jest',
     displayName: 'Jest',
     type: 'javascript',
@@ -335,8 +331,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['testing', 'unit tests', 'mocking', 'assertions'],
     packageName: 'jest',
   },
-  
-  'cypress': {
+
+  cypress: {
     name: 'cypress',
     displayName: 'Cypress',
     type: 'javascript',
@@ -346,12 +342,12 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     searchKeywords: ['e2e testing', 'integration testing', 'browser testing'],
     packageName: 'cypress',
   },
-  
+
   // ============================================================================
   // DEVELOPMENT TOOLS
   // ============================================================================
-  
-  'git': {
+
+  git: {
     name: 'git',
     displayName: 'Git',
     type: 'tool',
@@ -360,8 +356,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['git clone', 'git commit', 'git push', 'git pull', 'git branch'],
     searchKeywords: ['version control', 'repository', 'commit', 'branch'],
   },
-  
-  'docker': {
+
+  docker: {
     name: 'docker',
     displayName: 'Docker',
     type: 'tool',
@@ -370,8 +366,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['docker run', 'docker build', 'Dockerfile', 'docker-compose'],
     searchKeywords: ['containers', 'containerization', 'images', 'deployment'],
   },
-  
-  'kubernetes': {
+
+  kubernetes: {
     name: 'kubernetes',
     displayName: 'Kubernetes',
     type: 'tool',
@@ -380,8 +376,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['kubectl', 'k8s', 'deployment.yaml', 'pod', 'service'],
     searchKeywords: ['orchestration', 'containers', 'deployment', 'cluster'],
   },
-  
-  'terraform': {
+
+  terraform: {
     name: 'terraform',
     displayName: 'Terraform',
     type: 'tool',
@@ -390,8 +386,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['terraform', 'resource', 'provider', 'terraform apply'],
     searchKeywords: ['infrastructure as code', 'iac', 'provisioning', 'cloud'],
   },
-  
-  'aws': {
+
+  aws: {
     name: 'aws',
     displayName: 'AWS CLI',
     type: 'tool',
@@ -400,8 +396,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['aws cli', 's3', 'ec2', 'lambda', 'cloudformation'],
     searchKeywords: ['cloud', 'amazon', 'infrastructure', 'services'],
   },
-  
-  'gcloud': {
+
+  gcloud: {
     name: 'gcloud',
     displayName: 'Google Cloud CLI',
     type: 'tool',
@@ -409,8 +405,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['gcloud', 'gcp', 'compute', 'storage'],
     searchKeywords: ['cloud', 'google', 'infrastructure', 'services'],
   },
-  
-  'npm': {
+
+  npm: {
     name: 'npm',
     displayName: 'npm',
     type: 'tool',
@@ -419,8 +415,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['npm install', 'npm run', 'package.json', 'npm start'],
     searchKeywords: ['package manager', 'node', 'dependencies', 'javascript'],
   },
-  
-  'pip': {
+
+  pip: {
     name: 'pip',
     displayName: 'pip',
     type: 'tool',
@@ -429,8 +425,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['pip install', 'requirements.txt', 'pip freeze'],
     searchKeywords: ['package manager', 'python', 'dependencies'],
   },
-  
-  'cargo': {
+
+  cargo: {
     name: 'cargo',
     displayName: 'Cargo',
     type: 'tool',
@@ -439,8 +435,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['cargo build', 'cargo run', 'Cargo.toml'],
     searchKeywords: ['package manager', 'rust', 'dependencies', 'build tool'],
   },
-  
-  'make': {
+
+  make: {
     name: 'make',
     displayName: 'Make',
     type: 'tool',
@@ -448,12 +444,12 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['Makefile', 'make build', 'make test'],
     searchKeywords: ['build tool', 'automation', 'compilation'],
   },
-  
+
   // ============================================================================
   // DATABASES
   // ============================================================================
-  
-  'postgresql': {
+
+  postgresql: {
     name: 'postgresql',
     displayName: 'PostgreSQL',
     type: 'database',
@@ -462,8 +458,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['postgres', 'psql', 'pg_', 'SELECT', 'INSERT INTO'],
     searchKeywords: ['sql', 'relational database', 'queries', 'transactions'],
   },
-  
-  'mysql': {
+
+  mysql: {
     name: 'mysql',
     displayName: 'MySQL',
     type: 'database',
@@ -472,8 +468,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['mysql', 'SELECT', 'INSERT', 'UPDATE', 'DELETE'],
     searchKeywords: ['sql', 'relational database', 'queries'],
   },
-  
-  'mongodb': {
+
+  mongodb: {
     name: 'mongodb',
     displayName: 'MongoDB',
     type: 'database',
@@ -482,8 +478,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['mongo', 'db.collection', 'find()', 'insertOne', 'aggregate'],
     searchKeywords: ['nosql', 'document database', 'queries', 'collections'],
   },
-  
-  'redis': {
+
+  redis: {
     name: 'redis',
     displayName: 'Redis',
     type: 'database',
@@ -492,8 +488,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['redis', 'SET', 'GET', 'HSET', 'LPUSH'],
     searchKeywords: ['cache', 'key-value store', 'in-memory database'],
   },
-  
-  'sqlite': {
+
+  sqlite: {
     name: 'sqlite',
     displayName: 'SQLite',
     type: 'database',
@@ -501,8 +497,8 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['sqlite', 'sqlite3', '.db file'],
     searchKeywords: ['sql', 'embedded database', 'file-based'],
   },
-  
-  'elasticsearch': {
+
+  elasticsearch: {
     name: 'elasticsearch',
     displayName: 'Elasticsearch',
     type: 'database',
@@ -511,7 +507,7 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
     usagePatterns: ['elasticsearch', 'index', 'search', 'query'],
     searchKeywords: ['search engine', 'full-text search', 'analytics'],
   },
-};
+}
 
 /**
  * Helper functions for library database access
@@ -521,79 +517,80 @@ export const LIBRARY_DATABASE: Record<string, LibraryMetadata> = {
  * Get library metadata by name (case-insensitive)
  */
 export function getLibraryMetadata(libraryName: string): LibraryMetadata | undefined {
-  return LIBRARY_DATABASE[libraryName.toLowerCase()];
+  return LIBRARY_DATABASE[libraryName.toLowerCase()]
 }
 
 /**
  * Get all libraries of a specific type
  */
 export function getLibrariesByType(type: LibraryType): LibraryMetadata[] {
-  return Object.values(LIBRARY_DATABASE).filter(lib => lib.type === type);
+  return Object.values(LIBRARY_DATABASE).filter(lib => lib.type === type)
 }
 
 /**
  * Search libraries by keyword
  */
 export function searchLibraries(keyword: string): LibraryMetadata[] {
-  const lowerKeyword = keyword.toLowerCase();
-  return Object.values(LIBRARY_DATABASE).filter(lib => 
-    lib.name.includes(lowerKeyword) ||
-    lib.displayName.toLowerCase().includes(lowerKeyword) ||
-    lib.searchKeywords.some(k => k.includes(lowerKeyword))
-  );
+  const lowerKeyword = keyword.toLowerCase()
+  return Object.values(LIBRARY_DATABASE).filter(
+    lib =>
+      lib.name.includes(lowerKeyword) ||
+      lib.displayName.toLowerCase().includes(lowerKeyword) ||
+      lib.searchKeywords.some(k => k.includes(lowerKeyword))
+  )
 }
 
 /**
  * Get all library names (for quick lookup)
  */
 export function getAllLibraryNames(): string[] {
-  return Object.keys(LIBRARY_DATABASE);
+  return Object.keys(LIBRARY_DATABASE)
 }
 
 /**
  * Check if a library is in the database
  */
 export function isKnownLibrary(libraryName: string): boolean {
-  return libraryName.toLowerCase() in LIBRARY_DATABASE;
+  return libraryName.toLowerCase() in LIBRARY_DATABASE
 }
 
 /**
  * Get documentation URL for a library
  */
 export function getDocumentationUrl(libraryName: string): string | undefined {
-  const metadata = getLibraryMetadata(libraryName);
-  return metadata?.officialDocs;
+  const metadata = getLibraryMetadata(libraryName)
+  return metadata?.officialDocs
 }
 
 /**
  * Get GitHub repository URL for a library
  */
 export function getGitHubUrl(libraryName: string): string | undefined {
-  const metadata = getLibraryMetadata(libraryName);
-  return metadata?.githubRepo;
+  const metadata = getLibraryMetadata(libraryName)
+  return metadata?.githubRepo
 }
 
 /**
  * Build a search query for a library with context
  */
 export function buildSearchQuery(libraryName: string, context?: string): string {
-  const metadata = getLibraryMetadata(libraryName);
+  const metadata = getLibraryMetadata(libraryName)
   if (!metadata) {
-    return libraryName;
+    return libraryName
   }
-  
+
   // Start with library name
-  let query = metadata.displayName;
-  
+  let query = metadata.displayName
+
   // Add relevant keywords if no context provided
   if (!context && metadata.searchKeywords.length > 0) {
-    query += ' ' + metadata.searchKeywords.slice(0, 2).join(' ');
+    query += ' ' + metadata.searchKeywords.slice(0, 2).join(' ')
   }
-  
+
   // Add context if provided
   if (context) {
-    query += ' ' + context;
+    query += ' ' + context
   }
-  
-  return query;
+
+  return query
 }

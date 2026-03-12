@@ -1,12 +1,12 @@
 /**
  * Skill Templates
- * 
+ *
  * Predefined templates for different types of skills.
  * Templates define which sections to include and
  * provide default content for common skill patterns.
  */
 
-import type { SkillTemplate, SkillTemplateType } from './types';
+import type { SkillTemplate, SkillTemplateType } from './types'
 
 /**
  * Minimal template for simple tasks
@@ -28,7 +28,7 @@ export const minimalTemplate: SkillTemplate = {
     references: false,
   },
   targetTokens: 1000,
-};
+}
 
 /**
  * Standard template for most tasks
@@ -50,7 +50,7 @@ export const standardTemplate: SkillTemplate = {
     references: false,
   },
   targetTokens: 2000,
-};
+}
 
 /**
  * Complex template for multi-step workflows
@@ -72,7 +72,7 @@ export const complexTemplate: SkillTemplate = {
     references: true,
   },
   targetTokens: 3000,
-};
+}
 
 /**
  * API Integration template
@@ -94,7 +94,7 @@ export const apiIntegrationTemplate: SkillTemplate = {
     references: true,
   },
   targetTokens: 2500,
-};
+}
 
 /**
  * All available templates
@@ -104,7 +104,7 @@ export const allTemplates: SkillTemplate[] = [
   standardTemplate,
   complexTemplate,
   apiIntegrationTemplate,
-];
+]
 
 /**
  * Get template by type
@@ -112,15 +112,15 @@ export const allTemplates: SkillTemplate[] = [
 export function getTemplate(type: SkillTemplateType): SkillTemplate {
   switch (type) {
     case 'minimal':
-      return minimalTemplate;
+      return minimalTemplate
     case 'standard':
-      return standardTemplate;
+      return standardTemplate
     case 'complex':
-      return complexTemplate;
+      return complexTemplate
     case 'api-integration':
-      return apiIntegrationTemplate;
+      return apiIntegrationTemplate
     default:
-      return standardTemplate;
+      return standardTemplate
   }
 }
 
@@ -132,16 +132,16 @@ export function autoSelectTemplate(
   variableCount: number,
   conditionalCount: number
 ): SkillTemplate {
-  const complexity = stepCount + (variableCount * 2) + (conditionalCount * 3);
-  
+  const complexity = stepCount + variableCount * 2 + conditionalCount * 3
+
   if (complexity <= 6) {
-    return minimalTemplate;
+    return minimalTemplate
   } else if (complexity <= 15) {
-    return standardTemplate;
+    return standardTemplate
   } else if (complexity <= 25) {
-    return apiIntegrationTemplate;
+    return apiIntegrationTemplate
   } else {
-    return complexTemplate;
+    return complexTemplate
   }
 }
 
@@ -153,28 +153,28 @@ export function getTemplateRecommendations(
   variableCount: number,
   conditionalCount: number
 ): Array<{ template: SkillTemplate; reason: string }> {
-  const recommendations = [];
-  
+  const recommendations = []
+
   if (stepCount <= 4 && variableCount <= 2) {
     recommendations.push({
       template: minimalTemplate,
       reason: 'Simple workflow with few steps and variables',
-    });
+    })
   }
-  
+
   if (stepCount >= 4 && stepCount <= 10) {
     recommendations.push({
       template: standardTemplate,
       reason: 'Balanced complexity - most common use case',
-    });
+    })
   }
-  
+
   if (conditionalCount > 2 || variableCount > 4) {
     recommendations.push({
       template: complexTemplate,
       reason: 'Multiple paths or many variables require comprehensive documentation',
-    });
+    })
   }
-  
-  return recommendations;
+
+  return recommendations
 }
