@@ -1,12 +1,10 @@
-# Skill-E 🧠 (Hackathon 2026 Edition)
+# Skill-E 🧠
 
 > **The Bridge Between Human Action and Agent Understanding.**
 
 <div align="center">
   <img src="./src/assets/skille_bot.PNG" alt="Skill-E Mascot" width="150" />
 </div>
-
-## 🏆 Dynamous Kiro Hackathon 2026
 
 **Skill-E** is a local-first application that observes your workflow and automatically generates structured **Skill Definitions** for AI Agents. Instead of writing prompts or code, you simply *show* the agent what to do.
 
@@ -74,7 +72,7 @@ npm run tauri build
 
 ## 🗺️ Roadmap & Future Improvements
 
-We built Skill-E for the 2026 Hackathon timeframe, but our vision extends beyond.
+Skill-E is actively developed — here's what's done and what's next.
 
 ### ✅ Completed
 - [x] Multi-Window Architecture (Toolbar + Overlay).
@@ -82,7 +80,7 @@ We built Skill-E for the 2026 Hackathon timeframe, but our vision extends beyond
 - [x] Global Input Keylogging (Privacy-focused).
 - [x] Ollama / OpenRouter / Anthropic Support.
 
-### 🚧 Coming Soon (Post-Hackathon)
+### 🚧 Coming Soon
 - **Sidecar Architecture**: We plan to decouple the AI Engine into a Python Sidecar to enable full GPU acceleration (CUDA) without complex compilation steps on the client.
 - **Mac & Linux Support**: Currently Windows-only. Porting `rdev` and `GlobalHotkey` logic to MacOS is the next priority.
 - **Cloud Sync**: Optional syncing of generated skills to a team repository.
@@ -102,8 +100,6 @@ We built Skill-E for the 2026 Hackathon timeframe, but our vision extends beyond
 
 ## ❤️ Acknowledgements
 
-Special thanks to:
-- **Cole Medin** & **Dynamous Community** for the challenge and inspiration.
-- **Kiro CLI** for accelerating our development.
+- **[Kiro CLI](https://kiro.dev)** for accelerating development with spec-driven workflows.
 
-*Built with ❤️ by the Skill-E Team for the future of Agentic workflows.*
+*Built with ❤️ for the future of Agentic workflows.*

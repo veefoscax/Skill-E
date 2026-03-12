@@ -2,7 +2,7 @@
 
 > **The Bridge Between Human Action and Agent Understanding.**
 
-**Skill-E** is our submission for the **Dynamous Kiro Hackathon 2026**. It is a local-first application that observes your workflow and automatically generates structured **Skill Definitions** for AI Agents.
+**Skill-E** is a local-first application that observes your workflow and automatically generates structured **Skill Definitions** for AI Agents.
 
 Instead of writing complex prompts or code, you simply *show* the agent what to do while explaining it with your voice.
 
