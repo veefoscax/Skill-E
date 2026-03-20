@@ -66,6 +66,16 @@ export function Settings() {
     setSelectedMicId,
     outputDir,
     setOutputDir,
+    dayModeEnabled,
+    setDayModeEnabled,
+    segmentDurationMinutes,
+    setSegmentDurationMinutes,
+    autoProcessSessions,
+    setAutoProcessSessions,
+    rawRetentionDays,
+    setRawRetentionDays,
+    storageBudgetGb,
+    setStorageBudgetGb,
     // LLM state is managed by LLMConfiguration via store
     llmProvider,
     llmApiKey,
@@ -599,6 +609,89 @@ export function Settings() {
             >
               <FolderOpen className="h-3 w-3" />
             </Button>
+          </div>
+        </div>
+
+        {/* Day Mode */}
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground uppercase">
+            Day Mode
+          </Label>
+          <div className="p-3 rounded-md border bg-card space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="font-medium text-xs">Enable continuous session rotation</span>
+                <span className="text-[10px] text-muted-foreground">
+                  Capture short sessions back-to-back and process them in the background.
+                </span>
+              </div>
+              <button
+                onClick={() => setDayModeEnabled(!dayModeEnabled)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  dayModeEnabled ? 'bg-primary' : 'bg-muted'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    dayModeEnabled ? 'translate-x-5' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-[11px]">Segment Minutes</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={segmentDurationMinutes}
+                  onChange={e => setSegmentDurationMinutes(Math.max(1, Number(e.target.value) || 1))}
+                  className="h-7 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px]">Raw Retention (days)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={rawRetentionDays}
+                  onChange={e => setRawRetentionDays(Math.max(1, Number(e.target.value) || 1))}
+                  className="h-7 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px]">Storage Budget (GB)</Label>
+                <Input
+                  type="number"
+                  min={0.5}
+                  step={0.5}
+                  value={storageBudgetGb}
+                  onChange={e => setStorageBudgetGb(Math.max(0.5, Number(e.target.value) || 0.5))}
+                  className="h-7 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px]">Auto Process</Label>
+                <button
+                  onClick={() => setAutoProcessSessions(!autoProcessSessions)}
+                  className={`relative inline-flex h-7 w-full items-center rounded-md border px-3 text-xs transition-colors ${
+                    autoProcessSessions
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted text-muted-foreground border-input'
+                  }`}
+                >
+                  {autoProcessSessions ? 'Background queue enabled' : 'Queue paused'}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-muted-foreground">
+              For quick testing, set segment length to 1-2 minutes and verify that each completed
+              segment produces its own `operations-brief.json` and `day-mode-session.json`.
+            </p>
           </div>
         </div>
 
