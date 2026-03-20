@@ -11,8 +11,56 @@ pub struct CodexGenerationResult {
     pub working_dir: String,
 }
 
+fn codex_vendor_exe_candidates() -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+
+    if let Ok(explicit_path) = std::env::var("CODEX_EXE") {
+        let explicit = PathBuf::from(explicit_path);
+        if explicit.exists() {
+            candidates.push(explicit);
+        }
+    }
+
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        let npm_root = PathBuf::from(appdata).join("npm");
+        let vendor_suffix = PathBuf::from(
+            "node_modules/@openai/codex/node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/codex/codex.exe",
+        );
+
+        let direct_vendor = npm_root.join(&vendor_suffix);
+        if direct_vendor.exists() {
+            candidates.push(direct_vendor);
+        }
+
+        let openai_dir = npm_root.join("node_modules").join("@openai");
+        if let Ok(entries) = fs::read_dir(openai_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name();
+                if !name.to_string_lossy().starts_with(".codex-") {
+                    continue;
+                }
+
+                let candidate = entry.path().join(&vendor_suffix);
+                if candidate.exists() {
+                    candidates.push(candidate);
+                }
+            }
+        }
+    }
+
+    candidates
+}
+
+fn codex_command() -> String {
+    codex_vendor_exe_candidates()
+        .into_iter()
+        .next()
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|| "codex".to_string())
+}
+
 fn ensure_codex_login() -> Result<(), String> {
-    let output = Command::new("codex")
+    let output = Command::new(codex_command())
         .args(["login", "status"])
         .output()
         .map_err(|error| format!("failed_to_run_codex_login_status: {error}"))?;
@@ -70,7 +118,7 @@ pub fn codex_generate_text(
         None
     };
 
-    let mut command = Command::new("codex");
+    let mut command = Command::new(codex_command());
     command.current_dir(&resolved_working_dir);
     command.arg("exec");
     command.arg("--skip-git-repo-check");
