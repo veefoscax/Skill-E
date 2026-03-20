@@ -50,7 +50,7 @@ tauri-plugin-http = "2.0.0-beta.0"
 tauri-plugin-fs = "2.0.0-beta.0"
 
 [features]
-default = ["local-whisper"]
+default = []
 local-whisper = ["whisper-rs"]
 cuda = ["whisper-rs", "whisper-rs/cuda"]
 
