@@ -1,5 +1,5 @@
 use enigo::{
-    Direction::{Click, Press, Release},
+    Direction::Click,
     Enigo, Key, Keyboard, Mouse, Settings,
 };
 use serde::{Deserialize, Serialize};

@@ -42,9 +42,6 @@ use commands::export::{
     validate_export_path,
     save_skill_md,
 };
-use commands::playback::{
-    execute_native_playback,
-};
 use commands::codex::codex_generate_text;
 
 // Recording state for get_recording_data
@@ -170,10 +167,7 @@ fn open_folder(path: String) -> Result<(), String> {
 /// Open DevTools for debugging (only works in debug builds or with devtools feature)
 #[tauri::command]
 fn open_devtools(window: tauri::Window) -> Result<(), String> {
-    #[cfg(debug_assertions)]
-    {
-        window.open_devtools();
-    }
+    let _ = window;
     // In release builds, this is a no-op unless the app is built with the devtools feature
     Ok(())
 }

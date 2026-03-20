@@ -10,6 +10,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use futures_util::StreamExt;
+use tauri::Manager;
 
 
 /// Transcription segment with timestamps
@@ -543,8 +544,10 @@ pub async fn start_ai_sidecar(
         return Ok("Sidecar already running".to_string());
     }
 
-    let resource_path = app_handle.path().resource_dir()
-        .map_err(|e| e.to_string())?
+    let resource_path = app_handle
+        .path()
+        .resource_dir()
+        .map_err(|error| error.to_string())?
         .join("sidecar")
         .join("main.py");
 
@@ -599,8 +602,12 @@ pub async fn transcribe_sidecar(
         return Err(format!("Sidecar returned error: {}", response.status()));
     }
 
-    let result = response.json::<serde_json::Value>()
+    let response_text = response
+        .text()
         .await
+        .map_err(|e| format!("Failed to read sidecar response: {}", e))?;
+
+    let result = serde_json::from_str::<serde_json::Value>(&response_text)
         .map_err(|e| format!("Failed to parse sidecar response: {}", e))?;
 
     Ok(result)
