@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 
 export type TranscriptionMode = 'cloud_openai' | 'local_whisper' | 'browser_native'
 export type LLMProvider =
+  | 'codex'
   | 'openai'
   | 'anthropic'
   | 'google'
@@ -81,6 +82,7 @@ export const LLM_DEFAULTS: Record<
   LLMProvider,
   { label: string; baseUrl?: string; defaultModel?: string; headers?: Record<string, string> }
 > = {
+  codex: { label: 'Codex (ChatGPT Login)', defaultModel: 'gpt-5.4-mini' },
   openai: { label: 'OpenAI', defaultModel: 'gpt-4o' },
   anthropic: { label: 'Anthropic', defaultModel: 'claude-3-5-sonnet-20240620' },
   google: { label: 'Google Gemini', defaultModel: 'gemini-1.5-flash' },
@@ -154,10 +156,10 @@ export const useSettingsStore = create<SettingsState>()(
       whisperApiKey: '',
       sidecarEnabled: false,
       sidecarPort: 8000,
-      llmProvider: 'demo',
+      llmProvider: 'codex',
       llmApiKey: '',
       claudeApiKey: '',
-      llmModel: '',
+      llmModel: 'gpt-5.4-mini',
       llmBaseUrl: '',
       microphoneId: 'default',
       selectedMicId: 'default',
@@ -201,10 +203,10 @@ export const useSettingsStore = create<SettingsState>()(
           whisperApiKey: '',
           sidecarEnabled: false,
           sidecarPort: 8000,
-          llmProvider: 'demo',
+          llmProvider: 'codex',
           llmApiKey: '',
           claudeApiKey: '',
-          llmModel: '',
+          llmModel: 'gpt-5.4-mini',
           llmBaseUrl: '',
           microphoneId: 'default',
           selectedMicId: 'default',

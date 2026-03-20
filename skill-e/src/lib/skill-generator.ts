@@ -2,7 +2,7 @@ import { LLM_DEFAULTS } from './models-config.providers'
 import { useSettingsStore } from '../stores/settings'
 import { ProcessingProgress, LLMContext } from '../types/processing'
 import { createProgress } from './processing'
-import { fetch } from '@tauri-apps/plugin-http' // UPDATED: Use Tauri HTTP client
+import { generateTextCompletion } from './llm-text'
 
 // Export types for skill validation
 export interface ToolDefinition {
@@ -43,6 +43,7 @@ export interface GeneratedSkill {
 interface GenerateSkillOptions {
   onProgress?: (progress: ProcessingProgress) => void
   signal?: AbortSignal
+  workingDir?: string
 }
 
 /**
@@ -68,6 +69,7 @@ export async function generateSkill(
     apiKey: optApiKey,
     model: optModel,
     baseUrl: optBaseUrl,
+    workingDir,
   } = options || {}
 
   try {
@@ -84,7 +86,7 @@ export async function generateSkill(
     const baseUrl = optBaseUrl || settings.llmBaseUrl || LLM_DEFAULTS[provider]?.baseUrl
 
     // Validate API key (unless Ollama which can work without one)
-    if (!apiKey && provider !== 'ollama') {
+    if (!apiKey && provider !== 'ollama' && provider !== 'codex') {
       throw new Error('LLM API key is required. Please check your settings.')
     }
 
@@ -104,13 +106,17 @@ export async function generateSkill(
     console.log('📝 Skill Generator: Task description:', context.taskDescription)
     console.log('📝 Skill Generator: Steps count:', context.steps?.length || 0)
 
-    const skillContent = await generateWithoutStreaming(
+    const skillContent = await generateTextCompletion({
       prompt,
       model,
       apiKey,
+      provider,
       baseUrl,
-      customHeaders
-    )
+      customHeaders,
+      maxTokens: 4000,
+      temperature: 0.2,
+      workingDir,
+    })
 
     // 4. Validate output (basic check) - accept various header formats
     const hasValidHeader =

@@ -18,6 +18,12 @@ export async function fetchProviderModels(
   const config = OPENCLAW_PROVIDERS[providerId]
   const staticModels = config?.models?.map(m => ({ id: m.id, name: m.name })) || []
 
+  if (providerId === 'codex') {
+    return staticModels.length > 0
+      ? staticModels
+      : [{ id: config?.defaultModel || 'gpt-5.4-mini', name: config?.defaultModel || 'gpt-5.4-mini' }]
+  }
+
   // 1. Ollama (No Auth usually)
   if (providerId === 'ollama') {
     return fetchOllamaModels(baseUrl)

@@ -17,6 +17,7 @@ interface GenerateOperationsOptions {
   apiKey?: string
   model?: string
   baseUrl?: string
+  workingDir?: string
 }
 
 interface OperationsPayload {
@@ -67,6 +68,7 @@ export async function generateOperationsBrief(
     apiKey: optApiKey,
     model: optModel,
     baseUrl: optBaseUrl,
+    workingDir,
   } = options || {}
 
   onProgress?.(createProgress('context_generation', 92, 'Generating operations brief...'))
@@ -78,7 +80,7 @@ export async function generateOperationsBrief(
   const baseUrl = optBaseUrl || settings.llmBaseUrl || LLM_DEFAULTS[provider]?.baseUrl
   const customHeaders = LLM_DEFAULTS[provider]?.headers || {}
 
-  if (!apiKey && provider !== 'ollama') {
+  if (!apiKey && provider !== 'ollama' && provider !== 'codex') {
     return buildFallbackOperationsBrief(processedSession, context)
   }
 
@@ -87,10 +89,13 @@ export async function generateOperationsBrief(
       prompt: buildOperationsPrompt(processedSession, context),
       model,
       apiKey,
+      provider,
       baseUrl,
       customHeaders,
       maxTokens: 2500,
       temperature: 0.2,
+      workingDir,
+      outputSchema: buildOperationsBriefSchema(),
     })
 
     const parsed = parseOperationsPayload(rawResponse)
@@ -193,6 +198,112 @@ ${steps || 'No steps available'}
 Transcript highlights:
 ${painSignals || '- No transcript available'}
 `
+}
+
+function buildOperationsBriefSchema(): Record<string, unknown> {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: [
+      'workflow_goal',
+      'problem_framing',
+      'session_summary',
+      'observed_applications',
+      'pain_points',
+      'repetitive_tasks',
+      'suggested_automations',
+      'research_questions',
+      'automation_opportunities',
+      'human_in_loop_points',
+      'candidate_issues',
+      'next_actions',
+    ],
+    properties: {
+      workflow_goal: { type: 'string' },
+      problem_framing: { type: 'string' },
+      session_summary: { type: 'string' },
+      observed_applications: { type: 'array', items: { type: 'string' } },
+      pain_points: { type: 'array', items: { type: 'string' } },
+      repetitive_tasks: { type: 'array', items: { type: 'string' } },
+      suggested_automations: { type: 'array', items: { type: 'string' } },
+      research_questions: { type: 'array', items: { type: 'string' } },
+      automation_opportunities: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: [
+            'title',
+            'current_pain',
+            'proposed_automation',
+            'agent_feasibility',
+            'human_input_required',
+            'research_needed',
+            'success_criteria',
+          ],
+          properties: {
+            title: { type: 'string' },
+            current_pain: { type: 'string' },
+            proposed_automation: { type: 'string' },
+            agent_feasibility: {
+              type: 'string',
+              enum: ['agent-ready', 'human-in-the-loop', 'manual-only'],
+            },
+            human_input_required: { type: 'string' },
+            research_needed: { type: 'array', items: { type: 'string' } },
+            success_criteria: { type: 'array', items: { type: 'string' } },
+          },
+        },
+      },
+      human_in_loop_points: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: [
+            'step',
+            'why_human_matters',
+            'required_input',
+            'risk_if_automated_blindly',
+          ],
+          properties: {
+            step: { type: 'string' },
+            why_human_matters: { type: 'string' },
+            required_input: { type: 'string' },
+            risk_if_automated_blindly: { type: 'string' },
+          },
+        },
+      },
+      candidate_issues: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: [
+            'title',
+            'problem',
+            'impact',
+            'proposed_change',
+            'priority',
+            'evidence',
+            'acceptance_criteria',
+            'tags',
+          ],
+          properties: {
+            title: { type: 'string' },
+            problem: { type: 'string' },
+            impact: { type: 'string' },
+            proposed_change: { type: 'string' },
+            priority: { type: 'string', enum: ['P1', 'P2', 'P3'] },
+            evidence: { type: 'array', items: { type: 'string' } },
+            acceptance_criteria: { type: 'array', items: { type: 'string' } },
+            tags: { type: 'array', items: { type: 'string' } },
+          },
+        },
+      },
+      next_actions: { type: 'array', items: { type: 'string' } },
+    },
+  }
 }
 
 function parseOperationsPayload(rawResponse: string): OperationsPayload {

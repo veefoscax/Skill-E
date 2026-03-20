@@ -10,6 +10,7 @@ import { processSession } from './processing'
 import { generateSkill } from './skill-generator'
 import { generateOperationsBrief } from './operations-generator'
 import { useSettingsStore } from '@/stores/settings'
+import { LLM_DEFAULTS } from './models-config.providers'
 import type { ProcessingProgress } from '../types/processing'
 import type { ProcessedSession, LLMContext } from '../types/processing'
 import type { CaptureSession } from '../types/capture'
@@ -595,8 +596,10 @@ export async function processRecordingAndGenerateSkill(
     const llmContext = await generateLLMContext(processedSession)
 
     const { llmApiKey, llmProvider, llmBaseUrl, llmModel } = useSettingsStore.getState()
+    const resolvedModel =
+      llmModel || LLM_DEFAULTS[llmProvider]?.defaultModel || 'gpt-5.4-mini'
 
-    if (!llmApiKey && llmProvider !== 'ollama') {
+    if (!llmApiKey && llmProvider !== 'ollama' && llmProvider !== 'codex') {
       throw new Error('LLM API Key not found. Please configure it in Settings.')
     }
 
@@ -608,8 +611,9 @@ export async function processRecordingAndGenerateSkill(
     const generatedSkillResult = await generateSkill(llmContext, {
       provider: genProvider as any,
       apiKey: llmApiKey,
-      model: llmModel || 'gpt-4-turbo',
+      model: resolvedModel,
       baseUrl: llmBaseUrl,
+      workingDir: sessionDir,
     })
 
     const skillMarkdown = generatedSkillResult as string
@@ -617,8 +621,9 @@ export async function processRecordingAndGenerateSkill(
     const operationsBrief = await generateOperationsBrief(processedSession, llmContext, {
       provider: genProvider as any,
       apiKey: llmApiKey,
-      model: llmModel || 'gpt-4-turbo',
+      model: resolvedModel,
       baseUrl: llmBaseUrl,
+      workingDir: sessionDir,
     })
 
     try {

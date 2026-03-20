@@ -37,6 +37,8 @@ const ALLOW_BASE_URL_EDIT = [
   'xiaomi',
 ]
 
+const NO_API_KEY_PROVIDERS = ['ollama', 'codex']
+
 export function ProviderSelector({ compact = false, onProviderChange }: ProviderSelectorProps) {
   const {
     llmProvider,
@@ -128,7 +130,7 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
         )}
 
         {/* API Key */}
-        {llmProvider !== 'ollama' && (
+        {!NO_API_KEY_PROVIDERS.includes(llmProvider) && (
           <div>
             <Label className="text-xs font-medium text-gray-700">API Key</Label>
             <div className="relative mt-1">
@@ -238,7 +240,7 @@ export function ProviderSelector({ compact = false, onProviderChange }: Provider
       )}
 
       {/* API Key */}
-      {llmProvider !== 'ollama' && (
+      {!NO_API_KEY_PROVIDERS.includes(llmProvider) && (
         <div className="space-y-2">
           <Label className="text-xs font-medium">API Key</Label>
           <div className="relative">

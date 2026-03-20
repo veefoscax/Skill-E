@@ -1,24 +1,50 @@
 import { fetch } from '@tauri-apps/plugin-http'
+import { invoke } from '@tauri-apps/api/core'
 
 export interface GenerateTextOptions {
   prompt: string
   model: string
-  apiKey: string
+  apiKey?: string
+  provider?: string
   baseUrl?: string
   customHeaders?: Record<string, string>
   maxTokens?: number
   temperature?: number
+  workingDir?: string
+  outputSchema?: Record<string, unknown>
 }
 
 export async function generateTextCompletion({
   prompt,
   model,
-  apiKey,
+  apiKey = '',
+  provider,
   baseUrl = 'https://api.openai.com/v1',
   customHeaders = {},
   maxTokens = 4000,
   temperature = 0.2,
+  workingDir,
+  outputSchema,
 }: GenerateTextOptions): Promise<string> {
+  if (provider === 'codex') {
+    const result = await invoke<{
+      content: string
+      model: string
+      working_dir: string
+    }>('codex_generate_text', {
+      prompt,
+      model,
+      workingDir: workingDir || null,
+      outputSchemaJson: outputSchema ? JSON.stringify(outputSchema) : null,
+    })
+
+    if (!result?.content || result.content.trim() === '') {
+      throw new Error('Codex returned empty content')
+    }
+
+    return result.content
+  }
+
   let url = baseUrl
 
   const isOllamaPort = url.includes(':11434')

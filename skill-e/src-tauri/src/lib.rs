@@ -45,6 +45,7 @@ use commands::export::{
 use commands::playback::{
     execute_native_playback,
 };
+use commands::codex::codex_generate_text;
 
 // Recording state for get_recording_data
 use std::sync::Mutex;
@@ -292,6 +293,7 @@ pub fn run() {
             save_skill,
             validate_export_path,
             save_skill_md,
+            codex_generate_text,
             // Recording data
             get_recording_data,
             initialize_recording,

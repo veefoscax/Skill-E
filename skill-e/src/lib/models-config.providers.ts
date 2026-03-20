@@ -20,7 +20,7 @@ export const XIAOMI_DEFAULT_MODEL_ID = 'mimo-v2-flash'
 
 export interface ProviderConfig {
   baseUrl: string
-  api: 'openai-completions' | 'anthropic-messages'
+  api: 'openai-completions' | 'anthropic-messages' | 'native-cli'
   defaultModel: string
   label: string
   headers?: Record<string, string>
@@ -28,6 +28,17 @@ export interface ProviderConfig {
 }
 
 export const OPENCLAW_PROVIDERS: Record<string, ProviderConfig> = {
+  codex: {
+    label: 'Codex (ChatGPT Login)',
+    baseUrl: '',
+    api: 'native-cli',
+    defaultModel: 'gpt-5.4-mini',
+    models: [
+      { id: 'gpt-5.4-mini', name: 'GPT-5.4 Mini' },
+      { id: 'gpt-5.1-mini', name: 'GPT-5.1 Mini' },
+      { id: 'gpt-5.4', name: 'GPT-5.4' },
+    ],
+  },
   openrouter: {
     label: 'OpenRouter (Free Models)',
     baseUrl: 'https://openrouter.ai/api/v1',
