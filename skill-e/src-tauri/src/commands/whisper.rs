@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use futures_util::StreamExt;
 use tauri::Manager;
+use std::process::Command;
 
 
 /// Transcription segment with timestamps
@@ -572,15 +573,19 @@ pub async fn start_ai_sidecar(
 
     let device = device.unwrap_or_else(|| "cpu".to_string());
 
-    // Note: In a real bundled app, we would use the sidecar binary or a bundled python
-    // For development, we assume 'python' is in the PATH and venv is setup
-    let child = std::process::Command::new("python")
-        .args(&[
-            resource_path.to_str().unwrap(),
-            "--port", &port.to_string(),
-            "--model", &model,
-            "--device", &device,
-        ])
+    let (python_executable, mut python_args) = resolve_python_launcher()?;
+    python_args.extend([
+        resource_path.to_string_lossy().to_string(),
+        "--port".to_string(),
+        port.to_string(),
+        "--model".to_string(),
+        model,
+        "--device".to_string(),
+        device,
+    ]);
+
+    let child = Command::new(&python_executable)
+        .args(&python_args)
         .spawn()
         .map_err(|e| format!("Failed to spawn sidecar: {}", e))?;
 
@@ -631,5 +636,54 @@ pub async fn transcribe_sidecar(
         .map_err(|e| format!("Failed to parse sidecar response: {}", e))?;
 
     Ok(result)
+}
+
+fn resolve_python_launcher() -> Result<(String, Vec<String>), String> {
+    let mut candidate_paths: Vec<(String, Vec<String>)> = Vec::new();
+
+    if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
+        candidate_paths.push((
+            format!(r"{}\Programs\Python\Python311\python.exe", local_app_data),
+            vec![],
+        ));
+        candidate_paths.push((
+            format!(r"{}\Programs\Python\Python312\python.exe", local_app_data),
+            vec![],
+        ));
+        candidate_paths.push((
+            format!(r"{}\Programs\Python\Python313\python.exe", local_app_data),
+            vec![],
+        ));
+    }
+
+    candidate_paths.push(("python".to_string(), vec![]));
+    candidate_paths.push(("py".to_string(), vec!["-3.11".to_string()]));
+    candidate_paths.push(("py".to_string(), vec!["-3".to_string()]));
+
+    for (executable, args) in candidate_paths {
+        if is_python_launcher_available(&executable, &args) {
+            return Ok((executable, args));
+        }
+    }
+
+    Err("Could not find a working Python runtime for faster-whisper sidecar".to_string())
+}
+
+fn is_python_launcher_available(executable: &str, args: &[String]) -> bool {
+    let mut command = Command::new(executable);
+    command.arg("--version");
+
+    if !args.is_empty() {
+        command = Command::new(executable);
+        for arg in args {
+            command.arg(arg);
+        }
+        command.arg("--version");
+    }
+
+    command
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
 }
 

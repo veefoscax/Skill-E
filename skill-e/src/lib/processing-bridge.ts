@@ -289,7 +289,10 @@ async function transcribeAudioWithFallback(
     } as TranscriptionError
   }
 
-  if (settings.sidecarEnabled) {
+  const shouldTrySidecar =
+    settings.sidecarEnabled || settings.transcriptionMode === 'local_whisper'
+
+  if (shouldTrySidecar) {
     try {
       console.log(`🎤 [Sidecar] Trying faster-whisper sidecar (model: ${targetModel}, GPU: ${useGpu})...`)
       await fileLog(`Trying faster-whisper sidecar with model: ${targetModel}`)
