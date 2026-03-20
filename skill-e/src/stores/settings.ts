@@ -39,6 +39,13 @@ export interface SettingsState {
   microphoneId: string
   selectedMicId: string // Backward compat alias
 
+  // Day mode
+  dayModeEnabled: boolean
+  segmentDurationMinutes: number
+  autoProcessSessions: boolean
+  rawRetentionDays: number
+  storageBudgetGb: number
+
   // App State
   isOnboardingCompleted: boolean
   windowPosition: { x: number; y: number } | null
@@ -59,6 +66,11 @@ export interface SettingsState {
   setLlmBaseUrl: (url: string) => void
   setMicrophoneId: (id: string) => void
   setSelectedMicId: (id: string) => void
+  setDayModeEnabled: (enabled: boolean) => void
+  setSegmentDurationMinutes: (minutes: number) => void
+  setAutoProcessSessions: (enabled: boolean) => void
+  setRawRetentionDays: (days: number) => void
+  setStorageBudgetGb: (gb: number) => void
   setOnboardingCompleted: (completed: boolean) => void
   setWindowPosition: (pos: { x: number; y: number } | null) => void
   reset: () => void
@@ -149,6 +161,11 @@ export const useSettingsStore = create<SettingsState>()(
       llmBaseUrl: '',
       microphoneId: 'default',
       selectedMicId: 'default',
+      dayModeEnabled: false,
+      segmentDurationMinutes: 15,
+      autoProcessSessions: true,
+      rawRetentionDays: 7,
+      storageBudgetGb: 1.5,
       isOnboardingCompleted: false,
       windowPosition: null,
 
@@ -167,6 +184,11 @@ export const useSettingsStore = create<SettingsState>()(
       setLlmBaseUrl: url => set({ llmBaseUrl: url }),
       setMicrophoneId: id => set({ microphoneId: id, selectedMicId: id }),
       setSelectedMicId: id => set({ selectedMicId: id, microphoneId: id }),
+      setDayModeEnabled: enabled => set({ dayModeEnabled: enabled }),
+      setSegmentDurationMinutes: minutes => set({ segmentDurationMinutes: minutes }),
+      setAutoProcessSessions: enabled => set({ autoProcessSessions: enabled }),
+      setRawRetentionDays: days => set({ rawRetentionDays: days }),
+      setStorageBudgetGb: gb => set({ storageBudgetGb: gb }),
       setOnboardingCompleted: completed => set({ isOnboardingCompleted: completed }),
       setWindowPosition: pos => set({ windowPosition: pos }),
       reset: () =>
@@ -186,6 +208,11 @@ export const useSettingsStore = create<SettingsState>()(
           llmBaseUrl: '',
           microphoneId: 'default',
           selectedMicId: 'default',
+          dayModeEnabled: false,
+          segmentDurationMinutes: 15,
+          autoProcessSessions: true,
+          rawRetentionDays: 7,
+          storageBudgetGb: 1.5,
           isOnboardingCompleted: false,
           windowPosition: null,
         }),
@@ -206,6 +233,11 @@ export const useSettingsStore = create<SettingsState>()(
         llmBaseUrl: state.llmBaseUrl,
         microphoneId: state.microphoneId,
         selectedMicId: state.selectedMicId,
+        dayModeEnabled: state.dayModeEnabled,
+        segmentDurationMinutes: state.segmentDurationMinutes,
+        autoProcessSessions: state.autoProcessSessions,
+        rawRetentionDays: state.rawRetentionDays,
+        storageBudgetGb: state.storageBudgetGb,
         isOnboardingCompleted: state.isOnboardingCompleted,
         windowPosition: state.windowPosition,
       }),

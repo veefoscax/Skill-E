@@ -30,16 +30,14 @@ import {
   retryFailedSession,
 } from '@/lib/processing-bridge'
 import type { ProcessingProgress } from '@/types/processing'
-import { useRecordingStore } from '@/stores/recording'
-import { useOverlayStore } from '@/stores/overlay'
 import { useSettingsStore, WHISPER_MODEL_INFO } from '@/stores/settings'
 import { ProviderSelector } from './shared/ProviderSelector'
-import { COLORS } from '@/stores/overlay'
 import { FailedSession, getErrorHelp } from '@/lib/failed-sessions'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { buildSessionAnnotations } from '@/lib/session-annotations'
 
 interface ProcessingScreenProps {
-  onComplete: (skillMarkdown: string) => void
+  onComplete: (result: ProcessingResult) => void
   onCancel: () => void
 }
 
@@ -73,28 +71,7 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
 
     const process = async () => {
       try {
-        // Get annotations from stores
-        const recordingSteps = useRecordingStore.getState().steps
-        const overlayState = useOverlayStore.getState()
-
-        // Convert recording steps to click indicators
-        const clicks = recordingSteps
-          .filter(s => s.type === 'click' && s.data?.position)
-          .map((s, i) => ({
-            id: s.id,
-            number: i + 1,
-            position: s.data!.position!,
-            color: COLORS.COLOR_1,
-            timestamp: s.timestamp,
-            fadeState: 'visible' as const,
-          }))
-
-        const annotations = {
-          clicks: clicks,
-          drawings: overlayState.drawings || [],
-          selectedElements: overlayState.selectedElements || [],
-          keyboardInputs: [],
-        }
+        const annotations = buildSessionAnnotations()
 
         // Try real processing
         let processingResult: ProcessingResult
@@ -110,7 +87,7 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
 
         if (processingResult.success && processingResult.skillMarkdown) {
           setTimeout(() => {
-            onComplete(processingResult.skillMarkdown!)
+            onComplete(processingResult)
           }, 800)
         }
       } catch (error) {
@@ -162,7 +139,7 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
 
       if (result.success && result.skillMarkdown) {
         setTimeout(() => {
-          onComplete(result.skillMarkdown!)
+          onComplete(result)
         }, 800)
       } else if (result.failedSession) {
         setFailedSession(result.failedSession)

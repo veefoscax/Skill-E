@@ -8,9 +8,12 @@
 import { invoke } from '@tauri-apps/api/core'
 import { processSession } from './processing'
 import { generateSkill } from './skill-generator'
+import { generateOperationsBrief } from './operations-generator'
 import { useSettingsStore } from '@/stores/settings'
 import type { ProcessingProgress } from '../types/processing'
+import type { ProcessedSession, LLMContext } from '../types/processing'
 import type { CaptureSession } from '../types/capture'
+import type { OperationsBrief } from '../types/operations'
 import type { TranscriptionResult } from './whisper'
 import { transcribeAudio } from './whisper'
 import { readFile, writeFile } from '@tauri-apps/plugin-fs'
@@ -21,6 +24,9 @@ import { fileLog } from './file-logger'
 export interface ProcessingResult {
   success: boolean
   skillMarkdown?: string
+  operationsBrief?: OperationsBrief
+  processedSession?: ProcessedSession
+  llmContext?: LLMContext
   error?: string
   processingTime: number
   failedSession?: FailedSession
@@ -608,6 +614,26 @@ export async function processRecordingAndGenerateSkill(
 
     const skillMarkdown = generatedSkillResult as string
 
+    const operationsBrief = await generateOperationsBrief(processedSession, llmContext, {
+      provider: genProvider as any,
+      apiKey: llmApiKey,
+      model: llmModel || 'gpt-4-turbo',
+      baseUrl: llmBaseUrl,
+    })
+
+    try {
+      await writeFile(
+        `${sessionDir}/operations-brief.md`,
+        new TextEncoder().encode(operationsBrief.markdown)
+      )
+      await writeFile(
+        `${sessionDir}/operations-brief.json`,
+        new TextEncoder().encode(JSON.stringify(operationsBrief, null, 2))
+      )
+    } catch (artifactError) {
+      console.warn('Could not persist operations brief artifacts:', artifactError)
+    }
+
     // Stage 6: Save to file
     onProgress({
       stage: 'context_generation',
@@ -634,6 +660,9 @@ export async function processRecordingAndGenerateSkill(
     return {
       success: true,
       skillMarkdown,
+      operationsBrief,
+      processedSession,
+      llmContext,
       processingTime,
     }
   } catch (error) {

@@ -7,9 +7,12 @@ import { Toolbar } from './components/Toolbar';
 import { ProcessingScreen } from './components/ProcessingScreen';
 import { PreviewScreen } from './components/PreviewScreen';
 import { useRecordingControl } from './hooks/useRecordingControl';
+import { useDayModeController } from './hooks/useDayModeController';
 import { useLogCapture } from './hooks/useLogCapture';
 import { useInitialization } from './hooks/useInitialization';
 import { useSidecar } from './hooks/useSidecar';
+import type { ProcessingResult } from './lib/processing-bridge';
+import type { OperationsBrief } from './types/operations';
 
 // Lazy load components
 const OnboardingScreen = lazy(() => import('./components/Onboarding/OnboardingScreen').then(module => ({ default: module.OnboardingScreen })));
@@ -20,14 +23,33 @@ export type AppView = 'toolbar' | 'processing' | 'preview';
 function App() {
   const [view, setView] = useState<AppView>('toolbar');
   const [generatedSkill, setGeneratedSkill] = useState<string>('');
+  const [operationsBrief, setOperationsBrief] = useState<OperationsBrief | null>(null);
   
   // Custom hooks for logic extraction
   const { isReady, error: initError } = useInitialization();
   const { handleStart, handleStop } = useRecordingControl();
+  const {
+    dayModeEnabled,
+    isDayModeActive,
+    startDayMode,
+    stopDayMode,
+  } = useDayModeController({
+    startRecording: handleStart,
+    stopRecording: handleStop,
+  });
   useLogCapture();
   useSidecar();
 
   const isOnboardingCompleted = useSettingsStore(state => state.isOnboardingCompleted);
+  
+  const handleToolbarStart = async () => {
+    if (dayModeEnabled) {
+      await startDayMode();
+      return;
+    }
+
+    await handleStart();
+  };
 
   // Initialize shortcuts
   useEffect(() => {
@@ -44,11 +66,17 @@ function App() {
 
         await safeRegister('Ctrl+Shift+R', async () => {
           const { isRecording } = useRecordingStore.getState();
-          isRecording ? await handleStop() : await handleStart();
+          if (isRecording) {
+            isDayModeActive ? await stopDayMode() : await handleStop();
+          } else {
+            dayModeEnabled ? await startDayMode() : await handleStart();
+          }
         });
 
         await safeRegister('Escape', async () => {
-          if (useRecordingStore.getState().isRecording) await handleStop();
+          if (useRecordingStore.getState().isRecording) {
+            isDayModeActive ? await stopDayMode() : await handleStop();
+          }
         });
       } catch (e) { console.error('Shortcuts setup fail:', e); }
     };
@@ -58,7 +86,11 @@ function App() {
     // Tauri listeners
     const unlistenToggle = listen('hotkey-toggle-recording', async () => {
       const { isRecording } = useRecordingStore.getState();
-      isRecording ? await handleStop() : await handleStart();
+      if (isRecording) {
+        isDayModeActive ? await stopDayMode() : await handleStop();
+      } else {
+        dayModeEnabled ? await startDayMode() : await handleStart();
+      }
     });
 
     const unlistenStep = listen('recording:step-added', (event: any) => {
@@ -66,7 +98,9 @@ function App() {
     });
 
     const unlistenCancel = listen('hotkey-cancel-recording', async () => {
-      if (useRecordingStore.getState().isRecording) await handleStop();
+      if (useRecordingStore.getState().isRecording) {
+        isDayModeActive ? await stopDayMode() : await handleStop();
+      }
     });
 
     return () => {
@@ -75,17 +109,25 @@ function App() {
       unlistenCancel.then(f => f());
       unregisterAll().catch(() => { });
     };
-  }, [isReady, handleStart, handleStop]);
+  }, [isReady, handleStart, handleStop, dayModeEnabled, isDayModeActive, startDayMode, stopDayMode]);
 
   // View Handlers
   const onStopRecording = async () => {
+    if (isDayModeActive) {
+      await stopDayMode();
+      import('./lib/window-controls').then(w => w.setToolbarMode());
+      setView('toolbar');
+      return;
+    }
+
     await handleStop();
     import('./lib/window-controls').then(w => w.setProcessingMode());
     setView('processing');
   };
 
-  const handleProcessingComplete = (skillMarkdown: string) => {
-    setGeneratedSkill(skillMarkdown);
+  const handleProcessingComplete = (result: ProcessingResult) => {
+    setGeneratedSkill(result.skillMarkdown || '');
+    setOperationsBrief(result.operationsBrief || null);
     import('./lib/window-controls').then(w => w.setPreviewMode());
     setView('preview');
   };
@@ -94,6 +136,7 @@ function App() {
     import('./lib/window-controls').then(w => w.setToolbarMode());
     setView('toolbar');
     setGeneratedSkill('');
+    setOperationsBrief(null);
   };
 
   // UI States
@@ -144,7 +187,7 @@ function App() {
     <>
       {view === 'toolbar' && (
         <div className="w-full h-full p-2 flex items-center justify-center bg-transparent">
-          <Toolbar onStart={handleStart} onStop={onStopRecording} />
+          <Toolbar onStart={handleToolbarStart} onStop={onStopRecording} />
         </div>
       )}
 
@@ -158,6 +201,7 @@ function App() {
       {view === 'preview' && (
         <PreviewScreen
           skillMarkdown={generatedSkill}
+          operationsBrief={operationsBrief}
           onBack={resetToToolbar}
           onNewRecording={resetToToolbar}
         />

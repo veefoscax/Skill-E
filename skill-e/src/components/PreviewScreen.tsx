@@ -9,14 +9,21 @@ import { invoke } from '@tauri-apps/api/core'
 import { ArrowLeft, Download, Copy, Check, FileText, RotateCcw } from 'lucide-react'
 import { ExecutionPanel } from './ExecutionPanel'
 import { Button } from './ui/button'
+import type { OperationsBrief } from '@/types/operations'
 
 interface PreviewScreenProps {
   skillMarkdown: string
+  operationsBrief: OperationsBrief | null
   onBack: () => void
   onNewRecording: () => void
 }
 
-export function PreviewScreen({ skillMarkdown, onBack, onNewRecording }: PreviewScreenProps) {
+export function PreviewScreen({
+  skillMarkdown,
+  operationsBrief,
+  onBack,
+  onNewRecording,
+}: PreviewScreenProps) {
   const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState<'preview' | 'raw'>('preview')
 
@@ -181,6 +188,192 @@ export function PreviewScreen({ skillMarkdown, onBack, onNewRecording }: Preview
             </pre>
           )}
         </div>
+
+        {operationsBrief && (
+          <div className="max-w-4xl mx-auto mt-6 bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Operations Brief</h2>
+                <p className="text-sm text-gray-500">
+                  Session review focused on pain points and candidate issues.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(operationsBrief.markdown)
+                }}
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Copy Brief
+              </Button>
+            </div>
+
+            <div className="space-y-5 text-sm text-gray-700">
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-1">Workflow Goal</h3>
+                <p>{operationsBrief.workflowGoal}</p>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-1">Problem Framing</h3>
+                <p>{operationsBrief.problemFraming}</p>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-1">Session Summary</h3>
+                <p>{operationsBrief.sessionSummary}</p>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">Observed Applications</h3>
+                <div className="flex flex-wrap gap-2">
+                  {operationsBrief.observedApplications.map(app => (
+                    <span key={app} className="px-2 py-1 rounded bg-gray-100 text-gray-700">
+                      {app}
+                    </span>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">Pain Points</h3>
+                <ul className="space-y-1">
+                  {operationsBrief.painPoints.map(point => (
+                    <li key={point}>- {point}</li>
+                  ))}
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">Suggested Automations</h3>
+                <ul className="space-y-1">
+                  {operationsBrief.suggestedAutomations.map(item => (
+                    <li key={item}>- {item}</li>
+                  ))}
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">Research Questions</h3>
+                <ul className="space-y-1">
+                  {operationsBrief.researchQuestions.map(item => (
+                    <li key={item}>- {item}</li>
+                  ))}
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">Automation Opportunities</h3>
+                <div className="space-y-3">
+                  {operationsBrief.automationOpportunities.length === 0 && (
+                    <p className="text-gray-500">No automation opportunities were generated.</p>
+                  )}
+                  {operationsBrief.automationOpportunities.map(item => (
+                    <div key={item.title} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <h4 className="font-semibold text-gray-900">{item.title}</h4>
+                        <span className="px-2 py-1 rounded bg-white border text-xs font-medium capitalize">
+                          {item.agentFeasibility}
+                        </span>
+                      </div>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Current Pain:</span>{' '}
+                        {item.currentPain}
+                      </p>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Proposed Automation:</span>{' '}
+                        {item.proposedAutomation}
+                      </p>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Human Input Required:</span>{' '}
+                        {item.humanInputRequired}
+                      </p>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Research Needed:</span>{' '}
+                        {item.researchNeeded.join(' | ') || 'None'}
+                      </p>
+                      <p>
+                        <span className="font-medium text-gray-900">Success Criteria:</span>{' '}
+                        {item.successCriteria.join(' | ') || 'None'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">Human In The Loop</h3>
+                <div className="space-y-3">
+                  {operationsBrief.humanInLoopPoints.length === 0 && (
+                    <p className="text-gray-500">No human-in-the-loop points were generated.</p>
+                  )}
+                  {operationsBrief.humanInLoopPoints.map(item => (
+                    <div key={item.step} className="border rounded-lg p-4 bg-gray-50">
+                      <h4 className="font-semibold text-gray-900 mb-2">{item.step}</h4>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Why Human Matters:</span>{' '}
+                        {item.whyHumanMatters}
+                      </p>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Required Input:</span>{' '}
+                        {item.requiredInput}
+                      </p>
+                      <p>
+                        <span className="font-medium text-gray-900">
+                          Risk If Automated Blindly:
+                        </span>{' '}
+                        {item.riskIfAutomatedBlindly}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="font-semibold text-gray-900 mb-2">Candidate Issues</h3>
+                <div className="space-y-3">
+                  {operationsBrief.candidateIssues.length === 0 && (
+                    <p className="text-gray-500">No candidate issues were generated for this session.</p>
+                  )}
+                  {operationsBrief.candidateIssues.map(issue => (
+                    <div key={issue.title} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <h4 className="font-semibold text-gray-900">{issue.title}</h4>
+                        <span className="px-2 py-1 rounded bg-white border text-xs font-medium">
+                          {issue.priority}
+                        </span>
+                      </div>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Problem:</span> {issue.problem}
+                      </p>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Impact:</span> {issue.impact}
+                      </p>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Proposed Change:</span>{' '}
+                        {issue.proposedChange}
+                      </p>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Evidence:</span>{' '}
+                        {issue.evidence.join(' | ') || 'None'}
+                      </p>
+                      <p className="mb-2">
+                        <span className="font-medium text-gray-900">Acceptance Criteria:</span>{' '}
+                        {issue.acceptanceCriteria.join(' | ') || 'None'}
+                      </p>
+                      <p>
+                        <span className="font-medium text-gray-900">Tags:</span>{' '}
+                        {issue.tags.join(', ') || 'None'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </div>
+        )}
 
         {/* Execution Panel */}
         <div className="max-w-4xl mx-auto mt-6">

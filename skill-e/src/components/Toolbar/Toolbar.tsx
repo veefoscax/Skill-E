@@ -11,11 +11,13 @@ import { useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { emit } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { Settings, Circle, Square, Pause, Play, X, Loader2 } from 'lucide-react'
+import { Settings, Circle, Square, Pause, Play, X, Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '../ui/button'
 import { useAudioRecording } from '../../hooks/useAudioRecording'
 import { useCapture } from '../../hooks/useCapture'
 import { useRecordingStore } from '../../stores/recording'
+import { useSettingsStore } from '../../stores/settings'
+import { useDayModeStore } from '../../stores/day-mode'
 
 interface ToolbarProps {
   onStart?: () => Promise<void>
@@ -34,6 +36,13 @@ export function Toolbar({ onStart, onStop }: ToolbarProps) {
     resumeRecording,
     setDuration,
   } = useRecordingStore()
+  const {
+    dayModeEnabled,
+    setDayModeEnabled,
+    segmentDurationMinutes,
+  } = useSettingsStore()
+  const { isActive: isDayModeActive, processorBusy, queue } = useDayModeStore()
+  const pendingCount = queue.filter(item => item.status === 'pending').length
 
   // Audio recording
   const {
@@ -238,6 +247,16 @@ export function Toolbar({ onStart, onStop }: ToolbarProps) {
           {useRecordingStore(s => s.steps.length)} steps
         </div>
 
+        {dayModeEnabled && (
+          <div className="bg-blue-50 rounded px-2 py-1 text-xs font-medium text-blue-700 flex items-center gap-1">
+            <RefreshCw className={`w-3 h-3 ${processorBusy ? 'animate-spin' : ''}`} />
+            <span>
+              Day {segmentDurationMinutes}m
+              {isDayModeActive ? ` | queue ${pendingCount}` : ''}
+            </span>
+          </div>
+        )}
+
         {/* Divider */}
         <div className="w-px h-8 bg-gray-200" />
 
@@ -295,6 +314,16 @@ export function Toolbar({ onStart, onStop }: ToolbarProps) {
         <div className="w-px h-8 bg-gray-200" />
 
         {/* Settings */}
+        <Button
+          variant={dayModeEnabled ? 'default' : 'ghost'}
+          size="icon"
+          onClick={() => setDayModeEnabled(!dayModeEnabled)}
+          title={dayModeEnabled ? 'Disable Day Mode' : 'Enable Day Mode'}
+          className={dayModeEnabled ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+        >
+          <RefreshCw className={`w-5 h-5 ${isDayModeActive ? 'animate-spin' : ''}`} />
+        </Button>
+
         <Button variant="ghost" size="icon" onClick={openSettings}>
           <Settings className="w-5 h-5 text-gray-600" />
         </Button>

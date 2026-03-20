@@ -66,6 +66,8 @@ export function useCapture() {
 
         // 1. Memory Optimization: Sliding Window
         session.frames.push(frame)
+        session.allFrames = session.allFrames || []
+        session.allFrames.push(frame)
         if (session.frames.length > MAX_MEMORY_FRAMES) {
           session.frames.shift() // Remove oldest frame from RAM
         }
@@ -129,6 +131,7 @@ export function useCapture() {
         startTime,
         intervalMs,
         frames: [],
+        allFrames: [],
       }
 
       sessionRef.current = session
@@ -193,7 +196,7 @@ export function useCapture() {
         startTime: session.startTime,
         endTime: session.endTime,
         intervalMs: session.intervalMs,
-        frames: session.frames.map(f => ({
+        frames: (session.allFrames || session.frames).map(f => ({
           id: f.id,
           timestamp: f.timestamp,
           imagePath: f.imagePath.replace(`${session.directory}/`, ''), // Store relative path

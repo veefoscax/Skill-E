@@ -44,31 +44,24 @@ export function ExecutionPanel({ skillMarkdown }: ExecutionPanelProps) {
       setTotalSteps(skill.steps.length)
 
       const playbackSteps = skill.steps.map(s => {
-        let x = undefined;
-        let y = undefined;
-        let text = undefined;
+        let x = undefined
+        let y = undefined
+        let text = undefined
 
-        if (s.action === 'click' && s.target?.includes('{"x":')) {
-          try {
-            const parsed = JSON.parse(s.target);
-            x = parsed.x;
-            y = parsed.y;
-          } catch (e) {
-            // Ignore parse errors, fallback to undefined
-          }
+        if (s.actionType === 'click' && s.target?.coordinates) {
+          x = s.target.coordinates.x
+          y = s.target.coordinates.y
         }
 
-        if (s.action === 'type') {
-          text = s.value;
-        } else if (s.action === 'key') {
-          text = s.value;
+        if (s.actionType === 'type' || s.actionType === 'verify') {
+          text = s.target?.text || s.instruction
         }
 
         return {
-          action_type: s.action,
+          action_type: s.actionType,
           x,
           y,
-          text
+          text,
         }
       })
 

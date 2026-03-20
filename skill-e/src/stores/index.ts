@@ -43,3 +43,6 @@ export {
   getProviderDescription,
   validateApiKey,
 } from './provider'
+
+export { useDayModeStore } from './day-mode'
+export type { DayModeState, DayModeSessionItem, DayModeSessionStatus } from './day-mode'

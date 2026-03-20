@@ -102,6 +102,8 @@ export interface CaptureSession {
   endTime?: number
   /** All captured frames */
   frames: CaptureFrame[]
+  /** Full frame history for persistence-heavy flows */
+  allFrames?: CaptureFrame[]
   /** Capture interval in milliseconds */
   intervalMs: number
 }
