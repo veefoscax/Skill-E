@@ -82,7 +82,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [],
+    "resources": [
+      "../../sidecar"
+    ],
     "externalBin": [],
     "copyright": "© 2025 Skill-E",
     "category": "DeveloperTool",

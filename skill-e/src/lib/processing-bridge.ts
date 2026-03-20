@@ -165,6 +165,86 @@ async function transcribeWithApi(audioPath: string, apiKey: string): Promise<Tra
   return result
 }
 
+async function transcribeWithSidecar(
+  audioPath: string,
+  onProgress: (progress: ProcessingProgress) => void
+): Promise<TranscriptionResult> {
+  const settings = useSettingsStore.getState()
+  const targetModel = settings.whisperModel || 'tiny'
+  const device = settings.useGpu ? 'cuda' : 'cpu'
+
+  onProgress({
+    stage: 'loading',
+    percentage: 22,
+    currentStep: `Starting faster-whisper sidecar (${targetModel}, ${device})...`,
+  })
+
+  await fileLog(`Trying faster-whisper sidecar with model=${targetModel} device=${device}`)
+
+  await invoke('start_ai_sidecar', {
+    port: settings.sidecarPort,
+    model: targetModel,
+    device,
+  }).catch(error => {
+    console.warn('Sidecar start warning:', error)
+    return null
+  })
+
+  onProgress({
+    stage: 'loading',
+    percentage: 28,
+    currentStep: 'Transcribing with faster-whisper sidecar...',
+  })
+
+  const result = await invoke<{
+    text: string
+    segments?: Array<{
+      id?: number
+      start?: number
+      end?: number
+      text?: string
+    }>
+    language?: string
+    duration_seconds?: number
+    audio_duration_seconds?: number
+  }>('transcribe_sidecar', {
+    audioPath,
+    port: settings.sidecarPort,
+  })
+
+  const segments = (result.segments || [])
+    .filter(segment => (segment.text || '').trim().length > 0)
+    .map((segment, index) => ({
+      id: segment.id ?? index,
+      start: segment.start ?? 0,
+      end: segment.end ?? segment.start ?? 0,
+      text: segment.text?.trim() ?? '',
+    }))
+
+  const duration =
+    result.audio_duration_seconds ??
+    segments[segments.length - 1]?.end ??
+    result.duration_seconds ??
+    0
+
+  return {
+    text: result.text || segments.map(segment => segment.text).join(' ').trim(),
+    segments:
+      segments.length > 0
+        ? segments
+        : [
+            {
+              id: 0,
+              start: 0,
+              end: duration,
+              text: result.text || '',
+            },
+          ],
+    language: result.language || 'unknown',
+    duration,
+  }
+}
+
 /**
  * Main transcription function - tries local first, then API if configured
  * NO GENERIC FALLBACK - fails properly to allow retry
@@ -182,6 +262,46 @@ async function transcribeAudioWithFallback(
   const settings = useSettingsStore.getState()
   const targetModel = settings.whisperModel || 'tiny'
   const useGpu = settings.useGpu || false
+
+  if (settings.transcriptionMode === 'cloud_openai') {
+    if (!settings.whisperApiKey) {
+      throw {
+        type: 'API_KEY_MISSING',
+        message: 'Whisper API key is required for Cloud API transcription',
+        details: 'Set an API key or switch back to Local mode.',
+        canRetry: false,
+        canUseApi: true,
+        canDownloadModel: false,
+      } as TranscriptionError
+    }
+
+    return transcribeWithApi(audioPath, settings.whisperApiKey)
+  }
+
+  if (settings.transcriptionMode === 'browser_native') {
+    throw {
+      type: 'WHISPER_FAILED',
+      message: 'Browser-native transcription is not implemented yet',
+      details: 'Use faster-whisper sidecar or local Whisper for now.',
+      canRetry: false,
+      canUseApi: false,
+      canDownloadModel: false,
+    } as TranscriptionError
+  }
+
+  if (settings.sidecarEnabled) {
+    try {
+      console.log(`🎤 [Sidecar] Trying faster-whisper sidecar (model: ${targetModel}, GPU: ${useGpu})...`)
+      await fileLog(`Trying faster-whisper sidecar with model: ${targetModel}`)
+      const result = await transcribeWithSidecar(audioPath, onProgress)
+      await fileLog(`Sidecar transcription success: ${result.text.substring(0, 50)}...`)
+      return result
+    } catch (sidecarError) {
+      console.error('🎤 [Sidecar] Failed:', sidecarError)
+      await fileLog(`Sidecar transcription failed: ${sidecarError}`)
+      console.warn('Falling back to local whisper-rs path...')
+    }
+  }
 
   // Try 1: Local Whisper (preferred)
   console.log(`🎤 [Step 1] Trying Local Whisper (model: ${targetModel}, GPU: ${useGpu})...`)
@@ -491,6 +611,18 @@ export async function processRecordingAndGenerateSkill(
         transcription = await transcribeAudioWithFallback(audioPath, onProgress)
         console.log('🎤 Transcription successful:', transcription.text.substring(0, 100))
         await fileLog(`Transcription success: ${transcription.text.substring(0, 50)}...`)
+        try {
+          await writeFile(
+            `${sessionDir}/transcript.txt`,
+            new TextEncoder().encode(transcription.text)
+          )
+          await writeFile(
+            `${sessionDir}/transcript.json`,
+            new TextEncoder().encode(JSON.stringify(transcription, null, 2))
+          )
+        } catch (artifactError) {
+          console.warn('Could not persist transcript artifacts:', artifactError)
+        }
       } catch (error) {
         console.error('🎤 Transcription failed:', error)
         await fileLog(`Transcription FAILED: ${error}`)

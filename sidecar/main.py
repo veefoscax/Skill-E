@@ -1,6 +1,6 @@
 import os
 import argparse
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, HTTPException
 from faster_whisper import WhisperModel
 import uvicorn
 import time
@@ -29,19 +29,34 @@ async def transcribe(audio_path: str):
         raise HTTPException(status_code=404, detail="Audio file not found")
 
     start_time = time.time()
-    segments, info = model.transcribe(audio_path, beam_size=5)
-    
-    text = ""
-    for segment in segments:
-        text += segment.text + " "
+    segments, info = model.transcribe(audio_path, beam_size=2, vad_filter=True)
+
+    text_parts = []
+    segment_payload = []
+    last_end = 0.0
+
+    for index, segment in enumerate(segments):
+        segment_text = segment.text.strip()
+        text_parts.append(segment_text)
+        last_end = float(segment.end)
+        segment_payload.append(
+            {
+                "id": index,
+                "start": float(segment.start),
+                "end": float(segment.end),
+                "text": segment_text,
+            }
+        )
     
     duration = time.time() - start_time
     
     return {
-        "text": text.strip(),
+        "text": " ".join([part for part in text_parts if part]).strip(),
+        "segments": segment_payload,
         "language": info.language,
         "language_probability": info.language_probability,
-        "duration_seconds": duration
+        "duration_seconds": duration,
+        "audio_duration_seconds": last_end,
     }
 
 if __name__ == "__main__":

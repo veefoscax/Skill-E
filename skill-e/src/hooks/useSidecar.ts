@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useSettingsStore } from '../stores/settings';
 
 export function useSidecar() {
-  const { sidecarEnabled, sidecarPort, whisperModel } = useSettingsStore();
+  const { sidecarEnabled, sidecarPort, whisperModel, useGpu } = useSettingsStore();
 
   useEffect(() => {
     if (!sidecarEnabled) return;
@@ -13,7 +13,8 @@ export function useSidecar() {
         console.log(`[useSidecar] Starting AI sidecar on port ${sidecarPort}...`);
         const result = await invoke('start_ai_sidecar', {
           port: sidecarPort,
-          model: whisperModel
+          model: whisperModel,
+          device: useGpu ? 'cuda' : 'cpu',
         });
         console.log(`[useSidecar] ${result}`);
       } catch (error) {
@@ -34,5 +35,5 @@ export function useSidecar() {
       };
       stopSidecar();
     };
-  }, [sidecarEnabled, sidecarPort, whisperModel]);
+  }, [sidecarEnabled, sidecarPort, whisperModel, useGpu]);
 }

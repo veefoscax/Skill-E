@@ -536,6 +536,7 @@ pub async fn start_ai_sidecar(
     app_handle: tauri::AppHandle,
     port: u16,
     model: String,
+    device: Option<String>,
 ) -> Result<String, String> {
     let mut child_lock = state.child.lock().map_err(|e| e.to_string())?;
     
@@ -544,14 +545,32 @@ pub async fn start_ai_sidecar(
         return Ok("Sidecar already running".to_string());
     }
 
-    let resource_path = app_handle
+    let resource_dir = app_handle
         .path()
         .resource_dir()
-        .map_err(|error| error.to_string())?
-        .join("sidecar")
-        .join("main.py");
+        .map_err(|error| error.to_string())?;
+
+    let candidate_paths = vec![
+        resource_dir.join("sidecar").join("main.py"),
+        resource_dir.join("main.py"),
+        std::env::current_exe()
+            .ok()
+            .and_then(|path| path.parent().map(|dir| dir.join("sidecar").join("main.py")))
+            .unwrap_or_default(),
+        std::env::current_dir()
+            .ok()
+            .map(|dir| dir.join("..").join("sidecar").join("main.py"))
+            .unwrap_or_default(),
+    ];
+
+    let resource_path = candidate_paths
+        .into_iter()
+        .find(|path| path.exists())
+        .ok_or_else(|| "Could not locate sidecar/main.py in bundle resources or nearby paths".to_string())?;
 
     println!("Starting AI sidecar at: {:?}", resource_path);
+
+    let device = device.unwrap_or_else(|| "cpu".to_string());
 
     // Note: In a real bundled app, we would use the sidecar binary or a bundled python
     // For development, we assume 'python' is in the PATH and venv is setup
@@ -560,6 +579,7 @@ pub async fn start_ai_sidecar(
             resource_path.to_str().unwrap(),
             "--port", &port.to_string(),
             "--model", &model,
+            "--device", &device,
         ])
         .spawn()
         .map_err(|e| format!("Failed to spawn sidecar: {}", e))?;

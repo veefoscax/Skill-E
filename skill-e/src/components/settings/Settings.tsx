@@ -704,7 +704,7 @@ export function Settings() {
                 <Activity className={`h-4 w-4 ${sidecarEnabled ? 'text-green-500' : 'text-muted-foreground'}`} />
                 <div className="flex flex-col">
                   <span className="font-medium text-xs">Enable Sidecar</span>
-                  <span className="text-[10px] text-muted-foreground">Faster GPU-accelerated AI</span>
+                  <span className="text-[10px] text-muted-foreground">Use faster-whisper sidecar for local CPU/GPU transcription</span>
                 </div>
               </div>
               <button
@@ -732,6 +732,11 @@ export function Settings() {
                 />
               </div>
             )}
+
+            <p className="text-[10px] text-muted-foreground">
+              When Local mode is selected, enabling the sidecar makes transcription use Python
+              `faster-whisper` before falling back to the bundled Rust path.
+            </p>
           </div>
         </div>
 
