@@ -14,8 +14,6 @@ import { useSidecar } from './hooks/useSidecar';
 import type { ProcessingResult } from './lib/processing-bridge';
 import type { OperationsBrief } from './types/operations';
 
-// Lazy load components
-const OnboardingScreen = lazy(() => import('./components/Onboarding/OnboardingScreen').then(module => ({ default: module.OnboardingScreen })));
 const Settings = lazy(() => import('./components/settings/Settings').then(module => ({ default: module.Settings })));
 
 export type AppView = 'toolbar' | 'processing' | 'preview';
@@ -41,6 +39,7 @@ function App() {
   useSidecar();
 
   const isOnboardingCompleted = useSettingsStore(state => state.isOnboardingCompleted);
+  const setOnboardingCompleted = useSettingsStore(state => state.setOnboardingCompleted);
   
   const handleToolbarStart = async () => {
     if (dayModeEnabled) {
@@ -111,6 +110,21 @@ function App() {
     };
   }, [isReady, handleStart, handleStop, dayModeEnabled, isDayModeActive, startDayMode, stopDayMode]);
 
+  useEffect(() => {
+    if (!isReady) return;
+
+    const isMainWindow = !window.location.hash.includes('settings') && window.location.hash !== '#/overlay';
+    if (!isMainWindow) return;
+
+    if (!isOnboardingCompleted) {
+      setOnboardingCompleted(true);
+    }
+
+    import('./lib/window-controls').then(w => w.setToolbarMode()).catch(error => {
+      console.warn('Failed to force toolbar mode on startup:', error);
+    });
+  }, [isReady, isOnboardingCompleted, setOnboardingCompleted]);
+
   // View Handlers
   const onStopRecording = async () => {
     if (isDayModeActive) {
@@ -162,14 +176,6 @@ function App() {
           <p>Initializing Skill-E...</p>
         </div>
       </div>
-    );
-  }
-
-  if (!isOverlayWindow && !window.location.hash.includes('settings') && !isOnboardingCompleted) {
-    return (
-      <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading Onboarding...</div>}>
-        <OnboardingScreen onComplete={() => import('./lib/window-controls').then(w => w.setToolbarMode())} />
-      </Suspense>
     );
   }
 

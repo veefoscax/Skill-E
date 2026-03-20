@@ -168,7 +168,7 @@ export const useSettingsStore = create<SettingsState>()(
       autoProcessSessions: true,
       rawRetentionDays: 7,
       storageBudgetGb: 1.5,
-      isOnboardingCompleted: false,
+      isOnboardingCompleted: true,
       windowPosition: null,
 
       setFrameRate: fps => set({ frameRate: fps }),
@@ -215,7 +215,7 @@ export const useSettingsStore = create<SettingsState>()(
           autoProcessSessions: true,
           rawRetentionDays: 7,
           storageBudgetGb: 1.5,
-          isOnboardingCompleted: false,
+          isOnboardingCompleted: true,
           windowPosition: null,
         }),
     }),
