@@ -193,9 +193,9 @@ export function PreviewScreen({
           <div className="max-w-4xl mx-auto mt-6 bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between gap-4 mb-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Operations Brief</h2>
+                <h2 className="text-xl font-bold text-gray-900">Work Diary Brief</h2>
                 <p className="text-sm text-gray-500">
-                  Session review focused on pain points and candidate issues.
+                  A daily-style review of pain points, automation ideas, and what should improve next.
                 </p>
               </div>
               <Button
@@ -222,7 +222,7 @@ export function PreviewScreen({
               </section>
 
               <section>
-                <h3 className="font-semibold text-gray-900 mb-1">Session Summary</h3>
+                <h3 className="font-semibold text-gray-900 mb-1">Work Diary Summary</h3>
                 <p>{operationsBrief.sessionSummary}</p>
               </section>
 
@@ -332,10 +332,10 @@ export function PreviewScreen({
               </section>
 
               <section>
-                <h3 className="font-semibold text-gray-900 mb-2">Candidate Issues</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">Improvement Candidates</h3>
                 <div className="space-y-3">
                   {operationsBrief.candidateIssues.length === 0 && (
-                    <p className="text-gray-500">No candidate issues were generated for this session.</p>
+                    <p className="text-gray-500">No improvement candidates were generated for this session.</p>
                   )}
                   {operationsBrief.candidateIssues.map(issue => (
                     <div key={issue.title} className="border rounded-lg p-4 bg-gray-50">

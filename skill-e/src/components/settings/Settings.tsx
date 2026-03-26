@@ -612,17 +612,17 @@ export function Settings() {
           </div>
         </div>
 
-        {/* Day Mode */}
+        {/* Work Diary */}
         <div className="space-y-2">
           <Label className="text-xs font-medium text-muted-foreground uppercase">
-            Day Mode
+            Work Diary
           </Label>
           <div className="p-3 rounded-md border bg-card space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="font-medium text-xs">Enable continuous session rotation</span>
+                <span className="font-medium text-xs">Enable continuous work diary capture</span>
                 <span className="text-[10px] text-muted-foreground">
-                  Capture short sessions back-to-back and process them in the background.
+                  Record short work segments back-to-back, then summarize the day in the background.
                 </span>
               </div>
               <button
@@ -689,8 +689,8 @@ export function Settings() {
             </div>
 
             <p className="text-[10px] text-muted-foreground">
-              For quick testing, set segment length to 1-2 minutes and verify that each completed
-              segment produces its own `operations-brief.json` and `day-mode-session.json`.
+              Think of this as an operational companion: each finished segment should generate its
+              own diary artifact, pain summary, and next actions for improvement.
             </p>
           </div>
         </div>

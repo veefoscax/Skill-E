@@ -41,8 +41,15 @@ export function Toolbar({ onStart, onStop }: ToolbarProps) {
     setDayModeEnabled,
     segmentDurationMinutes,
   } = useSettingsStore()
-  const { isActive: isDayModeActive, processorBusy, queue } = useDayModeStore()
+  const {
+    isActive: isDayModeActive,
+    processorBusy,
+    queue,
+    completedToday,
+    failedToday,
+  } = useDayModeStore()
   const pendingCount = queue.filter(item => item.status === 'pending').length
+  const diaryStateLabel = isDayModeActive ? 'Live' : 'Ready'
 
   // Audio recording
   const {
@@ -248,11 +255,13 @@ export function Toolbar({ onStart, onStop }: ToolbarProps) {
         </div>
 
         {dayModeEnabled && (
-          <div className="bg-blue-50 rounded px-2 py-1 text-xs font-medium text-blue-700 flex items-center gap-1">
+          <div className="bg-blue-50 rounded px-2 py-1 text-xs font-medium text-blue-700 flex items-center gap-1 min-w-[11.5rem]">
             <RefreshCw className={`w-3 h-3 ${processorBusy ? 'animate-spin' : ''}`} />
             <span>
-              Day {segmentDurationMinutes}m
-              {isDayModeActive ? ` | queue ${pendingCount}` : ''}
+              Diary {diaryStateLabel} {segmentDurationMinutes}m
+              {pendingCount > 0 ? ` | queue ${pendingCount}` : ''}
+              {completedToday > 0 ? ` | done ${completedToday}` : ''}
+              {failedToday > 0 ? ` | fail ${failedToday}` : ''}
             </span>
           </div>
         )}
@@ -318,7 +327,7 @@ export function Toolbar({ onStart, onStop }: ToolbarProps) {
           variant={dayModeEnabled ? 'default' : 'ghost'}
           size="icon"
           onClick={() => setDayModeEnabled(!dayModeEnabled)}
-          title={dayModeEnabled ? 'Disable Day Mode' : 'Enable Day Mode'}
+          title={dayModeEnabled ? 'Disable Work Diary' : 'Enable Work Diary'}
           className={dayModeEnabled ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
         >
           <RefreshCw className={`w-5 h-5 ${isDayModeActive ? 'animate-spin' : ''}`} />

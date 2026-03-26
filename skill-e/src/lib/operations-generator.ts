@@ -129,7 +129,9 @@ function buildOperationsPrompt(processedSession: ProcessedSession, context: LLMC
     .map(step => `- ${step.transcript}`)
     .join('\n')
 
-  return `You are an operations research analyst for internal workflow capture.
+  return `You are an operational companion for a small business workday.
+Your job is to watch a captured work segment, understand what happened, identify the biggest pains,
+and turn that into a useful work diary that helps the team decide what to automate, improve, or keep human-led.
 
 Analyze the captured session and return ONLY valid JSON with this exact shape:
 {
@@ -176,7 +178,10 @@ Analyze the captured session and return ONLY valid JSON with this exact shape:
 }
 
 Rules:
+- Treat this as a work diary, not just a transcript review.
 - Focus on pain, friction, repetition, context switching, waiting, confusion, and automation opportunities.
+- Explain what looked like the biggest operational problem in this slice of the day and why it matters.
+- Prefer language that helps a team decide what to fix next, not generic summaries.
 - Distinguish clearly between what an agent could do autonomously, what requires human-in-the-loop approval or data entry, and what should remain manual.
 - When you identify a problem, propose what must be researched next to automate it well.
 - Human-in-the-loop points should capture moments where operator judgment, legal responsibility, trust, or quality control matters.
@@ -523,7 +528,7 @@ function buildOperationsMarkdown(brief: OperationsBrief): string {
     )
     .join('\n\n')
 
-  return `# Operations Brief
+  return `# Work Diary Brief
 
 ## Workflow Goal
 ${brief.workflowGoal}
@@ -531,7 +536,7 @@ ${brief.workflowGoal}
 ## Problem Framing
 ${brief.problemFraming}
 
-## Session Summary
+## Work Diary Summary
 ${brief.sessionSummary}
 
 ## Observed Applications
@@ -578,7 +583,7 @@ ${
     .join('\n\n') || 'No human-in-the-loop points generated.'
 }
 
-## Candidate Issues
+## Improvement Candidates
 ${issues || 'No candidate issues generated.'}
 
 ## Next Actions

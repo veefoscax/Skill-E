@@ -42,6 +42,7 @@ export interface DayModeState {
   markFailed: (id: string, error: string) => void
   removeSession: (id: string) => void
   clearFinished: () => void
+  recoverRuntimeState: () => void
 }
 
 export const useDayModeStore = create<DayModeState>()(
@@ -146,6 +147,22 @@ export const useDayModeStore = create<DayModeState>()(
       clearFinished: () =>
         set(state => ({
           queue: state.queue.filter(item => item.status === 'pending' || item.status === 'processing'),
+        })),
+
+      recoverRuntimeState: () =>
+        set(state => ({
+          isActive: false,
+          currentSessionDir: null,
+          currentSegmentStartedAt: null,
+          processorBusy: false,
+          queue: state.queue.map(item =>
+            item.status === 'processing'
+              ? {
+                  ...item,
+                  status: 'pending',
+                }
+              : item
+          ),
         })),
     }),
     {

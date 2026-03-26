@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { useRecordingStore, useSettingsStore } from '@/stores'
 import { useDayModeStore } from '@/stores/day-mode'
 import { buildSessionAnnotations } from '@/lib/session-annotations'
 import { processRecordingAndGenerateSkill } from '@/lib/processing-bridge'
 import { persistDayModeSessionArtifact } from '@/lib/day-mode-artifacts'
+import type { SessionManifest } from '@/types/capture'
 
 interface DayModeControllerOptions {
   startRecording: () => Promise<void>
@@ -36,11 +38,13 @@ export function useDayModeController({
     markProcessing,
     markCompleted,
     markFailed,
+    recoverRuntimeState,
   } = useDayModeStore()
 
   const rotationTimerRef = useRef<number | null>(null)
   const rotatingRef = useRef(false)
   const processingRef = useRef(false)
+  const recoveredRef = useRef(false)
 
   const retention = useMemo(
     () => ({
@@ -54,6 +58,25 @@ export function useDayModeController({
     if (rotationTimerRef.current !== null) {
       window.clearTimeout(rotationTimerRef.current)
       rotationTimerRef.current = null
+    }
+  }, [])
+
+  const validateSession = useCallback(async (sessionDir: string): Promise<string | null> => {
+    try {
+      const manifest = await invoke<SessionManifest>('load_session_manifest', { sessionDir })
+
+      if (!manifest.audioPath) {
+        return 'Work diary segment ended without audio.'
+      }
+
+      if (manifest.frames.length === 0) {
+        return 'Work diary segment ended without screenshots.'
+      }
+
+      return null
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown manifest validation error'
+      return `Failed to validate work diary segment: ${message}`
     }
   }, [])
 
@@ -118,9 +141,7 @@ export function useDayModeController({
           }
 
           const persistedState =
-            useDayModeStore
-              .getState()
-              .queue.find(queueItem => queueItem.id === item.id) || item
+            useDayModeStore.getState().queue.find(queueItem => queueItem.id === item.id) || item
 
           await persistDayModeSessionArtifact(persistedState, retention, result)
         } catch (error) {
@@ -128,9 +149,7 @@ export function useDayModeController({
           markFailed(item.id, message)
 
           const persistedState =
-            useDayModeStore
-              .getState()
-              .queue.find(queueItem => queueItem.id === item.id) || {
+            useDayModeStore.getState().queue.find(queueItem => queueItem.id === item.id) || {
               ...item,
               status: 'failed' as const,
               error: message,
@@ -170,7 +189,21 @@ export function useDayModeController({
             annotations,
           })
 
-          await persistDayModeSessionArtifact(queued, retention)
+          const validationError = await validateSession(sessionDir)
+          if (validationError) {
+            markFailed(queued.id, validationError)
+
+            const failedState =
+              useDayModeStore.getState().queue.find(item => item.id === queued.id) || {
+                ...queued,
+                status: 'failed' as const,
+                error: validationError,
+              }
+
+            await persistDayModeSessionArtifact(failedState, retention)
+          } else {
+            await persistDayModeSessionArtifact(queued, retention)
+          }
         }
 
         if (startNextSegment && useDayModeStore.getState().isActive) {
@@ -182,7 +215,16 @@ export function useDayModeController({
         rotatingRef.current = false
       }
     },
-    [beginSegment, clearRotationTimer, enqueueSession, retention, setCurrentSession, stopRecording]
+    [
+      beginSegment,
+      clearRotationTimer,
+      enqueueSession,
+      markFailed,
+      retention,
+      setCurrentSession,
+      stopRecording,
+      validateSession,
+    ]
   )
 
   const startDayMode = useCallback(async () => {
@@ -209,6 +251,15 @@ export function useDayModeController({
     clearRotationTimer()
     await rotateCurrentSegment(false)
   }, [clearRotationTimer, markStopped, rotateCurrentSegment])
+
+  useEffect(() => {
+    if (recoveredRef.current) {
+      return
+    }
+
+    recoverRuntimeState()
+    recoveredRef.current = true
+  }, [recoverRuntimeState])
 
   useEffect(() => {
     void processQueue()
