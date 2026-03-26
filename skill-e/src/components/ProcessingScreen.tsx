@@ -1,7 +1,7 @@
 /**
  * ProcessingScreen - Shows AI processing progress
  *
- * Connects recording data to processing pipeline and generates SKILL.md
+ * Connects recording data to processing pipeline and generates the work diary brief
  */
 
 import { useEffect, useState } from 'react'
@@ -85,7 +85,7 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
           setFailedSession(processingResult.failedSession)
         }
 
-        if (processingResult.success && processingResult.skillMarkdown) {
+        if (processingResult.success && processingResult.operationsBrief) {
           setTimeout(() => {
             onComplete(processingResult)
           }, 800)
@@ -137,7 +137,7 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
       setResult(result)
       setIsProcessing(false)
 
-      if (result.success && result.skillMarkdown) {
+      if (result.success && result.operationsBrief) {
         setTimeout(() => {
           onComplete(result)
         }, 800)
@@ -200,23 +200,23 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
   const getStageTitle = () => {
     switch (progress.stage) {
       case 'loading':
-        return 'Loading Recording...'
+        return 'Loading Work Segment...'
       case 'classification':
         return 'Classifying Speech'
       case 'timeline':
-        return 'Building Timeline...'
+        return 'Building Work Timeline...'
       case 'step_detection':
         return 'Detecting Steps'
       case 'ocr':
         return 'Extracting Text'
       case 'context_generation':
-        return 'Generating SKILL.md'
+        return 'Writing Work Diary Brief'
       case 'complete':
         return 'Complete!'
       case 'error':
         return failedSession ? 'Transcription Failed' : 'Processing Error'
       default:
-        return 'Processing...'
+        return 'Building Work Diary...'
     }
   }
 
