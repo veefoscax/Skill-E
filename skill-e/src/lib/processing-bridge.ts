@@ -5,7 +5,6 @@
  * Handles the complete flow: recording → processing → skill generation
  */
 
-import { invoke } from '@tauri-apps/api/core'
 import { processSession } from './processing'
 import { generateSkill } from './skill-generator'
 import { generateOperationsBrief } from './operations-generator'
@@ -17,10 +16,10 @@ import type { CaptureSession } from '../types/capture'
 import type { OperationsBrief } from '../types/operations'
 import type { TranscriptionResult } from './whisper'
 import { transcribeAudio } from './whisper'
-import { readFile, writeFile } from '@tauri-apps/plugin-fs'
 import { downloadModel as downloadWhisperModel } from './whisper-real'
 import { addFailedSession, FailedSession } from './failed-sessions'
 import { fileLog } from './file-logger'
+import { transcribeWithWisprHost } from './host-api'
 
 export interface ProcessingResult {
   success: boolean
@@ -53,6 +52,21 @@ export interface TranscriptionError {
   canRetry: boolean
   canUseApi: boolean
   canDownloadModel: boolean
+}
+
+async function tauriInvoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  const { invoke } = await import('@tauri-apps/api/core')
+  return invoke<T>(command, args)
+}
+
+async function tauriReadFile(path: string) {
+  const { readFile } = await import('@tauri-apps/plugin-fs')
+  return readFile(path)
+}
+
+async function tauriWriteFile(path: string, contents: Uint8Array) {
+  const { writeFile } = await import('@tauri-apps/plugin-fs')
+  return writeFile(path, contents)
 }
 
 /**
@@ -153,7 +167,7 @@ async function transcribeWithApi(audioPath: string, apiKey: string): Promise<Tra
   await fileLog('Using OpenAI Whisper API')
 
   // Read audio file
-  const audioBytes = await readFile(audioPath)
+  const audioBytes = await tauriReadFile(audioPath)
   console.log('🎤 [API] Audio file read:', audioBytes.length, 'bytes')
 
   const audioBlob = new Blob([audioBytes], { type: 'audio/webm' })
@@ -181,7 +195,7 @@ async function transcribeWithSidecar(
 
   await fileLog(`Trying faster-whisper sidecar with model=${targetModel} device=${device}`)
 
-  await invoke('start_ai_sidecar', {
+  await tauriInvoke('start_ai_sidecar', {
     port: settings.sidecarPort,
     model: targetModel,
     device,
@@ -196,7 +210,7 @@ async function transcribeWithSidecar(
     currentStep: 'Transcribing with faster-whisper sidecar...',
   })
 
-  const result = await invoke<{
+  const result = await tauriInvoke<{
     text: string
     segments?: Array<{
       id?: number
@@ -250,7 +264,7 @@ async function ensureWavAudioPath(audioPath: string): Promise<string> {
     return audioPath
   }
 
-  const audioBytes = await readFile(audioPath)
+  const audioBytes = await tauriReadFile(audioPath)
   const sourceMimeType =
     audioPath.toLowerCase().endsWith('.ogg') || audioPath.toLowerCase().endsWith('.opus')
       ? 'audio/ogg'
@@ -260,7 +274,7 @@ async function ensureWavAudioPath(audioPath: string): Promise<string> {
   const wavBlob = await convertWebMToWav(sourceBlob)
   const wavPath = audioPath.replace(/\.[^/.]+$/, '.wav')
   const wavBytes = new Uint8Array(await wavBlob.arrayBuffer())
-  await writeFile(wavPath, wavBytes)
+  await tauriWriteFile(wavPath, wavBytes)
   return wavPath
 }
 
@@ -283,35 +297,20 @@ async function transcribeWithWisprBridge(
     currentStep: 'Transcribing with Wispr Flow...',
   })
 
-  const result = await invoke<{
-    text: string
-    segments?: Array<{
-      id: number
-      start: number
-      end: number
-      text: string
-    }>
-    language?: string
-    duration?: number
-  }>('transcribe_wispr_bridge', {
-    audioPath: wavPath,
-  })
+  const result = await transcribeWithWisprHost(wavPath)
 
   return {
     text: result.text,
-    segments:
-      result.segments && result.segments.length > 0
-        ? result.segments
-        : [
-            {
-              id: 0,
-              start: 0,
-              end: result.duration ?? 0,
-              text: result.text,
-            },
-          ],
-    language: result.language || 'unknown',
-    duration: result.duration ?? result.segments?.[result.segments.length - 1]?.end ?? 0,
+    segments: [
+      {
+        id: 0,
+        start: 0,
+        end: result.duration ?? 0,
+        text: result.text,
+      },
+    ],
+    language: 'unknown',
+    duration: result.duration ?? 0,
   }
 }
 
@@ -396,7 +395,7 @@ async function transcribeAudioWithFallback(
 
   try {
     // Check if model exists
-    let whisperAvailable = await invoke<boolean>('check_model_exists', { model: targetModel })
+    let whisperAvailable = await tauriInvoke<boolean>('check_model_exists', { model: targetModel })
     console.log('🎤 Model available:', whisperAvailable)
 
     // AUTO-DOWNLOAD: If model not available, try to download it
@@ -419,7 +418,7 @@ async function transcribeAudioWithFallback(
         })
 
         // Check again if model is now available
-        whisperAvailable = await invoke<boolean>('check_model_exists', { model: targetModel })
+        whisperAvailable = await tauriInvoke<boolean>('check_model_exists', { model: targetModel })
         console.log('🎤 Model available after download:', whisperAvailable)
 
         if (!whisperAvailable) {
@@ -451,7 +450,7 @@ async function transcribeAudioWithFallback(
     if (whisperAvailable) {
       // Read WebM file
       console.log('🎤 Reading WebM file...')
-      const webmBytes = await readFile(audioPath)
+      const webmBytes = await tauriReadFile(audioPath)
       console.log('🎤 WebM file size:', webmBytes.length, 'bytes')
 
       if (webmBytes.length === 0) {
@@ -503,7 +502,7 @@ async function transcribeAudioWithFallback(
       const wavPath = audioPath.replace('.webm', '.wav')
       console.log('🎤 Saving WAV to:', wavPath)
       const wavBytes = new Uint8Array(await wavBlob.arrayBuffer())
-      await writeFile(wavPath, wavBytes)
+      await tauriWriteFile(wavPath, wavBytes)
 
       console.log('🎤 WAV file saved successfully')
 
@@ -518,7 +517,7 @@ async function transcribeAudioWithFallback(
       await fileLog('Calling local Whisper...')
 
       // Wrap Rust invoke in a timeout race to prevent infinite hanging
-      const transcriptionPromise = invoke<{
+      const transcriptionPromise = tauriInvoke<{
         text: string
         segments: Array<{ id: number; start: number; end: number; text: string }>
         language: string
@@ -639,7 +638,7 @@ export async function processRecordingAndGenerateSkill(
     await fileLog(`Processing session: ${sessionDir}`)
 
     // Load manifest from disk using existing command
-    const manifest = await invoke<{
+    const manifest = await tauriInvoke<{
       frames: Array<{
         timestamp: number
         imagePath: string
@@ -699,11 +698,11 @@ export async function processRecordingAndGenerateSkill(
         console.log('🎤 Transcription successful:', transcription.text.substring(0, 100))
         await fileLog(`Transcription success: ${transcription.text.substring(0, 50)}...`)
         try {
-          await writeFile(
+          await tauriWriteFile(
             `${sessionDir}/transcript.txt`,
             new TextEncoder().encode(transcription.text)
           )
-          await writeFile(
+          await tauriWriteFile(
             `${sessionDir}/transcript.json`,
             new TextEncoder().encode(JSON.stringify(transcription, null, 2))
           )
@@ -846,11 +845,11 @@ export async function processRecordingAndGenerateSkill(
     })
 
     try {
-      await writeFile(
+      await tauriWriteFile(
         `${sessionDir}/operations-brief.md`,
         new TextEncoder().encode(operationsBrief.markdown)
       )
-      await writeFile(
+      await tauriWriteFile(
         `${sessionDir}/operations-brief.json`,
         new TextEncoder().encode(JSON.stringify(operationsBrief, null, 2))
       )
@@ -866,7 +865,7 @@ export async function processRecordingAndGenerateSkill(
     })
 
     try {
-      await invoke('save_skill_md', { content: skillMarkdown })
+      await tauriInvoke('save_skill_md', { content: skillMarkdown })
     } catch (e) {
       console.warn('Could not save to file:', e)
     }

@@ -27,3 +27,13 @@ export interface HostTranscriptionResult {
   text: string
   duration?: number
 }
+
+declare global {
+  interface Window {
+    skillEHost?: {
+      shell?: HostShell
+      getStatus?: () => Promise<WorkDiaryHostStatus>
+      wisprTranscribe?: (audioPath: string) => Promise<HostTranscriptionResult>
+    }
+  }
+}
