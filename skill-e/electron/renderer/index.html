@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skill-E Electron Shell</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Skill-E Electron Shell</p>
+          <h1>Work Diary host scaffold</h1>
+          <p class="lede">
+            First migration slice out of Tauri. This shell boots providers and exposes their status
+            without reopening the domain model.
+          </p>
+        </div>
+        <div class="actions">
+          <button id="refresh-button" type="button">Refresh status</button>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Host status</h2>
+          <span id="checked-at" class="muted">waiting…</span>
+        </div>
+        <div id="status-summary" class="summary"></div>
+        <div id="providers" class="providers"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Wispr bridge smoke</h2>
+          <span class="muted">Direct shell provider call</span>
+        </div>
+
+        <label class="field">
+          <span>Audio path</span>
+          <input
+            id="audio-path"
+            type="text"
+            value="C:/contavan/tmp/wispr-bridge-test.wav"
+            spellcheck="false"
+          />
+        </label>
+
+        <div class="actions">
+          <button id="transcribe-button" type="button">Transcribe via Wispr</button>
+        </div>
+
+        <pre id="transcript-output" class="transcript">No transcript yet.</pre>
+      </section>
+    </main>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>
