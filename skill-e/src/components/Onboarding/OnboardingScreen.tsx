@@ -127,7 +127,7 @@ export function OnboardingScreen({ onComplete }: OnboardingProps) {
     try {
       const exists = await checkModelExists(selectedModel)
       setModelStatus(exists ? 'found' : 'missing')
-      setTranscriptionMode('local_whisper')
+      setTranscriptionMode('wispr_flow')
     } catch (e) {
       console.error(e)
       setModelStatus('missing')
@@ -159,7 +159,7 @@ export function OnboardingScreen({ onComplete }: OnboardingProps) {
   const handleFinish = () => {
     setOnboardingCompleted(true)
     const mode: TranscriptionMode =
-      transcriptionMethod === 'local' ? 'local_whisper' : 'cloud_openai'
+      transcriptionMethod === 'local' ? 'wispr_flow' : 'cloud_openai'
     setTranscriptionMode(mode)
 
     if (transcriptionMethod === 'local') {

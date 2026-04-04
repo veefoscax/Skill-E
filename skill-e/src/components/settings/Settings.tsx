@@ -114,7 +114,7 @@ export function Settings() {
 
   // Check if selected model exists
   useEffect(() => {
-    if (transcriptionMode === 'local_whisper') {
+    if (transcriptionMode === 'local_whisper' || transcriptionMode === 'wispr_flow') {
       checkModelExists(whisperModel)
         .then(exists => setModelExists(exists))
         .catch(err => console.warn('Failed to check model existence:', err))
@@ -273,7 +273,12 @@ export function Settings() {
     // No-op validation for now as types are enforced
   }, [transcriptionMode, setTranscriptionMode])
 
-  const uiTranscriptionMode = transcriptionMode === 'cloud_openai' ? 'api' : 'local'
+  const uiTranscriptionMode =
+    transcriptionMode === 'cloud_openai'
+      ? 'api'
+      : transcriptionMode === 'wispr_flow'
+        ? 'wispr'
+        : 'local'
 
   return (
     <div className="h-full w-full flex flex-col bg-background text-foreground select-none border rounded-lg shadow-xl overflow-hidden">
@@ -365,7 +370,7 @@ export function Settings() {
           <Label className="text-xs font-medium text-muted-foreground uppercase">
             Transcription Mode
           </Label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => setTranscriptionMode('cloud_openai')}
               className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${
@@ -376,6 +381,17 @@ export function Settings() {
             >
               <Cloud className="h-5 w-5 mb-1" />
               <span className="font-medium text-xs">Cloud API</span>
+            </button>
+            <button
+              onClick={() => setTranscriptionMode('wispr_flow')}
+              className={`flex flex-col items-center justify-center p-3 rounded-md border transition-all ${
+                uiTranscriptionMode === 'wispr'
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-card hover:bg-muted border-input'
+              }`}
+            >
+              <Mic className="h-5 w-5 mb-1" />
+              <span className="font-medium text-xs">Wispr Flow</span>
             </button>
             <button
               onClick={() => setTranscriptionMode('local_whisper')}
@@ -392,8 +408,14 @@ export function Settings() {
         </div>
 
         {/* Local Settings */}
-        {uiTranscriptionMode === 'local' && (
+        {uiTranscriptionMode !== 'api' && (
           <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+            {uiTranscriptionMode === 'wispr' && (
+              <div className="rounded-md border border-blue-200 bg-blue-50 p-2 text-[10px] text-blue-900">
+                Wispr Flow is the primary transcript path. The local model below is used only as
+                fallback if the bridge is unavailable or fails.
+              </div>
+            )}
             {/* GPU Toggle */}
             <div
               className={`flex items-center justify-between p-3 rounded-md border ${
@@ -442,7 +464,9 @@ export function Settings() {
             {/* Model Dropdown */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <Label className="text-xs">Whisper Model</Label>
+                <Label className="text-xs">
+                  {uiTranscriptionMode === 'wispr' ? 'Fallback Whisper Model' : 'Whisper Model'}
+                </Label>
                 {modelExists ? (
                   <span className="text-[10px] text-green-600 flex items-center gap-1"><Check className="w-3 h-3"/> Downloaded</span>
                 ) : (
@@ -734,8 +758,9 @@ export function Settings() {
             )}
 
             <p className="text-[10px] text-muted-foreground">
-              When Local mode is selected, enabling the sidecar makes transcription use Python
-              `faster-whisper` before falling back to the bundled Rust path.
+              In Local mode, enabling the sidecar makes transcription use Python `faster-whisper`
+              before falling back to the bundled Rust path. In Wispr mode, this same sidecar is
+              the first fallback after the Wispr bridge.
             </p>
           </div>
         </div>

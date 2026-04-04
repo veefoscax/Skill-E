@@ -336,11 +336,18 @@ export function ProcessingScreen({ onComplete, onCancel }: ProcessingScreenProps
               <p className="text-xs text-red-600 mb-2 font-medium">Current Settings:</p>
               <div className="flex flex-wrap gap-2 text-xs text-red-700">
                 <span className="bg-red-100 px-2 py-1 rounded">
-                  Mode: {settings.transcriptionMode === 'cloud_openai' ? 'Cloud API' : 'Local'}
+                  Mode:{' '}
+                  {settings.transcriptionMode === 'cloud_openai'
+                    ? 'Cloud API'
+                    : settings.transcriptionMode === 'wispr_flow'
+                      ? 'Wispr Flow'
+                      : 'Local'}
                 </span>
-                {settings.transcriptionMode === 'local_whisper' && (
+                {(settings.transcriptionMode === 'local_whisper' ||
+                  settings.transcriptionMode === 'wispr_flow') && (
                   <span className="bg-red-100 px-2 py-1 rounded">
-                    Model: {WHISPER_MODEL_INFO[settings.whisperModel].name}
+                    {settings.transcriptionMode === 'wispr_flow' ? 'Fallback Model' : 'Model'}:{' '}
+                    {WHISPER_MODEL_INFO[settings.whisperModel].name}
                   </span>
                 )}
                 {settings.whisperApiKey && (

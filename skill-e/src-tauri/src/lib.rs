@@ -30,6 +30,7 @@ use commands::whisper::{
     stop_ai_sidecar,
     transcribe_sidecar,
 };
+use commands::wispr::transcribe_wispr_bridge;
 use commands::overlay::{
     create_overlay_window,
     show_overlay,
@@ -277,6 +278,7 @@ pub fn run() {
             start_ai_sidecar,
             stop_ai_sidecar,
             transcribe_sidecar,
+            transcribe_wispr_bridge,
             // Overlay window commands
             create_overlay_window,
             show_overlay,

@@ -245,6 +245,76 @@ async function transcribeWithSidecar(
   }
 }
 
+async function ensureWavAudioPath(audioPath: string): Promise<string> {
+  if (audioPath.toLowerCase().endsWith('.wav')) {
+    return audioPath
+  }
+
+  const audioBytes = await readFile(audioPath)
+  const sourceMimeType =
+    audioPath.toLowerCase().endsWith('.ogg') || audioPath.toLowerCase().endsWith('.opus')
+      ? 'audio/ogg'
+      : 'audio/webm'
+
+  const sourceBlob = new Blob([audioBytes], { type: sourceMimeType })
+  const wavBlob = await convertWebMToWav(sourceBlob)
+  const wavPath = audioPath.replace(/\.[^/.]+$/, '.wav')
+  const wavBytes = new Uint8Array(await wavBlob.arrayBuffer())
+  await writeFile(wavPath, wavBytes)
+  return wavPath
+}
+
+async function transcribeWithWisprBridge(
+  audioPath: string,
+  onProgress: (progress: ProcessingProgress) => void
+): Promise<TranscriptionResult> {
+  onProgress({
+    stage: 'loading',
+    percentage: 22,
+    currentStep: 'Preparing audio for Wispr Flow...',
+  })
+
+  await fileLog(`Trying Wispr Flow bridge with audio: ${audioPath}`)
+  const wavPath = await ensureWavAudioPath(audioPath)
+
+  onProgress({
+    stage: 'loading',
+    percentage: 28,
+    currentStep: 'Transcribing with Wispr Flow...',
+  })
+
+  const result = await invoke<{
+    text: string
+    segments?: Array<{
+      id: number
+      start: number
+      end: number
+      text: string
+    }>
+    language?: string
+    duration?: number
+  }>('transcribe_wispr_bridge', {
+    audioPath: wavPath,
+  })
+
+  return {
+    text: result.text,
+    segments:
+      result.segments && result.segments.length > 0
+        ? result.segments
+        : [
+            {
+              id: 0,
+              start: 0,
+              end: result.duration ?? 0,
+              text: result.text,
+            },
+          ],
+    language: result.language || 'unknown',
+    duration: result.duration ?? result.segments?.[result.segments.length - 1]?.end ?? 0,
+  }
+}
+
 /**
  * Main transcription function - tries local first, then API if configured
  * NO GENERIC FALLBACK - fails properly to allow retry
@@ -287,6 +357,20 @@ async function transcribeAudioWithFallback(
       canUseApi: false,
       canDownloadModel: false,
     } as TranscriptionError
+  }
+
+  if (settings.transcriptionMode === 'wispr_flow') {
+    try {
+      console.log('🎤 [Wispr] Trying Wispr Flow bridge...')
+      await fileLog('Trying Wispr Flow bridge')
+      const result = await transcribeWithWisprBridge(audioPath, onProgress)
+      await fileLog(`Wispr Flow transcription success: ${result.text.substring(0, 50)}...`)
+      return result
+    } catch (wisprError) {
+      console.error('🎤 [Wispr] Failed:', wisprError)
+      await fileLog(`Wispr Flow bridge failed: ${wisprError}`)
+      console.warn('Falling back to local transcription path...')
+    }
   }
 
   const shouldTrySidecar =

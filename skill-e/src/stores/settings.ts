@@ -1,7 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type TranscriptionMode = 'cloud_openai' | 'local_whisper' | 'browser_native'
+export type TranscriptionMode =
+  | 'cloud_openai'
+  | 'wispr_flow'
+  | 'local_whisper'
+  | 'browser_native'
 export type LLMProvider =
   | 'codex'
   | 'openai'
@@ -150,7 +154,7 @@ export const useSettingsStore = create<SettingsState>()(
     set => ({
       frameRate: 1,
       outputDir: null,
-      transcriptionMode: 'local_whisper',
+      transcriptionMode: 'wispr_flow',
       whisperModel: 'tiny',
       useGpu: false,
       whisperApiKey: '',
@@ -197,7 +201,7 @@ export const useSettingsStore = create<SettingsState>()(
         set({
           frameRate: 1,
           outputDir: null,
-          transcriptionMode: 'local_whisper',
+          transcriptionMode: 'wispr_flow',
           whisperModel: 'tiny',
           useGpu: false,
           whisperApiKey: '',
